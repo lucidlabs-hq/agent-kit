@@ -36,6 +36,7 @@ SYNCABLE_PATHS=(
     "scripts/promote.sh"
     "scripts/sync-upstream.sh"
     "CLAUDE.md"
+    "AGENTS.md"
     "WORKFLOW.md"
 )
 

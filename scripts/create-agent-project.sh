@@ -386,7 +386,26 @@ EOF
     if [[ "$INCLUDE_FRONTEND" = true ]]; then
         print_step "Setting up Frontend (Next.js)..."
         if [[ -d "$template_dir/frontend" ]]; then
-            cp -r "$template_dir/frontend" .
+            # Use rsync to exclude build artifacts, or fallback to manual copy
+            if command -v rsync &> /dev/null; then
+                rsync -a --exclude='node_modules' --exclude='.next' --exclude='playwright-report' --exclude='test-results' --exclude='.dev-screenshots' "$template_dir/frontend/" frontend/
+            else
+                mkdir -p frontend
+                # Manual copy excluding problematic directories
+                for item in "$template_dir/frontend"/*; do
+                    base=$(basename "$item")
+                    if [[ "$base" != "node_modules" && "$base" != ".next" && "$base" != "playwright-report" && "$base" != "test-results" && "$base" != ".dev-screenshots" ]]; then
+                        cp -r "$item" frontend/ 2>/dev/null || true
+                    fi
+                done
+                # Copy hidden files except .next
+                for item in "$template_dir/frontend"/.[!.]*; do
+                    base=$(basename "$item")
+                    if [[ "$base" != ".next" && "$base" != ".dev-screenshots" && -e "$item" ]]; then
+                        cp -r "$item" frontend/ 2>/dev/null || true
+                    fi
+                done
+            fi
             # Update package.json
             sed -i '' "s/@lucidlabs\/agent-kit-frontend/${NPM_SCOPE}\/${PROJECT_NAME}-frontend/g" frontend/package.json 2>/dev/null || \
             sed -i "s/@lucidlabs\/agent-kit-frontend/${NPM_SCOPE}\/${PROJECT_NAME}-frontend/g" frontend/package.json 2>/dev/null || true

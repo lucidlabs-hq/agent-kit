@@ -54,6 +54,4 @@ test-results/
 # Cursor Rules (IDE-specific)
 /.cursorrules
 
-# Note: .claude/ and CLAUDE.md are now tracked for skills sharing
-# AGENTS.md kept local as it may contain IDE-specific settings
-/AGENTS.md
+# Note: .claude/, CLAUDE.md, and AGENTS.md are tracked for consistency

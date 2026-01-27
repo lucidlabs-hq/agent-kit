@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
+.next/
+dist/
+out/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Database
+*.db
+*.sqlite
+
+# Misc
+*.tgz
+.cache/
+
+# Temp
+/tmp/
+
+# Dev Screenshots (Visual Verification)
+.dev-screenshots/
+/.agents
+/.claude
+/.cursorrules
+/AGENTS.md
+/CLAUDE.md

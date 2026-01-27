@@ -1,0 +1,44 @@
+# Dependencies
+node_modules
+
+# Build output
+.next
+out
+dist
+build
+
+# Version control
+.git
+.gitignore
+
+# Environment files
+.env
+.env.local
+.env*.local
+
+# IDE and editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Testing
+coverage
+.nyc_output
+
+# Documentation (keep in source, exclude from Docker)
+*.md
+!README.md
+
+# Misc
+.turbo
+.eslintcache

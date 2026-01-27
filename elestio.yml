@@ -1,0 +1,41 @@
+# Elestio Configuration - Neola AI
+# Frontend-only deployment (MVP)
+
+config:
+  runTime: "dockerCompose"
+  version: "1"
+
+ports:
+  - protocol: "HTTPS"
+    targetProtocol: "HTTP"
+    listeningPort: "443"
+    targetPort: "3000"
+    public: true
+    path: "/"
+    isAuth: false
+
+  # Backend API will be added later
+  # - protocol: "HTTPS"
+  #   targetProtocol: "HTTP"
+  #   listeningPort: "444"
+  #   targetPort: "4000"
+  #   public: true
+  #   path: "/api"
+  #   isAuth: false
+
+environments:
+  - key: "NODE_ENV"
+    value: "production"
+
+  # Backend environment variables (for later)
+  # - key: "DATABASE_URL"
+  #   value: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+  # - key: "ANTHROPIC_API_KEY"
+  #   value: ""
+  # - key: "OPENAI_API_KEY"
+  #   value: ""
+
+# Lifecycle hooks will be added when backend is ready
+# lifeCycle:
+#   postInstall: "docker compose exec backend pnpm run db:push"
+#   postUpdate: "docker compose exec backend pnpm run db:push"

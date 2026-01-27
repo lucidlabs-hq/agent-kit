@@ -1,0 +1,129 @@
+# =============================================================================
+# Agent Kit - Docker Compose Configuration
+#
+# Production-ready setup with Caddy as reverse proxy.
+#
+# Usage:
+#   docker-compose up -d              # Start all services
+#   docker-compose up frontend mastra # Start specific services
+#   docker-compose logs -f            # View logs
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # REVERSE PROXY (Caddy - Auto HTTPS)
+  # ===========================================================================
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    depends_on:
+      - frontend
+    networks:
+      - agent-network
+
+  # ===========================================================================
+  # FRONTEND (Next.js)
+  # ===========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_CONVEX_URL=${CONVEX_URL}
+      - NEXT_PUBLIC_MASTRA_URL=http://mastra:4000
+    depends_on:
+      - mastra
+    networks:
+      - agent-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================================================
+  # MASTRA (AI Agents)
+  # ===========================================================================
+  mastra:
+    build:
+      context: ./mastra
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - CONVEX_URL=${CONVEX_URL}
+    networks:
+      - agent-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===========================================================================
+  # CONVEX LOCAL BACKEND (Self-hosted option)
+  # ===========================================================================
+  # Uncomment for self-hosted Convex (development/privacy requirements)
+  # convex:
+  #   image: convex/convex-local-backend:latest
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3210:3210"
+  #   volumes:
+  #     - convex_data:/data
+  #   environment:
+  #     - CONVEX_SITE_URL=${CONVEX_SITE_URL:-http://localhost:3210}
+  #   networks:
+  #     - agent-network
+
+  # ===========================================================================
+  # N8N (Workflow Automation) - Optional
+  # ===========================================================================
+  # Uncomment to enable n8n
+  # n8n:
+  #   image: n8nio/n8n:latest
+  #   restart: unless-stopped
+  #   environment:
+  #     - N8N_BASIC_AUTH_ACTIVE=true
+  #     - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+  #     - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-changeme}
+  #     - N8N_HOST=${DOMAIN:-localhost}
+  #     - N8N_PORT=5678
+  #     - N8N_PROTOCOL=https
+  #     - WEBHOOK_URL=https://${DOMAIN:-localhost}/n8n/
+  #     - GENERIC_TIMEZONE=Europe/Berlin
+  #   volumes:
+  #     - n8n_data:/home/node/.n8n
+  #     - ./n8n/workflows:/home/node/workflows:ro
+  #   networks:
+  #     - agent-network
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+networks:
+  agent-network:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
+  convex_data:
+  n8n_data:

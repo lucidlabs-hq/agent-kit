@@ -1,0 +1,285 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Color Palette - Indigo + Slate Only */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Surface Hierarchy (Calm Density) */
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-divider: var(--divider);
+
+  /* Typography */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Border Radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  /* Light Mode - Indigo + Slate */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0.014 285.82);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0.014 285.82);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0.014 285.82);
+  --primary: oklch(0.511 0.262 276.97);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.968 0.007 264.54);
+  --secondary-foreground: oklch(0.208 0.042 265.76);
+  --muted: oklch(0.968 0.007 264.54);
+  --muted-foreground: oklch(0.554 0.046 264.39);
+  --accent: oklch(0.968 0.007 264.54);
+  --accent-foreground: oklch(0.208 0.042 265.76);
+  --border: oklch(0.929 0.013 264.53);
+  --input: oklch(0.929 0.013 264.53);
+  --ring: oklch(0.511 0.262 276.97);
+  --radius: 0.625rem;
+
+  /* Surface Hierarchy (Calm Density) */
+  --surface-0: #f1f5f9;  /* Page Background - slate-100 (darker for card contrast) */
+  --surface-1: #ffffff;  /* Raised Cards - white */
+  --surface-2: #f1f5f9;  /* Input/Muted Backgrounds - slate-100 */
+  --divider: #e2e8f0;    /* Section Dividers - slate-200 */
+
+  /* Gradient Accent (Logo Colors) */
+  --gradient-start: #00c8ff;  /* Cyan */
+  --gradient-mid: #c850c0;    /* Magenta */
+  --gradient-end: #ff6b35;    /* Coral/Orange */
+
+  /* ============================================================================
+     TYPOGRAPHY TOKENS - 3-Level System
+     ============================================================================
+
+     Hierarchie entsteht durch:
+     - font-weight (400 normal, 500 medium, 600 semibold)
+     - color (slate-900 primary, slate-500 secondary)
+     - NICHT durch zusätzliche Größenstufen
+
+     ============================================================================ */
+
+  /* TITLE - Case/Page Identity only (24px) */
+  --text-title-size: 24px;
+  --text-title-line: 32px;
+  --text-title-weight: 600;
+
+  /* BODY - All readable content (14px) */
+  --text-body-size: 14px;
+  --text-body-line: 22px;
+
+  /* LABEL - Meta, Section Headers, Badges (12px) */
+  --text-label-size: 12px;
+  --text-label-line: 16px;
+  --text-label-tracking: 0.02em;
+}
+
+.dark {
+  /* Dark Mode - Indigo + Slate */
+  --background: oklch(0.145 0.014 285.82);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0.014 285.82);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0.014 285.82);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.707 0.165 254.62);
+  --primary-foreground: oklch(0.208 0.042 265.76);
+  --secondary: oklch(0.269 0.032 265.75);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0.032 265.75);
+  --muted-foreground: oklch(0.704 0.042 264.39);
+  --accent: oklch(0.269 0.032 265.75);
+  --accent-foreground: oklch(0.985 0 0);
+  --border: oklch(0.269 0.032 265.75);
+  --input: oklch(0.269 0.032 265.75);
+  --ring: oklch(0.551 0.27 262.88);
+
+  /* Surface Hierarchy (Calm Density) - Dark Mode */
+  --surface-0: #0f172a;  /* Page Background - slate-900 */
+  --surface-1: #1e293b;  /* Raised Cards - slate-800 */
+  --surface-2: #334155;  /* Input/Muted Backgrounds - slate-700 */
+  --divider: #475569;    /* Section Dividers - slate-600 */
+}
+
+@layer base {
+  /* NOTE: Global border-border removed for Calm Density design */
+  /* Cards and elements now use explicit borders only when needed */
+
+  body {
+    @apply bg-surface-0 text-foreground;
+  }
+}
+
+/* ============================================================================
+   TYPOGRAPHY UTILITY CLASSES - Strict 3-Level System
+   ============================================================================
+
+   VERBINDLICHE REGELN - KEINE AUSNAHMEN:
+
+   ┌─────────────────────────────────────────────────────────────────────────┐
+   │  TITLE (24px)   → ONLY for Case/Page title                              │
+   │  BODY  (14px)   → ALL content: values, steps, text, email previews     │
+   │  LABEL (12px)   → ALL labels, meta, badges, section headers            │
+   └─────────────────────────────────────────────────────────────────────────┘
+
+   REGELN:
+   - Labels sind IMMER kleiner als Werte (12px < 14px)
+   - Werte sind NIE größer als Arbeitsschritte (alle 14px)
+   - Labels: 12px, slate-500, nie bold (außer Badges)
+   - Values: 14px, kein medium/bold (außer aktive Auswahl)
+
+   KLASSEN:
+   - .text-title           → Case title only (24px, semibold)
+   - .text-body            → All values, steps, content (14px, normal)
+   - .text-body-semibold   → ONLY active/selected state (14px, semibold)
+   - .text-label           → All labels, meta (12px, normal, slate-500)
+   - .text-label-medium    → Section headers (12px, medium, uppercase)
+   - .text-label-bold      → Priority badges only (12px, semibold, uppercase)
+
+   ============================================================================ */
+
+@layer utilities {
+  /* TITLE - 24px - Case/Page identity ONLY */
+  .text-title {
+    font-size: var(--text-title-size);
+    line-height: var(--text-title-line);
+    font-weight: var(--text-title-weight);
+  }
+
+  /* BODY - 14px - ALL content/values/steps */
+  .text-body {
+    font-size: var(--text-body-size);
+    line-height: var(--text-body-line);
+    font-weight: 400;
+  }
+
+  /* BODY SEMIBOLD - 14px - ONLY for active/selected states */
+  .text-body-semibold {
+    font-size: var(--text-body-size);
+    line-height: var(--text-body-line);
+    font-weight: 600;
+  }
+
+  /* LABEL - 12px - All labels, meta info */
+  .text-label {
+    font-size: var(--text-label-size);
+    line-height: var(--text-label-line);
+    font-weight: 400;
+  }
+
+  /* LABEL MEDIUM - 12px - Section headers (uppercase) */
+  .text-label-medium {
+    font-size: var(--text-label-size);
+    line-height: var(--text-label-line);
+    font-weight: 500;
+    letter-spacing: var(--text-label-tracking);
+    text-transform: uppercase;
+  }
+
+  /* LABEL BOLD - 12px - Priority badges ONLY (uppercase) */
+  .text-label-bold {
+    font-size: var(--text-label-size);
+    line-height: var(--text-label-line);
+    font-weight: 600;
+    letter-spacing: var(--text-label-tracking);
+    text-transform: uppercase;
+  }
+
+  /* ============================================================================
+     SABINE PRESENCE ANIMATIONS
+     ============================================================================ */
+
+  /* Subtle pulse for working state */
+  .animate-pulse-subtle {
+    animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+/* Keyframes for subtle pulse */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* ============================================================================
+   TOAST STYLING - Calm, aligned with content cards
+   ============================================================================
+
+   Design spec:
+   - Dark indigo/graphite background (slate-800)
+   - Aligned to card edge (24px from right, matching content padding)
+   - Subtle animation: fade + minimal slide from top (2-4px)
+   - Top position with 24px offset (matching content padding)
+   ============================================================================ */
+
+/* Position toasts aligned with content area */
+[data-sonner-toaster] {
+  --offset: 24px !important;
+}
+
+[data-sonner-toaster][data-x-position="right"] {
+  right: 44px !important;
+}
+
+/* Subtle slide-in animation (fade + 4px slide from top) */
+[data-sonner-toast] {
+  --toast-slide-distance: 4px;
+}
+
+[data-sonner-toast][data-mounted="true"] {
+  animation: toast-fade-slide-in 200ms ease-out;
+}
+
+[data-sonner-toast][data-removed="true"] {
+  animation: toast-fade-slide-out 150ms ease-in forwards;
+}
+
+@keyframes toast-fade-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--toast-slide-distance)));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-fade-slide-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--toast-slide-distance)));
+  }
+}

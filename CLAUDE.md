@@ -745,6 +745,7 @@ This project uses Claude Code Skills instead of legacy commands. Skills follow t
 | `/init-project` | Initialize new project | Planning |
 | `/screenshot` | Visual verification | Validation |
 | `/update-readme` | Update documentation | Implementation |
+| `/promote` | Promote patterns to upstream | Any |
 
 ### Skill vs Mastra Tool
 

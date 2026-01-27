@@ -14,6 +14,7 @@ Skills extend Claude's capabilities in this project. Each skill is a directory w
 | `/init-project` | Initialize new project | Planning |
 | `/screenshot` | Visual verification screenshots | Validation |
 | `/update-readme` | Update README file | Implementation |
+| `/promote` | Promote patterns to upstream | Any |
 
 ## Skill Format (Claude Code v2.1.3+)
 

@@ -151,6 +151,7 @@ Skills extend Claude's capabilities. Invoke with `/skill-name`.
 | `/init-project` | Initialize new downstream project | Planning |
 | `/screenshot` | Visual verification with agent-browser | Validation |
 | `/update-readme` | Update README with current status | Implementation |
+| `/promote` | Promote patterns to upstream agent-kit | Any |
 
 Skills are stored in `.claude/skills/` with `SKILL.md` files. See [Claude Code Skills Docs](https://code.claude.com/docs/en/skills).
 

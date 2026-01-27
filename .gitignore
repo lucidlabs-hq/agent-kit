@@ -51,6 +51,9 @@ test-results/
 # Local Agent Work (plans, audits)
 /.agents
 
+# Future Plans (local only, not tracked)
+/future-plans/
+
 # Cursor Rules (IDE-specific)
 /.cursorrules
 

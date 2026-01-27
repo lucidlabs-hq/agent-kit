@@ -7,7 +7,7 @@ This guide explains the complete development workflow for Agent Kit projects.
 1. [Quick Reference](#quick-reference)
 2. [PRD-First Development](#prd-first-development)
 3. [The PIV Loop](#the-piv-loop)
-4. [Slash Commands](#slash-commands)
+4. [Skills](#skills)
 5. [Step-by-Step Workflow](#step-by-step-workflow)
 6. [Best Practices](#best-practices)
 
@@ -126,7 +126,10 @@ Agent Kit uses the **PIV (Plan-Implement-Validate)** workflow:
 
 ---
 
-## Slash Commands
+## Skills
+
+> **Note:** As of Claude Code v2.1.3 (January 2026), slash commands have been merged into skills.
+> Skills are stored in `.claude/skills/` with `SKILL.md` files. See [Claude Code Skills Docs](https://code.claude.com/docs/en/skills).
 
 ### `/create-prd`
 

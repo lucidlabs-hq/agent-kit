@@ -91,7 +91,7 @@ agent-kit/
 │
 ├── .claude/                  # Claude Code configuration
 │   ├── PRD.md                # Product Requirements
-│   ├── commands/             # Slash commands
+│   ├── skills/               # Claude Code skills (v2.1.3+)
 │   └── reference/            # Best practices
 │
 ├── docker-compose.yml        # Production deployment
@@ -137,18 +137,22 @@ Agent Kit follows a **PRD-First** development approach:
 
 See [WORKFLOW.md](./WORKFLOW.md) for detailed instructions.
 
-## Available Commands
+## Available Skills (Claude Code v2.1.3+)
 
-### Slash Commands (Claude Code)
+Skills extend Claude's capabilities. Invoke with `/skill-name`.
 
-| Command | Description |
-|---------|-------------|
-| `/create-prd` | Create a new PRD interactively |
-| `/plan-feature` | Plan feature implementation |
-| `/execute` | Execute an implementation plan |
-| `/validate` | Validate compliance with standards |
-| `/commit` | Create formatted commit |
-| `/prime` | Prime Claude with codebase understanding |
+| Skill | Description | PIV Phase |
+|-------|-------------|-----------|
+| `/create-prd` | Create a new PRD interactively | Planning |
+| `/plan-feature` | Plan feature implementation | Planning |
+| `/execute` | Execute an implementation plan | Implementation |
+| `/commit` | Create formatted commit | Implementation |
+| `/prime` | Load project context | Any |
+| `/init-project` | Initialize new downstream project | Planning |
+| `/screenshot` | Visual verification with agent-browser | Validation |
+| `/update-readme` | Update README with current status | Implementation |
+
+Skills are stored in `.claude/skills/` with `SKILL.md` files. See [Claude Code Skills Docs](https://code.claude.com/docs/en/skills).
 
 ### Package Scripts
 

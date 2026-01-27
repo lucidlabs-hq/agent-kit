@@ -16,7 +16,7 @@ export default function HomePage() {
       <div className="flex flex-col">
         <AppHeader
           title="Agent Kit"
-          subtitle="AI Agent Starter Kit by Lucidlabs"
+          subtitle="AI Agent Starter Kit by Lucid Labs GmbH"
         />
 
         <div className="px-8 pb-8">

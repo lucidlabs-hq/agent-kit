@@ -6,7 +6,7 @@
 **Version:** 1.0
 **Status:** Production-Ready
 **Last Updated:** January 2026
-**Owner:** Lucidlabs
+**Owner:** Lucid Labs GmbH
 
 ---
 
@@ -41,7 +41,7 @@
 
 ### What We're Building
 
-A reusable boilerplate that serves as the **upstream foundation** for all Lucidlabs AI agent projects. It defines structure, rules, and interfaces - not domain logic or business features.
+A reusable boilerplate that serves as the **upstream foundation** for all Lucid Labs GmbH AI agent projects. It defines structure, rules, and interfaces - not domain logic or business features.
 
 ### Goals
 
@@ -190,7 +190,7 @@ agent-kit/
 
 | Layer | Ownership | Contains |
 |-------|-----------|----------|
-| Agent Kit | Lucidlabs | Patterns, interfaces, boilerplate |
+| Agent Kit | Lucid Labs GmbH | Patterns, interfaces, boilerplate |
 | Downstream Project | Project Team | Domain logic, features, data |
 
 ---

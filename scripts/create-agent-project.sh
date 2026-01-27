@@ -54,7 +54,7 @@ print_banner() {
     echo -e "${CYAN}║${NC}    ${BLUE}██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║${NC}                   ${CYAN}║${NC}"
     echo -e "${CYAN}║${NC}    ${BLUE}╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝${NC}   ${GREEN}KIT${NC}           ${CYAN}║${NC}"
     echo -e "${CYAN}║                                                                ║${NC}"
-    echo -e "${CYAN}║${NC}          ${YELLOW}AI Agent Starter Kit by Lucidlabs${NC}                    ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}       ${YELLOW}AI Agent Starter Kit by Lucid Labs GmbH${NC}              ${CYAN}║${NC}"
     echo -e "${CYAN}║                                                                ║${NC}"
     echo -e "${CYAN}╚════════════════════════════════════════════════════════════════╝${NC}"
     echo ""

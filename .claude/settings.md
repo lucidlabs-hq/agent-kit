@@ -243,4 +243,4 @@ pnpm run test:e2e
 
 **Version:** 1.0
 **Last Updated:** January 2026
-**Maintainer:** Lucidlabs
+**Maintainer:** Lucid Labs GmbH

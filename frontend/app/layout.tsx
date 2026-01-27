@@ -24,7 +24,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Agent Kit | AI Agent Starter",
-  description: "AI Agent Starter Kit by Lucidlabs - Next.js, Mastra, Convex, n8n",
+  description: "AI Agent Starter Kit by Lucid Labs GmbH - Next.js, Mastra, Convex, n8n",
 };
 
 interface RootLayoutProps {

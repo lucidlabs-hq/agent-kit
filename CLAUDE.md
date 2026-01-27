@@ -1,6 +1,6 @@
 # Agent Kit
 
-> **AI Agent Starter Kit by Lucidlabs**
+> **AI Agent Starter Kit by Lucid Labs GmbH**
 > Reusable boilerplate for rapid AI agent project development
 
 ## Open Questions
@@ -1064,5 +1064,5 @@ Any deviation from the PIV model is considered an error.
 ---
 
 **Last Updated:** January 2026
-**Maintainer:** Lucidlabs
+**Maintainer:** Lucid Labs GmbH
 **Version:** 1.0

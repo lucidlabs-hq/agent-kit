@@ -1,6 +1,6 @@
 # Agent Kit
 
-> **AI Agent Starter Kit by Lucidlabs**
+> **AI Agent Starter Kit by Lucid Labs GmbH**
 >
 > A production-ready boilerplate for building AI-powered applications with Next.js, Mastra, Convex, and n8n.
 
@@ -417,4 +417,4 @@ MIT License - See [LICENSE](./LICENSE) for details.
 
 ---
 
-**Built with care by [Lucidlabs](https://lucidlabs.de)**
+**Built with care by [Lucid Labs GmbH](https://lucidlabs.de)**

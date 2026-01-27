@@ -3,21 +3,33 @@ name: promote
 description: Promote generic patterns from this project back to the upstream agent-kit. Use when you have reusable patterns to share.
 disable-model-invocation: true
 allowed-tools: Bash, Read
-argument-hint: [--upstream <path>]
+argument-hint: [--dry-run]
 ---
 
 # Promote Patterns to Upstream
 
 Promote generic, reusable patterns from this downstream project back to the upstream agent-kit template.
 
+## Expected Folder Structure
+
+```
+lucidlabs/
+├── lucidlabs-agent-kit/        # Upstream template
+└── projects/
+    └── [this-project]/         # You are here (downstream)
+```
+
 ## Quick Start
 
 ```bash
-# Run promotion script
-./scripts/promote.sh --upstream ~/templates/agent-kit
+# Run promotion script (default path: ../../lucidlabs-agent-kit)
+./scripts/promote.sh --upstream ../../lucidlabs-agent-kit
 
 # Preview only (dry run)
-./scripts/promote.sh --upstream ~/templates/agent-kit --dry-run
+./scripts/promote.sh --upstream ../../lucidlabs-agent-kit --dry-run
+
+# Custom upstream path (if different structure)
+./scripts/promote.sh --upstream /path/to/agent-kit
 ```
 
 ## What Gets Promoted
@@ -71,8 +83,8 @@ These indicate the code may not be generic enough for the template.
 ║              PATTERN PROMOTION                                 ║
 ╚════════════════════════════════════════════════════════════════╝
 
-ℹ Downstream: /Users/dev/projects/my-project
-ℹ Upstream:   /Users/dev/templates/agent-kit
+ℹ Downstream: ~/coding/repos/lucidlabs/projects/customer-portal
+ℹ Upstream:   ~/coding/repos/lucidlabs/lucidlabs-agent-kit
 
 ▶ Scanning for promotable changes...
 
@@ -84,14 +96,35 @@ Promotable changes found:
 
 Enter numbers to promote (e.g., 1,2 or 'all'): 1,2
 
-▶ Creating branch: promote/20260127-from-my-project
+▶ Creating branch: promote/20260127-from-customer-portal
 ✔ Copied: .claude/skills/code-review/SKILL.md
 ✔ Copied: .claude/reference/api-patterns.md
 ✔ Committed 2 files
 
 Create GitHub PR? [Y/n] y
-✔ PR created: https://github.com/lucidlabs/agent-kit/pull/42
+✔ PR created: https://github.com/lucidlabs-hq/agent-kit/pull/42
 ```
+
+## When to Promote
+
+Promote patterns when:
+- You created a reusable skill that could help other projects
+- You built a generic UI component with no domain logic
+- You documented a best practice others should follow
+- You wrote utility functions that are project-agnostic
+
+Do NOT promote:
+- Project-specific configurations
+- Domain logic or business rules
+- Database schemas
+- App pages or routes
+
+## Related Commands
+
+| Direction | Command | Description |
+|-----------|---------|-------------|
+| Downstream → Upstream | `/promote` | This skill |
+| Upstream → Downstream | `./scripts/sync-upstream.sh` | Pull updates from template |
 
 ## Best Practices
 

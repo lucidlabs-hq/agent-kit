@@ -39,7 +39,7 @@ pnpm run build                   # Production Build (Node.js)
 
 **Project-specific details belong in:**
 - `.claude/PRD.md` - Product Requirements Document
-- `.claude/commands/` - Project-specific slash commands
+- `.claude/skills/` - Claude Code skills (v2.1.3+)
 
 **This file contains:**
 - Tech stack & conventions
@@ -311,11 +311,13 @@ agent-kit/
 │   └── environments/            # Dev/prod configurations
 │
 ├── scripts/
-│   └── create-agent-project.sh  # Project scaffolding
+│   ├── create-agent-project.sh  # Project scaffolding
+│   ├── promote.sh               # Promote patterns upstream
+│   └── sync-upstream.sh         # Sync updates downstream
 │
 ├── .claude/                     # Claude Code configuration
 │   ├── PRD.md                   # Product Requirements
-│   ├── commands/                # Slash commands
+│   ├── skills/                  # Claude Code skills (v2.1.3+)
 │   └── reference/               # Best practices
 │
 ├── docker-compose.yml           # Production deployment
@@ -684,6 +686,54 @@ export class ExamplePage {
 3. Write E2E tests only for critical flows (10%)
 
 **Reference:** `.claude/reference/testing-and-logging.md`
+
+---
+
+## Skills (Claude Code v2.1.3+)
+
+This project uses Claude Code Skills. Skills follow the [Agent Skills](https://agentskills.io) open standard.
+
+### Available Skills
+
+| Skill | Purpose | PIV Phase |
+|-------|---------|-----------|
+| `/start` | Entry point - create or open project | Any |
+| `/checkout-project` | Clone existing project from GitHub | Any |
+| `/create-prd` | Create Product Requirements | Planning |
+| `/plan-feature` | Plan feature implementation | Planning |
+| `/execute` | Execute implementation plan | Implementation |
+| `/commit` | Create formatted commit | Implementation |
+| `/prime` | Load project context | Any |
+| `/init-project` | Initialize new project | Planning |
+| `/screenshot` | Visual verification | Validation |
+| `/update-readme` | Update documentation | Implementation |
+| `/promote` | Promote patterns to upstream | Any |
+| `/sync` | Sync updates from upstream | Any |
+
+Skills are stored in `.claude/skills/` with `SKILL.md` files.
+
+---
+
+## Upstream/Downstream Model
+
+### Folder Structure
+
+```
+lucidlabs/
+├── lucidlabs-agent-kit/        # UPSTREAM (template)
+└── projects/
+    └── [project-name]/         # DOWNSTREAM (your project)
+```
+
+### Workflow Commands
+
+| What You Want | Where To Run | Command |
+|---------------|--------------|---------|
+| Create project | `lucidlabs-agent-kit/` | `./scripts/create-agent-project.sh ../projects/[name]` |
+| Promote patterns | `projects/[name]/` | `./scripts/promote.sh --upstream ../../lucidlabs-agent-kit` |
+| Sync updates | `projects/[name]/` | `./scripts/sync-upstream.sh` |
+
+See `README.md` and `WORKFLOW.md` for detailed instructions.
 
 ---
 

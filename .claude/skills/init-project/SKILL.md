@@ -8,178 +8,109 @@ argument-hint: [project-name]
 
 # Initialize New Project
 
-Set up a new project based on the Agent Kit boilerplate.
+Create a new downstream project from the Agent Kit template.
+
+## Expected Folder Structure
+
+```
+lucidlabs/
+├── lucidlabs-agent-kit/            ← You are here (upstream)
+└── projects/
+    └── [project-name]/             ← Will be created here
+```
 
 ## Project Details
 
 **Project Name:** $ARGUMENTS
 
 If no argument provided, ask for:
-- Project name (kebab-case, e.g., `my-project`)
+- Project name (kebab-case, e.g., `customer-portal`)
 - Project description (one sentence)
-- Client/Domain (e.g., "Property Management", "E-Commerce")
 
-## Initialization Steps
+## Step 1: Run the Scaffolding Script
 
-### 1. Verify Boilerplate Structure
+The script automatically creates the project in `../projects/`:
 
 ```bash
-# Check required directories exist
-ls -la frontend/
-ls -la .claude/
-ls -la .agents/
+# Interactive mode (recommended for first-time)
+./scripts/create-agent-project.sh --interactive
+
+# Or with project name directly
+./scripts/create-agent-project.sh [project-name]
 ```
 
-### 2. Update Project Metadata
+**What the script does:**
+1. Creates `../projects/[project-name]/`
+2. Copies all boilerplate files
+3. Customizes package.json and README
+4. Creates template PRD
+5. Initializes git repository with initial commit
 
-**Update `frontend/package.json`:**
-```json
-{
-  "name": "[project-name]",
-  "description": "[project-description]",
-  "version": "0.1.0"
-}
-```
+## Step 2: Provide Next Steps
 
-**Update `README.md`:**
-- Change "Agent Kit" to project name
-- Update description
-- Keep structure and commands documentation
-
-**Update `frontend/app/layout.tsx`:**
-- Change title to project name
-- Update description
-
-**Update `frontend/app/page.tsx`:**
-- Update heading and welcome text for the project
-
-### 3. Update PROJECT-STATUS.md
+After the script completes, tell the user:
 
 ```markdown
-## Quick Status
+## Projekt erstellt
 
-| Field | Value |
-|-------|-------|
-| **Project** | [Project Name] |
-| **Phase** | Initialization |
-| **Active Plan** | None |
-| **Last Updated** | [Today] |
+**Projekt:** [project-name]
+**Pfad:** ../projects/[project-name]/
 
-## Current Focus
+### WICHTIG: Neue Claude Session starten
 
-**Status:** Project initialized, ready for PRD creation
+Claude Sessions sind verzeichnisgebunden. Um im neuen Projekt zu arbeiten:
 
-**Next Steps:**
-1. Create PRD with `/create-prd`
-2. Run `/prime` to verify setup
-3. Plan first feature with `/plan-feature`
+**Terminal:**
+\`\`\`bash
+cd ../projects/[project-name] && claude
+\`\`\`
+
+**VS Code:**
+1. Öffne den Ordner `../projects/[project-name]/` in VS Code
+2. Starte Claude über die Command Palette
+
+### Nach dem Start der neuen Session:
+
+1. Dependencies installieren:
+   \`\`\`bash
+   cd frontend && pnpm install
+   \`\`\`
+
+2. Kontext laden:
+   \`\`\`
+   /prime
+   \`\`\`
+
+3. PRD erstellen:
+   \`\`\`
+   /create-prd
+   \`\`\`
+
+4. Erste Feature planen:
+   \`\`\`
+   /plan-feature [feature-name]
+   \`\`\`
 ```
 
-### 4. Configure Environment
+## Key Principle
 
-Create `.env.local` from template:
+**Claude arbeitet immer im aktuellen Verzeichnis.** Eine Session die in `lucidlabs-agent-kit/` gestartet wurde, arbeitet am Template. Für Projekt-Arbeit muss eine neue Session im Projekt-Verzeichnis gestartet werden.
 
-```bash
-cat > frontend/.env.local.example << 'EOF'
-# Database (Convex)
-NEXT_PUBLIC_CONVEX_URL=https://your-project.convex.cloud
-
-# AI
-ANTHROPIC_API_KEY=sk-ant-...
-OPENAI_API_KEY=sk-...
-
-# App
-NODE_ENV=development
-NEXT_PUBLIC_API_URL=http://localhost:4000
-EOF
-```
-
-### 5. Update Docker Configuration
-
-**Update `docker-compose.yml`:**
-- Change service names to project name
-
-**Update `docker-compose.dev.yml`:**
-- Change service names to `[project-name]_dev`
-
-### 6. Install Dependencies
-
-```bash
-cd frontend
-pnpm install
-```
-
-### 7. Create Initial Commit
-
-```bash
-git add -A
-git commit -m "chore: initialize [project-name] from Agent Kit
-
-- Update package.json with project name
-- Configure environment templates
-- Update Docker configuration
-- Ready for PRD creation"
-```
-
-### 8. Verify Setup
-
-```bash
-# Start dev server
-cd frontend && pnpm run dev &
-sleep 3
-
-# Verify it works
-curl -s http://localhost:3000/api/health
-
-# Stop server
-pkill -f "next dev"
-```
-
-## Output
-
-Provide summary:
-
-### Project Initialized
-
-- **Name:** [project-name]
-- **Location:** [current directory]
-- **Tech Stack:** Next.js 16, TypeScript, Tailwind v4, shadcn/ui
-
-### Files Modified
-
-| File | Change |
-|------|--------|
-| `frontend/package.json` | Updated name |
-| `README.md` | Updated project info |
-| `PROJECT-STATUS.md` | Initialized tracking |
-| `frontend/app/layout.tsx` | Updated title |
-| `frontend/app/page.tsx` | Updated welcome |
-| `docker-compose*.yml` | Updated service names |
-| `.env.local.example` | Created |
-
-### Next Steps
-
-```
-1. Copy frontend/.env.local.example to frontend/.env.local
-2. Fill in API keys (ANTHROPIC_API_KEY)
-3. Create PRD: /create-prd
-4. Start development: cd frontend && pnpm run dev
-```
-
-### Available Skills
+## Available Skills in New Project
 
 | Skill | Description |
 |-------|-------------|
-| `/create-prd` | Create Product Requirements Document |
 | `/prime` | Load project context |
-| `/plan-feature` | Create feature implementation plan |
+| `/create-prd` | Create Product Requirements Document |
+| `/plan-feature` | Plan feature implementation |
 | `/execute` | Execute an implementation plan |
 | `/validate` | Run all validation checks |
 | `/commit` | Create formatted commit |
+| `/promote` | Promote patterns back to template |
+| `/sync` | Sync updates from template |
 
 ## Notes
 
-- Remember to use `pnpm` for package management (never npm/yarn)
-- Use `pnpm run dev` for development server
+- Always use `pnpm` for package management (never npm/yarn)
+- PRD is the main project-specific file
 - Follow patterns in `.claude/reference/` docs
-- PRD is the only project-specific file; everything else is reusable

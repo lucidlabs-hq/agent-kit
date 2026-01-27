@@ -4,12 +4,229 @@ This guide explains the complete development workflow for Agent Kit projects.
 
 ## Table of Contents
 
-1. [Quick Reference](#quick-reference)
-2. [PRD-First Development](#prd-first-development)
-3. [The PIV Loop](#the-piv-loop)
-4. [Skills](#skills)
-5. [Step-by-Step Workflow](#step-by-step-workflow)
-6. [Best Practices](#best-practices)
+1. [Upstream/Downstream Model](#upstreamdownstream-model)
+2. [Quick Reference](#quick-reference)
+3. [PRD-First Development](#prd-first-development)
+4. [The PIV Loop](#the-piv-loop)
+5. [Skills](#skills)
+6. [Step-by-Step Workflow](#step-by-step-workflow)
+7. [Best Practices](#best-practices)
+
+---
+
+## Upstream/Downstream Model
+
+Agent Kit uses a **template-based architecture** where the kit serves as the upstream source and all projects are downstream consumers.
+
+### Folder Structure
+
+```
+lucidlabs/                              # Workspace root
+│
+├── lucidlabs-agent-kit/                # UPSTREAM (this template)
+│   ├── .claude/
+│   │   ├── skills/                     # Generic skills (promotable)
+│   │   ├── reference/                  # Best practices (promotable)
+│   │   └── PRD.md                      # Template PRD (not promotable)
+│   ├── frontend/
+│   │   ├── components/ui/              # Generic UI (promotable)
+│   │   └── app/                        # Boilerplate pages
+│   ├── mastra/
+│   │   └── src/tools/                  # Generic tools (promotable)
+│   └── scripts/
+│       ├── create-agent-project.sh     # Creates downstream projects
+│       ├── promote.sh                  # Promotes patterns upstream
+│       └── sync-upstream.sh            # Syncs updates downstream
+│
+└── projects/                           # DOWNSTREAM projects
+    ├── customer-portal/                # Each is own git repo
+    │   ├── .claude/PRD.md              # Project-specific PRD
+    │   └── ...
+    ├── internal-dashboard/
+    └── ai-assistant/
+```
+
+### Key Concepts
+
+| Concept | Description |
+|---------|-------------|
+| **Upstream** | The agent-kit template – contains only generic, reusable patterns |
+| **Downstream** | Individual projects – contain domain-specific logic and PRD |
+| **Promote** | Move generic patterns FROM downstream TO upstream |
+| **Sync** | Pull updates FROM upstream TO downstream |
+
+### Decision Flow: Where Does Code Belong?
+
+```
+Is this code domain-specific?
+│
+├─ YES → Keep in downstream project
+│        Examples: Customer schema, domain agents, app pages
+│
+└─ NO → Could be promoted to upstream
+        │
+        ├─ Is it a reusable pattern?
+        │   └─ YES → Promote via ./scripts/promote.sh
+        │
+        └─ Is it project-specific but not domain logic?
+            └─ Keep in downstream (e.g., deployment configs)
+```
+
+### Workflow Commands Summary
+
+| What You Want | Where To Run | Command |
+|---------------|--------------|---------|
+| Create new project | `lucidlabs-agent-kit/` | `./scripts/create-agent-project.sh ../projects/[name]` |
+| Promote patterns | `projects/[name]/` | `./scripts/promote.sh --upstream ../../lucidlabs-agent-kit` |
+| Sync from template | `projects/[name]/` | `./scripts/sync-upstream.sh` |
+| Preview promotion | `projects/[name]/` | `./scripts/promote.sh --upstream ... --dry-run` |
+
+---
+
+### Creating a New Project
+
+**Step-by-step:**
+
+```bash
+# 1. Navigate to the template
+cd ~/coding/repos/lucidlabs/lucidlabs-agent-kit
+
+# 2. Run the scaffolding script
+./scripts/create-agent-project.sh ../projects/my-project
+
+# 3. Move to the new project
+cd ../projects/my-project
+
+# 4. Install dependencies
+cd frontend && pnpm install && cd ..
+
+# 5. Initialize git repo and push
+git init
+gh repo create lucidlabs-hq/my-project --private --source=. --push
+
+# 6. Start developing
+/create-prd              # Create project requirements
+/prime                   # Load context
+/plan-feature login      # Plan first feature
+```
+
+---
+
+### Promoting Patterns to Upstream
+
+**When to promote:**
+- You created a generic skill that could help other projects
+- You built a reusable UI component
+- You documented a best practice
+- You wrote a utility function with no domain logic
+
+**Step-by-step:**
+
+```bash
+# 1. Navigate to your downstream project
+cd ~/coding/repos/lucidlabs/projects/customer-portal
+
+# 2. Preview what can be promoted
+./scripts/promote.sh --upstream ../../lucidlabs-agent-kit --dry-run
+
+# 3. Run the promotion
+./scripts/promote.sh --upstream ../../lucidlabs-agent-kit
+
+# 4. Select files to promote (interactive)
+#    → Enter numbers: 1,2,3 or 'all'
+
+# 5. Script creates PR in upstream repo
+#    → Review and merge the PR
+
+# 6. Done! Pattern is now in the template
+```
+
+**Promotable vs Non-Promotable:**
+
+| ✅ Promote These | ❌ Never Promote |
+|-----------------|------------------|
+| `.claude/skills/*` | `.claude/PRD.md` |
+| `.claude/reference/*` | `frontend/app/*` (pages) |
+| `frontend/components/ui/*` | `mastra/src/agents/*` |
+| `frontend/lib/utils.ts` | `convex/schema.ts` |
+| `frontend/lib/hooks/*` | Domain-specific code |
+| `scripts/*` (generic) | Project configs |
+
+---
+
+### Syncing Updates from Upstream
+
+**When to sync:**
+- New skill added to template
+- Best practice documentation updated
+- UI component improved
+- Bug fix in shared utility
+
+**Option A: Cherry-pick specific commits**
+
+```bash
+# 1. Add template as remote (one-time)
+cd ~/coding/repos/lucidlabs/projects/customer-portal
+git remote add template ../../lucidlabs-agent-kit
+
+# 2. Fetch latest
+git fetch template
+
+# 3. See what's new
+git log template/main --oneline -10
+
+# 4. Cherry-pick what you need
+git cherry-pick abc1234
+```
+
+**Option B: Manual file copy**
+
+```bash
+# 1. Compare differences
+diff -r ../../lucidlabs-agent-kit/.claude/skills .claude/skills
+
+# 2. Copy specific files
+cp ../../lucidlabs-agent-kit/.claude/skills/new-skill/SKILL.md \
+   .claude/skills/new-skill/SKILL.md
+
+# 3. Commit
+git add .
+git commit -m "chore: sync new-skill from upstream"
+```
+
+**Option C: Sync script (recommended)**
+
+```bash
+# Run the sync script
+./scripts/sync-upstream.sh
+
+# Interactively select what to sync
+# → Shows diff, lets you choose files
+```
+
+---
+
+### Best Practices for Upstream/Downstream
+
+1. **Never edit upstream directly for project work**
+   - Always create a downstream project first
+   - Promote patterns back after they're proven
+
+2. **Keep upstream minimal**
+   - Only generic, domain-agnostic code
+   - If it mentions a business concept, it's downstream
+
+3. **Sync regularly**
+   - Check upstream monthly for new patterns
+   - Pull improvements into active projects
+
+4. **Small, focused promotions**
+   - One pattern per PR
+   - Easier to review and merge
+
+5. **Test patterns in isolation**
+   - Before promoting, verify it works without project context
+   - Remove any project-specific imports
 
 ---
 

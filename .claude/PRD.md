@@ -211,6 +211,8 @@ agent-kit/
 
 | Skill | Purpose | PIV Phase |
 |-------|---------|-----------|
+| `/start` | Entry point - create or open project | Any |
+| `/checkout-project` | Clone existing project from GitHub | Any |
 | `/create-prd` | Create Product Requirements | Planning |
 | `/plan-feature` | Plan feature implementation | Planning |
 | `/execute` | Execute implementation plan | Implementation |
@@ -219,6 +221,8 @@ agent-kit/
 | `/init-project` | Initialize downstream project | Planning |
 | `/screenshot` | Visual verification | Validation |
 | `/update-readme` | Update documentation | Implementation |
+| `/promote` | Promote patterns to upstream | Any |
+| `/sync` | Sync updates from upstream | Any |
 
 ### Skill Ownership Rules
 

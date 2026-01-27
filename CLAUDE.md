@@ -737,6 +737,8 @@ This project uses Claude Code Skills instead of legacy commands. Skills follow t
 
 | Skill | Purpose | PIV Phase |
 |-------|---------|-----------|
+| `/start` | Entry point - create or open project | Any |
+| `/checkout-project` | Clone existing project from GitHub | Any |
 | `/create-prd` | Create Product Requirements | Planning |
 | `/plan-feature` | Plan feature implementation | Planning |
 | `/execute` | Execute implementation plan | Implementation |
@@ -746,6 +748,7 @@ This project uses Claude Code Skills instead of legacy commands. Skills follow t
 | `/screenshot` | Visual verification | Validation |
 | `/update-readme` | Update documentation | Implementation |
 | `/promote` | Promote patterns to upstream | Any |
+| `/sync` | Sync updates from upstream | Any |
 
 ### Skill vs Mastra Tool
 

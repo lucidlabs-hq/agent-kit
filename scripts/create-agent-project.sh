@@ -26,6 +26,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
+BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 # Default values
@@ -38,6 +39,11 @@ INCLUDE_TERRAFORM=false
 NPM_SCOPE="@lucidlabs"
 AI_MODEL="anthropic"  # anthropic, openai, both
 INTERACTIVE=false
+GITHUB_REPO_URL=""
+
+# Get the script's directory (agent-kit root)
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PROJECTS_DIR="$SCRIPT_DIR/../projects"
 
 #-------------------------------------------------------------------------------
 # Helper Functions
@@ -223,7 +229,13 @@ run_interactive() {
 #-------------------------------------------------------------------------------
 
 create_project() {
-    local project_dir="$PWD/$PROJECT_NAME"
+    # Ensure projects directory exists
+    if [[ ! -d "$PROJECTS_DIR" ]]; then
+        print_step "Creating projects directory: $PROJECTS_DIR"
+        mkdir -p "$PROJECTS_DIR"
+    fi
+
+    local project_dir="$PROJECTS_DIR/$PROJECT_NAME"
 
     print_step "Creating project directory: $project_dir"
 
@@ -235,15 +247,60 @@ create_project() {
     mkdir -p "$project_dir"
     cd "$project_dir"
 
-    # Copy template files
-    local template_dir
-    template_dir="$(dirname "$0")/.."
+    # Template directory is the agent-kit root
+    local template_dir="$SCRIPT_DIR"
 
     # Core files (always included)
     print_step "Copying core configuration..."
     cp "$template_dir/CLAUDE.md" . 2>/dev/null || true
     cp "$template_dir/AGENTS.md" . 2>/dev/null || true
     cp "$template_dir/.gitignore" . 2>/dev/null || true
+
+    # Add Welcome Section to CLAUDE.md for project-specific greeting
+    print_step "Adding project welcome section..."
+    cat >> "CLAUDE.md" << 'WELCOME_EOF'
+
+---
+
+## Session Start: Welcome
+
+**WICHTIG:** Wenn dies der erste Kontakt in einer neuen Session ist, begrüße den Benutzer mit dem folgenden Format:
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║  Willkommen bei [PROJECT_NAME]!                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+Projekt: [PROJECT_NAME]
+Status:  [Lies PROJECT-STATUS.md falls vorhanden]
+
+Was möchtest du tun?
+
+┌─────────────────────────────────────────────────────────────────┐
+│  [1] 🔍 Prime      - Projekt verstehen, Kontext laden           │
+│  [2] 📋 Create PRD - Product Requirements erstellen             │
+│  [3] 📝 Plan       - Feature planen                             │
+│  [4] ⚡ Execute    - Plan ausführen                              │
+│  [5] ✅ Commit     - Änderungen committen                        │
+│  [6] 🔄 Sync       - Updates vom Template holen                  │
+│  [7] 📤 Promote    - Pattern zum Template befördern              │
+└─────────────────────────────────────────────────────────────────┘
+
+Antworte mit einer Zahl oder beschreibe, was du machen möchtest.
+```
+
+Nach der Begrüßung:
+- Bei [1]: Führe `/prime` aus
+- Bei [2]: Führe `/create-prd` aus
+- Bei [3]: Frage nach dem Feature-Namen, dann `/plan-feature [name]`
+- Bei [4]: Frage nach dem Plan, dann `/execute [plan]`
+- Bei [5]: Führe `/commit` aus
+- Bei [6]: Führe `/sync` aus
+- Bei [7]: Führe `/promote` aus
+
+WELCOME_EOF
+    sed -i '' "s/\[PROJECT_NAME\]/$PROJECT_NAME/g" "CLAUDE.md" 2>/dev/null || \
+    sed -i "s/\[PROJECT_NAME\]/$PROJECT_NAME/g" "CLAUDE.md" 2>/dev/null || true
 
     # .claude directory
     if [[ -d "$template_dir/.claude" ]]; then
@@ -421,6 +478,34 @@ EOF
     git add .
     git commit -q -m "Initial commit from Agent Kit template"
 
+    # GitHub Repository Creation
+    if command -v gh &> /dev/null; then
+        echo ""
+        if confirm "GitHub Repository erstellen?" "y"; then
+            echo ""
+            read -p "GitHub Organization/User (default: lucidlabs-hq): " gh_org
+            gh_org=${gh_org:-"lucidlabs-hq"}
+
+            local visibility="private"
+            if confirm "Repository öffentlich machen?" "n"; then
+                visibility="public"
+            fi
+
+            print_step "Creating GitHub repository: $gh_org/$PROJECT_NAME ($visibility)..."
+
+            if gh repo create "$gh_org/$PROJECT_NAME" --"$visibility" --source=. --push 2>/dev/null; then
+                print_success "GitHub repository created and pushed!"
+                GITHUB_REPO_URL="https://github.com/$gh_org/$PROJECT_NAME"
+            else
+                print_warning "Could not create GitHub repo. You can do it later with:"
+                echo "  gh repo create $gh_org/$PROJECT_NAME --private --source=. --push"
+            fi
+        fi
+    else
+        print_info "GitHub CLI (gh) not installed. Skipping repo creation."
+        print_info "Install with: brew install gh"
+    fi
+
     print_success "Project created successfully!"
 }
 
@@ -429,17 +514,32 @@ EOF
 #-------------------------------------------------------------------------------
 
 print_next_steps() {
+    local project_path="$PROJECTS_DIR/$PROJECT_NAME"
+    local relative_path="../projects/$PROJECT_NAME"
+
     echo ""
     echo -e "${GREEN}════════════════════════════════════════════════════════════════${NC}"
     echo -e "${GREEN}                    Project Created Successfully!               ${NC}"
     echo -e "${GREEN}════════════════════════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "${CYAN}📁 Project Location:${NC} $PWD/$PROJECT_NAME"
+    echo -e "${CYAN}📁 Project Location:${NC} $project_path"
+
+    if [[ -n "$GITHUB_REPO_URL" ]]; then
+        echo -e "${CYAN}🔗 GitHub Repository:${NC} $GITHUB_REPO_URL"
+    fi
+
     echo ""
-    echo -e "${CYAN}📋 Next Steps:${NC}"
+    echo -e "${CYAN}🚀 Jetzt starten:${NC}"
+    echo ""
+    echo -e "  ${BOLD}Starte eine neue Claude Session im Projekt:${NC}"
+    echo -e "     ${YELLOW}cd $relative_path && claude${NC}"
+    echo ""
+    echo -e "  Claude wird dich dann begrüßen und fragen, was du tun möchtest!"
+    echo ""
+    echo -e "${CYAN}📋 Alternativ manuell:${NC}"
     echo ""
     echo "  1. Navigate to project:"
-    echo -e "     ${YELLOW}cd $PROJECT_NAME${NC}"
+    echo -e "     ${YELLOW}cd $relative_path${NC}"
     echo ""
 
     if [[ "$INCLUDE_FRONTEND" = true ]]; then

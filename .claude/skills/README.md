@@ -6,6 +6,8 @@ Skills extend Claude's capabilities in this project. Each skill is a directory w
 
 | Skill | Description | PIV Phase |
 |-------|-------------|-----------|
+| `/start` | Entry point - create or open project | Any |
+| `/checkout-project` | Clone existing project from GitHub | Any |
 | `/create-prd` | Create Product Requirements Document | Planning |
 | `/plan-feature` | Plan feature implementation | Planning |
 | `/execute` | Execute implementation plan | Implementation |
@@ -15,6 +17,7 @@ Skills extend Claude's capabilities in this project. Each skill is a directory w
 | `/screenshot` | Visual verification screenshots | Validation |
 | `/update-readme` | Update README file | Implementation |
 | `/promote` | Promote patterns to upstream | Any |
+| `/sync` | Sync updates from upstream | Any |
 
 ## Skill Format (Claude Code v2.1.3+)
 

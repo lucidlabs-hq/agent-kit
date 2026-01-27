@@ -8,27 +8,47 @@
 
 **Do NOT develop directly in this repository.** Agent Kit is an **upstream template** – you create new projects from it, then promote reusable patterns back.
 
+### Recommended Folder Structure
+
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  UPSTREAM (This Repo)                                           │
-│  github.com/lucidlabs-hq/agent-kit                              │
-│                                                                 │
-│  • Generic skills, UI components, scripts                       │
-│  • Never edited directly for client projects                    │
-└─────────────────────────────────────────────────────────────────┘
-        │                                     ▲
-        │ clone + scaffold                    │ ./scripts/promote.sh
-        ▼                                     │
-┌─────────────────────────────────────────────────────────────────┐
-│  DOWNSTREAM (Your Project)                                      │
-│  github.com/lucidlabs-hq/client-project                         │
-│                                                                 │
-│  • Custom PRD, domain agents, app pages                         │
-│  • Develops generic patterns → promotes back                    │
-└─────────────────────────────────────────────────────────────────┘
+lucidlabs/                              # Your workspace root
+│
+├── lucidlabs-agent-kit/                # UPSTREAM TEMPLATE (this repo)
+│   ├── .claude/skills/                 # Generic development skills
+│   ├── frontend/                       # Next.js boilerplate
+│   ├── mastra/                         # Agent layer boilerplate
+│   └── scripts/
+│       ├── create-agent-project.sh     # Creates downstream projects
+│       └── promote.sh                  # Promotes patterns upstream
+│
+└── projects/                           # DOWNSTREAM PROJECTS
+    ├── customer-portal/                # Project A (own git repo)
+    ├── internal-dashboard/             # Project B (own git repo)
+    └── ai-assistant/                   # Project C (own git repo)
 ```
 
-See [Upstream/Downstream Workflow](#upstreamdownstream-workflow) for details.
+### Bidirectional Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           lucidlabs/                                    │
+│                                                                         │
+│   ┌─────────────────────┐                ┌──────────────────────────┐  │
+│   │ lucidlabs-agent-kit │    PROMOTE     │       projects/          │  │
+│   │     (UPSTREAM)      │◄───────────────│                          │  │
+│   │                     │                │  ┌────────────────────┐  │  │
+│   │  • Generic skills   │ SYNC/INIT      │  │  customer-portal   │  │  │
+│   │  • Boilerplate      │───────────────►│  │   (DOWNSTREAM)     │  │  │
+│   │  • Best practices   │                │  │                    │  │  │
+│   └─────────────────────┘                │  │  • Domain logic    │  │  │
+│                                          │  │  • Project PRD     │  │  │
+│                                          │  │  • Custom agents   │  │  │
+│                                          │  └────────────────────┘  │  │
+│                                          └──────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+See [Upstream/Downstream Workflow](#upstreamdownstream-workflow) for step-by-step instructions.
 
 ---
 
@@ -129,7 +149,9 @@ agent-kit/
 │   └── environments/         # Dev/prod configurations
 │
 ├── scripts/
-│   └── create-agent-project.sh  # Project scaffolding
+│   ├── create-agent-project.sh  # Project scaffolding
+│   ├── promote.sh               # Promote patterns upstream
+│   └── sync-upstream.sh         # Sync updates downstream
 │
 ├── .claude/                  # Claude Code configuration
 │   ├── PRD.md                # Product Requirements
@@ -185,6 +207,8 @@ Skills extend Claude's capabilities. Invoke with `/skill-name`.
 
 | Skill | Description | PIV Phase |
 |-------|-------------|-----------|
+| `/start` | Entry point in template - create or open project | Any |
+| `/checkout-project` | Clone existing project from GitHub | Any |
 | `/create-prd` | Create a new PRD interactively | Planning |
 | `/plan-feature` | Plan feature implementation | Planning |
 | `/execute` | Execute an implementation plan | Implementation |
@@ -194,6 +218,7 @@ Skills extend Claude's capabilities. Invoke with `/skill-name`.
 | `/screenshot` | Visual verification with agent-browser | Validation |
 | `/update-readme` | Update README with current status | Implementation |
 | `/promote` | Promote patterns to upstream agent-kit | Any |
+| `/sync` | Sync updates from upstream agent-kit | Any |
 
 Skills are stored in `.claude/skills/` with `SKILL.md` files. See [Claude Code Skills Docs](https://code.claude.com/docs/en/skills).
 
@@ -303,7 +328,8 @@ vercel
 | [WORKFLOW.md](./WORKFLOW.md) | Step-by-step workflow guide |
 | [.claude/PRD.md](./.claude/PRD.md) | Product requirements template |
 | [.claude/skills/README.md](./.claude/skills/README.md) | Skills documentation |
-| [scripts/promote.sh](./scripts/promote.sh) | Pattern promotion script |
+| [scripts/promote.sh](./scripts/promote.sh) | Promote patterns to upstream |
+| [scripts/sync-upstream.sh](./scripts/sync-upstream.sh) | Sync updates from upstream |
 | [convex/README.md](./convex/README.md) | Database setup |
 | [mastra/README.md](./mastra/README.md) | AI agents guide |
 | [n8n/README.md](./n8n/README.md) | Workflow templates |
@@ -313,83 +339,182 @@ vercel
 
 ### The Model
 
-Agent Kit uses a **template-based workflow** where:
+Agent Kit uses a **template-based workflow** with bidirectional synchronization:
 
-| Term | Meaning | Example |
-|------|---------|---------|
-| **Upstream** | This template repository | `lucidlabs-hq/agent-kit` |
-| **Downstream** | Projects created from template | `lucidlabs-hq/client-project` |
+| Term | Meaning | Location |
+|------|---------|----------|
+| **Upstream** | This template repository | `lucidlabs/lucidlabs-agent-kit/` |
+| **Downstream** | Projects created from template | `lucidlabs/projects/[name]/` |
 
-### Creating a New Project
+---
+
+### 1. Initial Setup (One-Time)
+
+Set up the folder structure on your machine:
 
 ```bash
-# 1. Clone agent-kit locally (if not already)
-git clone git@github.com:lucidlabs-hq/agent-kit.git ~/templates/agent-kit
+# Create workspace structure
+mkdir -p ~/coding/repos/lucidlabs/projects
 
-# 2. Create new project
-cd ~/templates/agent-kit
-./scripts/create-agent-project.sh my-new-project
+# Clone the upstream template
+cd ~/coding/repos/lucidlabs
+git clone git@github.com:lucidlabs-hq/agent-kit.git lucidlabs-agent-kit
 
-# 3. The new project is created at ~/templates/my-new-project
-cd ~/templates/my-new-project
-
-# 4. Create repo and push
-gh repo create lucidlabs-hq/my-new-project --private --source=. --push
+# Verify structure
+ls -la ~/coding/repos/lucidlabs/
+# Should show:
+#   lucidlabs-agent-kit/
+#   projects/
 ```
 
-### Promoting Patterns Back
+---
 
-When you develop something reusable in a downstream project (new skill, UI component, utility):
+### 2. Creating a New Project (Upstream → Downstream)
+
+**When:** Starting a new client project or internal tool.
+
+```bash
+# Navigate to the upstream template
+cd ~/coding/repos/lucidlabs/lucidlabs-agent-kit
+
+# Create new project in projects/ folder
+./scripts/create-agent-project.sh ../projects/customer-portal
+
+# Or with interactive mode
+./scripts/create-agent-project.sh --interactive
+# → Enter name: customer-portal
+# → Creates: ../projects/customer-portal/
+```
+
+**What happens:**
+1. Script copies boilerplate to `../projects/[name]/`
+2. Initializes fresh git repo
+3. Updates package.json, README with project name
+4. Project is ready for development
+
+**Next steps in the new project:**
+```bash
+cd ../projects/customer-portal
+pnpm install
+/create-prd          # Create project-specific PRD
+/plan-feature login  # Start first feature
+```
+
+---
+
+### 3. Promoting Patterns (Downstream → Upstream)
+
+**When:** You developed something generic in a project that should be shared.
 
 ```bash
 # In your downstream project
-cd ~/projects/my-client-project
+cd ~/coding/repos/lucidlabs/projects/customer-portal
 
-# Run promotion script
-./scripts/promote.sh --upstream ~/templates/agent-kit
+# Run promotion script (points to upstream template)
+./scripts/promote.sh --upstream ../../lucidlabs-agent-kit
 
-# Interactive selection:
-# Promotable changes found:
-#   [1] .claude/skills/code-review/SKILL.md (NEW)
-#   [2] frontend/components/ui/data-table.tsx (NEW)
-#
-# Enter numbers to promote: 1,2
-#
-# ✔ Branch created: promote/20260127-from-my-client-project
-# ✔ PR created: https://github.com/lucidlabs-hq/agent-kit/pull/1
+# Or preview first (dry run)
+./scripts/promote.sh --upstream ../../lucidlabs-agent-kit --dry-run
 ```
 
-### What Gets Promoted
+**Interactive session:**
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║                      PATTERN PROMOTION                            ║
+╚═══════════════════════════════════════════════════════════════════╝
 
-| Promotable ✅ | Not Promotable ❌ |
+ℹ Downstream: ~/coding/repos/lucidlabs/projects/customer-portal
+ℹ Upstream:   ~/coding/repos/lucidlabs/lucidlabs-agent-kit
+
+▶ Scanning for promotable changes...
+
+Promotable changes found:
+
+  [1] .claude/skills/code-review/SKILL.md (NEW)
+  [2] .claude/reference/api-patterns.md (NEW)
+  [3] frontend/components/ui/data-table.tsx (MODIFIED)
+
+Enter numbers to promote (e.g., 1,2 or 'all'): 1,2
+
+▶ Creating branch: promote/20260127-from-customer-portal
+✔ Copied: .claude/skills/code-review/SKILL.md
+✔ Copied: .claude/reference/api-patterns.md
+✔ Committed 2 files
+
+Create GitHub PR? [Y/n] y
+✔ PR created: https://github.com/lucidlabs-hq/agent-kit/pull/42
+```
+
+**What gets promoted:**
+
+| ✅ Promotable | ❌ Not Promotable |
 |---------------|-------------------|
-| `.claude/skills/*` | `.claude/PRD.md` |
-| `.claude/reference/*` | `frontend/app/*` |
-| `frontend/components/ui/*` | `mastra/src/agents/*` |
-| `frontend/lib/utils.ts` | `convex/*` |
-| `frontend/lib/hooks/*` | Domain-specific code |
+| `.claude/skills/*` | `.claude/PRD.md` (project-specific) |
+| `.claude/reference/*` | `frontend/app/*` (pages) |
+| `frontend/components/ui/*` | `mastra/src/agents/*` (domain) |
+| `frontend/lib/utils.ts` | `convex/*` (schema) |
+| `frontend/lib/hooks/*` | Any domain-specific code |
 | `scripts/*` | |
 
-### Getting Upstream Updates
+---
 
-When agent-kit gets new features you want:
+### 4. Syncing Updates (Upstream → Downstream)
 
+**When:** The template got new skills/patterns you want in your project.
+
+**Option A: Cherry-pick specific commits**
 ```bash
 # In your downstream project
-cd ~/projects/my-client-project
+cd ~/coding/repos/lucidlabs/projects/customer-portal
 
-# Add upstream remote (once)
-git remote add upstream git@github.com:lucidlabs-hq/agent-kit.git
+# Add upstream remote (one-time)
+git remote add template ../../lucidlabs-agent-kit
 
-# Fetch updates
-git fetch upstream
+# Fetch latest from template
+git fetch template
+
+# See what changed
+git log template/main --oneline -10
 
 # Cherry-pick specific commits
 git cherry-pick <commit-hash>
-
-# OR compare and copy manually
-git diff upstream/main -- .claude/skills/
 ```
+
+**Option B: Manual sync of specific files**
+```bash
+# Compare what's different
+git diff template/main -- .claude/skills/
+
+# Copy specific files
+cp ../../lucidlabs-agent-kit/.claude/skills/new-skill/SKILL.md \
+   .claude/skills/new-skill/SKILL.md
+
+# Commit the sync
+git add .claude/skills/new-skill/
+git commit -m "chore: sync new-skill from upstream template"
+```
+
+**Option C: Sync script (recommended)**
+```bash
+# Run sync script
+./scripts/sync-upstream.sh
+
+# Interactive selection of what to sync
+# Syncs: skills, reference docs, UI components, scripts
+```
+
+---
+
+### 5. Quick Reference
+
+| Task | Location | Command |
+|------|----------|---------|
+| **Create new project** | In `lucidlabs-agent-kit/` | `./scripts/create-agent-project.sh ../projects/[name]` |
+| **Promote to upstream** | In `projects/[name]/` | `./scripts/promote.sh --upstream ../../lucidlabs-agent-kit` |
+| **Sync from upstream** | In `projects/[name]/` | `./scripts/sync-upstream.sh` or manual cherry-pick |
+| **Preview promotion** | In `projects/[name]/` | `./scripts/promote.sh --upstream ... --dry-run` |
+
+---
 
 ### Best Practices
 
@@ -398,6 +523,7 @@ git diff upstream/main -- .claude/skills/
 3. **Small promotions** – Promote one pattern at a time for easier review
 4. **Test in isolation** – Verify patterns work without project context
 5. **Document patterns** – Add comments explaining usage
+6. **Sync regularly** – Pull useful updates from upstream monthly
 
 ---
 

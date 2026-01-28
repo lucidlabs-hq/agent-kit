@@ -62,3 +62,4 @@ test-results/
 /.cursorrules
 
 # Note: .claude/, CLAUDE.md, and AGENTS.md are tracked for consistency
+*.local.md

@@ -117,33 +117,49 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... dein.name@lucidlabs.de
 
 ---
 
-## Schritt 5: Mit Server verbinden
+## Schritt 5: SSH Config einrichten (WICHTIG!)
+
+**LUCIDLABS-HQ läuft auf Port 2222** (nicht Standard-Port 22).
+
+Erstelle/bearbeite `~/.ssh/config`:
+
+### macOS / Linux
 
 ```bash
-ssh root@91.98.70.29
-# oder
-ssh root@projects.lucidlabs.de
+nano ~/.ssh/config
+```
+
+### Windows
+
+```
+notepad %USERPROFILE%\.ssh\config
+```
+
+### Config-Inhalt
+
+```
+Host lucidlabs-hq
+    HostName 91.98.70.29
+    User DEIN-USERNAME
+    IdentityFile ~/.ssh/id_ed25519
+    Port 2222
+```
+
+**Ersetze `DEIN-USERNAME`** mit dem Benutzernamen den du vom Admin bekommen hast.
+
+---
+
+## Schritt 6: Mit Server verbinden
+
+```bash
+ssh lucidlabs-hq
 ```
 
 Beim ersten Mal: `yes` eingeben wenn nach "fingerprint" gefragt wird.
 
----
-
-## SSH Config (Optional, aber praktisch)
-
-Erstelle/bearbeite `~/.ssh/config`:
-
-```
-# Lucid Labs HQ Server
-Host lucidlabs-hq
-    HostName 91.98.70.29
-    User root
-    IdentityFile ~/.ssh/id_ed25519
-```
-
-Danach einfach:
+**Ohne Config:**
 ```bash
-ssh lucidlabs-hq
+ssh -i ~/.ssh/id_ed25519 -p 2222 DEIN-USERNAME@91.98.70.29
 ```
 
 ---
@@ -154,18 +170,35 @@ ssh lucidlabs-hq
 
 1. **Key auf Server vorhanden?**
    - Prüfe ob dein Key in Elestio unter SSH Keys steht
+   - Frag den Admin ob dein User angelegt wurde
 
-2. **Richtiger Key wird verwendet?**
+2. **Richtiger Port?**
    ```bash
-   ssh -v root@91.98.70.29
+   # LUCIDLABS-HQ nutzt Port 2222!
+   ssh -p 2222 dein-user@91.98.70.29
+   ```
+
+3. **Richtiger Key wird verwendet?**
+   ```bash
+   ssh -v -p 2222 dein-user@91.98.70.29
    ```
    Zeigt welcher Key versucht wird.
 
-3. **SSH Agent läuft?**
+4. **SSH Agent läuft?**
    ```bash
    # Key zum Agent hinzufügen
    ssh-add ~/.ssh/id_ed25519
    ```
+
+### "Connection refused" auf Port 22
+
+LUCIDLABS-HQ nutzt **Port 2222**, nicht 22!
+
+```bash
+ssh -p 2222 dein-user@91.98.70.29
+```
+
+Oder SSH Config mit `Port 2222` anlegen (siehe oben).
 
 ### "Warning: Unprotected private key file"
 
@@ -188,19 +221,41 @@ ssh-add $env:USERPROFILE\.ssh\id_ed25519
 
 ## Für Admins: Neuen User hinzufügen
 
-1. User erstellt seinen Key (Schritt 1-3 oben)
-2. User schickt dir seinen **Public Key** (NIEMALS Private Key!)
-3. Du fügst den Key in Elestio hinzu:
-   - Service → lucidlabs-hq → Settings → SSH Keys → Add Key
-   - Title: `vorname-nachname`
-   - Key: Public Key einfügen
-   - Save
+### 1. User erstellt Key
 
-**Alternative:** Direkt auf Server hinzufügen
+User folgt Schritt 1-3 oben und schickt dir seinen **Public Key** (NIEMALS Private Key!).
+
+### 2. Key in Elestio hinzufügen
+
+- Service → lucidlabs-hq → Settings → SSH Keys → Add Key
+- Title: `vorname-nachname`
+- Key: Public Key einfügen
+- Save
+
+### 3. User auf Server anlegen
+
 ```bash
-ssh root@lucidlabs-hq
-echo "ssh-ed25519 AAAAC3... user@email.de" >> ~/.ssh/authorized_keys
+ssh lucidlabs-hq  # Als Admin
+
+# User anlegen
+adduser neuer-user --disabled-password --gecos ""
+usermod -aG sudo neuer-user
+
+# SSH Key für User einrichten
+mkdir -p /home/neuer-user/.ssh
+echo "ssh-ed25519 AAAAC3... user@email.de" > /home/neuer-user/.ssh/authorized_keys
+chown -R neuer-user:neuer-user /home/neuer-user/.ssh
+chmod 700 /home/neuer-user/.ssh
+chmod 600 /home/neuer-user/.ssh/authorized_keys
 ```
+
+### 4. User informieren
+
+Schick dem User:
+- Username: `neuer-user`
+- Server: `91.98.70.29`
+- Port: `2222`
+- Link zu dieser Anleitung
 
 ---
 
@@ -224,12 +279,20 @@ ssh-keygen -t ed25519 -C "email@lucidlabs.de"
 # Public Key anzeigen (zum Kopieren)
 cat ~/.ssh/id_ed25519.pub
 
-# Verbinden
-ssh root@91.98.70.29
-
-# Mit Config
+# Verbinden (mit SSH Config)
 ssh lucidlabs-hq
+
+# Verbinden (ohne Config)
+ssh -i ~/.ssh/id_ed25519 -p 2222 dein-user@91.98.70.29
 ```
+
+## Server Info
+
+| Eigenschaft | Wert |
+|-------------|------|
+| **IP** | 91.98.70.29 |
+| **SSH Port** | 2222 (nicht 22!) |
+| **Domain** | projects.lucidlabs.de |
 
 ---
 

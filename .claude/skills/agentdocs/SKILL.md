@@ -1,12 +1,12 @@
 ---
-name: docs
+name: agentdocs
 description: Browse Agent Kit documentation directly in terminal. Use for quick access to architecture, skills, workflows, and reference docs.
 disable-model-invocation: true
 allowed-tools: Read, Glob, Bash
 argument-hint: [section]
 ---
 
-# Docs: Terminal Documentation Browser
+# Agent Docs: Terminal Documentation Browser
 
 Browse the Lucid Labs Agent Kit documentation without leaving the terminal.
 
@@ -15,9 +15,9 @@ Browse the Lucid Labs Agent Kit documentation without leaving the terminal.
 ## Usage
 
 ```
-/docs                    # Show documentation overview
-/docs [section]          # Jump directly to section
-/docs search [query]     # Search across all docs
+/agentdocs                    # Show documentation overview
+/agentdocs [section]          # Jump directly to section
+/agentdocs search [query]     # Search across all docs
 ```
 
 ---

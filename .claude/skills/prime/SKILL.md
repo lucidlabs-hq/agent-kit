@@ -11,6 +11,27 @@ allowed-tools: Read, Bash, Glob, Write, AskUserQuestion
 
 Build comprehensive understanding of the codebase AND show current project status so work can resume immediately.
 
+---
+
+## IMPORTANT: Agent Kit Command Scope
+
+You are operating inside the Lucid Labs Agent Kit.
+
+When rendering the session start screen, command list, or skill overview:
+
+- ONLY list commands that are explicitly defined as part of the Lucid Labs Agent Kit
+- These commands are Agent-Kit-specific (e.g. /prime, /plan-feature, /skills, /tickets, etc.)
+- DO NOT list Claude-native commands in the Agent Kit command list
+- DO NOT introduce new commands, aliases, or variations
+- DO NOT extrapolate or "helpfully" extend the command set
+
+**Standard Claude Code commands remain available** (e.g. /help, /clear, /config, etc.)
+They are just not listed in the Agent Kit session commands block.
+
+Deviation from the defined Agent Kit command set is considered an error.
+
+---
+
 ## Process
 
 ### 0. Session Intro & Begrüßung (ZUERST!)
@@ -28,17 +49,11 @@ if [ -f "$DEVELOPER_FILE" ]; then
 fi
 ```
 
-**Boot Sequence Output:**
+**Boot Screen Layout (exakt so rendern):**
 
 ```
-{ ──────────────── { * BOOT SEQUENCE * } ──────────────── }
-
-{{BOOT_SUBLINE}}
-
-Welcome back, {{developer.name}}.
-
-lucid labs
-────────────────────────────────────────────────────────────────────────────
+LUCID LABS
+───────────────────────────────────────────────────────────────────────────────
 
  █████╗  ██████╗ ███████╗███╗   ██╗████████╗    ██╗  ██╗██╗████████╗
 ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝    ██║ ██╔╝██║╚══██╔══╝
@@ -47,56 +62,75 @@ lucid labs
 ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║       ██║  ██╗██║   ██║
 ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝       ╚═╝  ╚═╝╚═╝   ╚═╝
 
-A modular engineering toolkit for building AI agents
+{{RANDOM_GREETING}}
 
-{{HUMOR_COMMENT}}
+───────────────────────────────────────────────────────────────────────────────
 
-────────────────────────────────────────────────────────────────────────────
+{ ────────────────── { * {{RANDOM_AGENT_LOG}} * } ────────────────── }
 
-Type /docs to explore the Agent Kit documentation.
+───────────────────────────────────────────────────────────────────────────────
+
+/agentdocs     Explore Agent Kit documentation
+/skills        List available Agent Kit skills
+/tickets       Show assigned Linear tickets
+/new-ticket    Create a new Linear issue
+/todos         Open local TODOs and notes
+/future        View planned features and improvements
+/status        Show system and session status
+/session-end   End session and persist context
+───────────────────────────────────────────────────────────────────────────────
+Tip: Type a command or select an option number below.
 ```
 
-#### 0.1.1 Boot Sublines (rotierend, zufällig wählen)
+**Danach folgt der Tickets/Options-Block (siehe 0.3).**
 
-**Technisch-trocken:**
-- `Initializing systems. Assumptions included.`
-- `Booting agent environment. No promises made.`
-- `Loading tools, patterns, and questionable decisions.`
+---
 
-**Nerd-ironisch:**
-- `Compiling intent. Please stand by.`
-- `Starting session. This started as a small change.`
-- `Spinning up agents. Human supervision enabled.`
+#### 0.1.1 Data Pools (random pick exactly one)
 
-**Meta/selbstironisch (Favoriten):**
-- `Initializing systems. Works on our machine.`
-- `Boot sequence complete. Reality may vary.`
-- `Systems ready. Optimism level: cautious.`
+**GREETING_POOL** (pick 1, use `developer.name` from JSON):
+```
+Welcome back, {{developer.name}}.
+Welcome, {{developer.name}}. Session initialized.
+Welcome, {{developer.name}}. Ready when you are.
+Welcome, {{developer.name}}. Systems over scripts.
+Welcome, {{developer.name}}. Let's build something solid.
+Welcome, {{developer.name}}. This will compile. Eventually.
+```
 
-#### 0.1.2 Humor Comments (rotierend, Kommentar-Syntax)
+**AGENT_LOG_POOL** (pick 1):
+```
+AGENT LOG: THIS STARTED AS A SMALL CHANGE
+AGENT LOG: HUMAN IN THE LOOP. FOR NOW.
+AGENT LOG: AUTONOMOUS, BUT NOT UNSUPERVISED
+AGENT LOG: DESIGNED FOR CLARITY. REALITY MAY VARY
+AGENT LOG: OPTIMIZED FOR THINKING, NOT SPEED
+AGENT LOG: WORKS ON MY MACHINE
+AGENT LOG: TEMPORARY FIX. DO NOT REMOVE
+AGENT LOG: TODO – REFACTOR LATER
+```
 
-- `// Temporary fix. Do not remove.`
-- `// This works. Do not touch.`
-- `// TODO: refactor later`
-- `// This started as a small change.`
-- `// Works on my machine.`
-- `// We'll clean this up in v2.`
-- `// The agent understands the system. Mostly.`
-- `// Human in the loop. For now.`
-- `// Autonomous, but not unsupervised.`
-- `// Designed for clarity. Reality may vary.`
-- `// Optimized for thinking, not speed.`
-- `// Fewer prompts. Better systems.`
+---
 
-#### 0.1.3 Welcome Varianten
+#### 0.1.2 Rendering Rules
 
-Alle nutzen `{{developer.name}}` aus `developer.json`:
+```
+BOOT SCREEN =
+  HEADER (static: "LUCID LABS")
+  LOGO (static: AGENT KIT block letters)
+  GREETING (random, exactly one line from GREETING_POOL)
+  DIVIDER
+  AGENT_LOG (random, exactly one line from AGENT_LOG_POOL, in { } format)
+  DIVIDER
+  COMMAND CHEAT SHEET (static)
+  CONTEXTUAL WORK OPTIONS (dynamic, from Linear/TODOs)
+```
 
-- `Welcome back, {{developer.name}}.` (Default)
-- `Welcome, {{developer.name}}. Session initialized.`
-- `Welcome, {{developer.name}}. Ready when you are.`
-- `Welcome, {{developer.name}}. Systems over scripts.`
-- `Welcome, {{developer.name}}. Let's build something solid.`
+**Rules:**
+- NUR eine Begrüßung zur Zeit
+- NUR ein Agent Log zur Zeit
+- Keine Listen, keine Bulletpoints, keine Humor-Sektionen
+- Keine neuen Sprüche erfinden - nur aus den Pools wählen
 
 ---
 
@@ -170,42 +204,78 @@ Dann speichern in `~/.claude-time/developer.json`:
 
 ```json
 {
-  "name": "Adam",
+  "name": "Adam Kassama",
   "email": "adam@lucidlabs.de",
   "handle": "adam",
   "role": "engineer",
   "created": "2026-01-28",
+  "updated": "2026-01-28",
 
   "linear": {
-    "user_id": "abc123",
+    "user_id": "usr_abc123def456",
     "display_name": "Adam K.",
-    "default_team": "lucid-labs-agents"
+    "email": "adam@lucidlabs.de",
+    "default_team_id": "team_xyz789",
+    "default_team_key": "CUS",
+    "workspace": "lucid-labs-agents"
   },
 
   "productive": {
     "person_id": "12345",
-    "default_activity_type": "Development"
+    "organization_id": "67890",
+    "email": "adam@lucidlabs.de",
+    "default_service_id": null,
+    "default_activity_type_id": "11111",
+    "rate_card_id": null
+  },
+
+  "time_tracking": {
+    "total_minutes_all_time": 0,
+    "first_session": null,
+    "last_session": null
   },
 
   "preferences": {
     "boot_humor": true,
     "dashboard_style": "compact",
-    "auto_sync_time": false
+    "auto_sync_to_productive": false,
+    "show_budget_warnings": true
   }
 }
 ```
 
 **Felder-Erklärung:**
 
-| Feld | Zweck | Wann abfragen |
-|------|-------|---------------|
-| `name` | Begrüßung, Reports | Erstes Setup |
-| `email` | Identifikation | Erstes Setup |
-| `handle` | Kurz-ID für Commits | Erstes Setup |
-| `linear.user_id` | Linear API Queries | Bei erstem `/linear` |
-| `linear.display_name` | Ticket-Anzeige | Bei erstem `/linear` |
-| `productive.person_id` | Zeit-Sync | Bei erstem `/productive setup` |
-| `preferences.*` | UX-Anpassung | Optional, später |
+| Feld | Zweck | Wann abfragen | API Source |
+|------|-------|---------------|------------|
+| `name` | Begrüßung, Reports | Erstes Setup | User Input |
+| `email` | Identifikation, Matching | Erstes Setup | User Input |
+| `handle` | Kurz-ID für Commits | Erstes Setup | User Input |
+| `linear.user_id` | API Queries (assignee filter) | Bei erstem `/linear` | Linear API: `viewer.id` |
+| `linear.default_team_id` | Issue Creation | Bei erstem `/linear` | Linear API: `teams` |
+| `linear.default_team_key` | Issue Prefix (CUS-xxx) | Bei erstem `/linear` | Linear API: `team.key` |
+| `productive.person_id` | Time Entry Creation | Bei `/productive setup` | Productive API: `people` (match by email) |
+| `productive.organization_id` | API Header | Bei `/productive setup` | Productive API Settings |
+| `productive.default_activity_type_id` | Time Entry Type | Bei `/productive setup` | Productive API: `activity_types` |
+| `time_tracking.*` | Aggregierte Statistiken | Automatisch | Berechnet |
+| `preferences.*` | UX-Anpassung | Optional | User Input |
+
+**Wie werden die IDs ermittelt?**
+
+```
+LINEAR:
+1. /linear status → OAuth via MCP
+2. Query: viewer { id, email, name }
+3. Query: teams { nodes { id, key, name } }
+4. Speichere in developer.json
+
+PRODUCTIVE:
+1. /productive setup
+2. GET /api/v2/people?filter[email]={email}
+3. Speichere person_id
+4. GET /api/v2/activity_types
+5. Zeige Auswahl, speichere default
+```
 
 **Falls Developer EXISTIERT (normale Session):**
 
@@ -221,35 +291,29 @@ Dann direkt weiter zu **0.3 Session-Optionen** (Tickets, etc.).
 Nach der Begrüßung zeige die Arbeitsoptionen:
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                                                                                 │
-│   Woran möchtest du heute arbeiten?                                            │
-│                                                                                 │
-│   ─────────────────────────────────────────────────────────────────────────     │
-│                                                                                 │
-│   MEINE LINEAR TICKETS (dir zugewiesen)                                        │
-│   ─────────────────────────────────────                                         │
-│                                                                                 │
-│   [1] CUS-42  Login Feature implementieren          Delivery    ⏱ 5h 30min     │
-│   [2] CUS-45  Error Handling verbessern            Exploration  ⏱ 1h 15min     │
-│   [3] CUS-48  API Dokumentation                    Backlog      ⏱ 0h 00min     │
-│                                                                                 │
-│   ─────────────────────────────────────────────────────────────────────────     │
-│                                                                                 │
-│   WEITERE OPTIONEN                                                              │
-│   ────────────────                                                              │
-│                                                                                 │
-│   [4] 📋 Future Plans      - Geplante Features & Verbesserungen                │
-│   [5] 📝 Lokale TODOs      - Deine persönlichen Notizen                        │
-│   [6] 🆕 Neues Ticket      - Neues Linear Issue erstellen                      │
-│   [7] 🔍 Frei erkunden     - Codebase ohne spezifisches Ziel                   │
-│                                                                                 │
-│   ─────────────────────────────────────────────────────────────────────────     │
-│                                                                                 │
-│   Wähle [1-7] oder beschreibe, was du tun möchtest:                            │
-│   > _                                                                           │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  Woran möchtest du heute arbeiten?                                          │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  MEINE LINEAR TICKETS (dir zugewiesen)                                      │
+│  ─────────────────────────────────────                                      │
+│                                                                             │
+│  [1] CUS-42  Login Feature implementieren        Delivery       5h 30min    │
+│  [2] CUS-45  Error Handling verbessern          Exploration    1h 15min    │
+│  [3] CUS-48  API Dokumentation                  Backlog        0h 00min    │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  WEITERE OPTIONEN                                                           │
+│  ────────────────                                                           │
+│                                                                             │
+│  [4] Future Plans      - Geplante Features & Verbesserungen                 │
+│  [5] Lokale TODOs      - Deine persönlichen Notizen                         │
+│  [6] Neues Ticket      - Neues Linear Issue erstellen                       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Linear Query für "Meine Tickets":**
@@ -300,7 +364,7 @@ Zeige das Dashboard im folgenden Format:
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                               ║
-║   🕐 SESSION DASHBOARD                                     [project-name]    ║
+║   SESSION DASHBOARD                                     [project-name]    ║
 ║                                                                               ║
 ╠═══════════════════════════════════════════════════════════════════════════════╣
 ║                                                                               ║
@@ -369,7 +433,7 @@ echo "Project: $PROJECT_NAME" >> "$TIME_DIR/current-session.txt"
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                               ║
-║   🕐 SESSION DASHBOARD                                     [project-name]    ║
+║   SESSION DASHBOARD                                     [project-name]    ║
 ║                                                                               ║
 ╠═══════════════════════════════════════════════════════════════════════════════╣
 ║                                                                               ║

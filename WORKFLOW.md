@@ -49,7 +49,7 @@ A modular engineering toolkit for building AI agents
 
 ────────────────────────────────────────────────────────────────────────────
 
-Type /docs to explore the Agent Kit documentation.
+Type /agentdocs to explore the Agent Kit documentation.
 ```
 
 ### First Time Setup
@@ -75,25 +75,25 @@ After the boot sequence, you'll see your work options:
 ```
 MEINE LINEAR TICKETS (dir zugewiesen)
 ─────────────────────────────────────
-[1] CUS-42  Login Feature implementieren          Delivery    ⏱ 5h 30min
-[2] CUS-45  Error Handling verbessern            Exploration  ⏱ 1h 15min
+[1] CUS-42  Login Feature implementieren          Delivery    5h 30min
+[2] CUS-45  Error Handling verbessern            Exploration  1h 15min
 
 WEITERE OPTIONEN
 ────────────────
-[4] 📋 Future Plans      - Geplante Features & Verbesserungen
-[5] 📝 Lokale TODOs      - Deine persönlichen Notizen
-[6] 🆕 Neues Ticket      - Neues Linear Issue erstellen
+[4] Future Plans      - Geplante Features & Verbesserungen
+[5] Lokale TODOs      - Deine persönlichen Notizen
+[6] Neues Ticket      - Neues Linear Issue erstellen
 ```
 
 ### Documentation Browser
 
-Use `/docs` to browse documentation without leaving the terminal:
+Use `/agentdocs` to browse documentation without leaving the terminal:
 
 ```bash
-/docs                    # Show documentation overview
-/docs skills             # List all available skills
-/docs stack              # Tech stack overview
-/docs search "convex"    # Search across all docs
+/agentdocs                    # Show documentation overview
+/agentdocs skills             # List all available skills
+/agentdocs stack              # Tech stack overview
+/agentdocs search "convex"    # Search across all docs
 ```
 
 ---
@@ -942,7 +942,7 @@ See `.claude/reference/task-system.md` for complete documentation.
 ## Skills
 
 > **Note:** As of Claude Code v2.1.3 (January 2026), slash commands have been merged into skills.
-> Skills are stored in `.claude/skills/` with `SKILL.md` files. See [Claude Code Skills Docs](https://code.claude.com/docs/en/skills).
+> Skills are stored in `.claude/skills/` with `SKILL.md` files. See [Claude Code Skills Docs](https://code.claude.com/agentdocs/en/skills).
 
 ### `/create-prd`
 
@@ -1187,10 +1187,10 @@ At session end, you get efficiency tips:
 │                                                                                 │
 │  TOP 3 VERBESSERUNGEN FÜR NÄCHSTE SESSION:                                     │
 │                                                                                 │
-│  1. ⚡ Mehr Kontext bei Feature-Requests                                        │
+│  1. [!] Mehr Kontext bei Feature-Requests                                       │
 │     → Nächstes Mal: "Kontext: [Situation], Problem: [X], Ziel: [Y]"            │
 │                                                                                 │
-│  2. 📋 Akzeptanzkriterien definieren                                           │
+│  2. [!] Akzeptanzkriterien definieren                                          │
 │     → Nächstes Mal: Was muss funktionieren, damit Feature "fertig" ist?        │
 │                                                                                 │
 │  ─────────────────────────────────────────────────────────────────────────────  │
@@ -1383,4 +1383,4 @@ cat .claude/PRD.md
 
 ---
 
-**Happy building!** 🚀
+**Happy building!**

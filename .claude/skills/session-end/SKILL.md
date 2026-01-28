@@ -256,17 +256,17 @@ Analysiere während der Session:
 │  TOP 3 VERBESSERUNGEN FÜR NÄCHSTE SESSION:                                     │
 │  ─────────────────────────────────────────────────────────────────────────────  │
 │                                                                                 │
-│  1. ⚡ Mehr Kontext bei Feature-Requests                                        │
+│  1. [!] Mehr Kontext bei Feature-Requests                                       │
 │     → Nächstes Mal: "Kontext: [Situation], Problem: [X], Ziel: [Y]"            │
 │                                                                                 │
-│  2. 📋 Akzeptanzkriterien definieren                                           │
+│  2. [!] Akzeptanzkriterien definieren                                          │
 │     → Nächstes Mal: Was muss funktionieren, damit Feature "fertig" ist?        │
 │                                                                                 │
-│  3. 🎯 Scope klar eingrenzen                                                   │
+│  3. [!] Scope klar eingrenzen                                                  │
 │     → Nächstes Mal: "Nur X, nicht Y" explizit angeben                          │
 │                                                                                 │
 │  ─────────────────────────────────────────────────────────────────────────────  │
-│  📄 Vollständiger Report: ~/.claude-time/reports/[project]-[date].md           │
+│  --> Vollständiger Report: ~/.claude-time/reports/[project]-[date].md           │
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```

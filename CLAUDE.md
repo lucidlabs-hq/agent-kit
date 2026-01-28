@@ -825,6 +825,8 @@ This project uses Claude Code Skills instead of legacy commands. Skills follow t
 | `/session-end` | End session, update Linear, clean state | Any |
 | `/productizer` | Bridge Linear ↔ Productive.io for customer reporting | Any |
 | `/notion-publish` | Publish markdown to Notion (private pages) | Any |
+| `/clone-skill` | Clone skills from central repository | Any |
+| `/publish-skill` | Share your skills with the team | Any |
 | `/promote` | Promote patterns to upstream | Any |
 | `/sync` | Sync updates from upstream | Any |
 

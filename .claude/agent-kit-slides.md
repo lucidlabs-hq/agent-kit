@@ -865,6 +865,50 @@ Import in n8n → Credentials setzen → Fertig!
 
 ---
 
+## SLIDE 18c: Skill Sharing - Clone & Publish
+
+**Skills direkt zwischen Projekten teilen:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          SKILL SHARING                                           │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│                        CENTRAL REPOSITORY                                        │
+│                     lucidlabs-hq/agent-kit                                      │
+│                                                                                  │
+│         ┌───────────────────────────────────────────────────────┐               │
+│         │  /clone-skill pdf-analyzer                             │               │
+│         │         ↓                                              │               │
+│         │  Skill wird ins Projekt kopiert                       │               │
+│         └───────────────────────────────────────────────────────┘               │
+│                                                                                  │
+│         ┌───────────────────────────────────────────────────────┐               │
+│         │  Developer baut coolen Skill                          │               │
+│         │         ↓                                              │               │
+│         │  /publish-skill meeting-notes                         │               │
+│         │         ↓                                              │               │
+│         │  PR → Review → Merge                                  │               │
+│         │         ↓                                              │               │
+│         │  Alle Projekte können ihn jetzt nutzen!               │               │
+│         └───────────────────────────────────────────────────────┘               │
+│                                                                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  COMMANDS:                                                                       │
+│                                                                                  │
+│  /clone-skill --list              Verfügbare Skills auflisten                   │
+│  /clone-skill [name]              Skill ins Projekt klonen                      │
+│  /clone-skill --import            Aus Claude.ai Cloud importieren              │
+│  /publish-skill [name]            Skill mit Team teilen (via PR)               │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Vorteil:** Entwickler können sofort von den Patterns anderer profitieren - ohne vollständigen Sync.
+
+---
+
 ## SLIDE 19: Qualitätssicherung
 
 **Validierung auf 4 Ebenen:**

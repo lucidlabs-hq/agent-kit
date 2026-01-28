@@ -72,6 +72,8 @@ LUCID LABS
 
 /agentdocs       Explore Agent Kit documentation
 /skills          List available Agent Kit skills
+/clone-skill     Clone skills from central repository
+/publish-skill   Share your skills with the team
 /tickets         Show assigned Linear tickets
 /new-ticket      Create a new Linear issue
 /todos           Open local TODOs and notes

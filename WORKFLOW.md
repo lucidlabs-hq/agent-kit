@@ -581,6 +581,98 @@ git commit -m "chore: sync new-skill from upstream"
 
 ---
 
+### Skill Sharing: Clone & Publish
+
+Skills können direkt zwischen Projekten geteilt werden - ohne den Umweg über vollständige Upstream/Downstream Syncs.
+
+#### Der Skill Sharing Cycle
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          SKILL SHARING CYCLE                                     │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│                        CENTRAL REPOSITORY                                        │
+│                     lucidlabs-hq/agent-kit                                      │
+│                              │                                                   │
+│              ┌───────────────┼───────────────┐                                  │
+│              │               │               │                                  │
+│      /clone-skill      /clone-skill    /clone-skill                             │
+│              │               │               │                                  │
+│              ▼               ▼               ▼                                  │
+│         ┌─────────┐    ┌─────────┐    ┌─────────┐                              │
+│         │Project A│    │Project B│    │Project C│                              │
+│         └────┬────┘    └────┬────┘    └────┬────┘                              │
+│              │              │              │                                    │
+│              │         Developer          │                                    │
+│              │         creates            │                                    │
+│              │         cool skill         │                                    │
+│              │              │              │                                    │
+│              │       /publish-skill       │                                    │
+│              │              │              │                                    │
+│              │              ▼              │                                    │
+│              │         PR + Review        │                                    │
+│              │              │              │                                    │
+│              │              ▼              │                                    │
+│              │      Merged to Central     │                                    │
+│              │              │              │                                    │
+│              ▼              ▼              ▼                                    │
+│         Available      Available      Available                                 │
+│         for all!       for all!       for all!                                 │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Skills klonen
+
+```bash
+# Alle verfügbaren Skills auflisten
+/clone-skill --list
+
+# Skill aus zentralem Repo klonen
+/clone-skill pdf-analyzer
+
+# Skill aus anderem Repo klonen
+/clone-skill email-parser --from lucidlabs-hq/customer-skills
+
+# Skill aus Claude.ai Cloud importieren (manuell)
+/clone-skill --import
+```
+
+#### Skills publizieren
+
+```bash
+# Lokale Skills auflisten (noch nicht im zentralen Repo)
+/publish-skill --list-local
+
+# Skill publizieren (erstellt PR)
+/publish-skill pdf-analyzer
+
+# Skill in internes Repo publizieren
+/publish-skill secret-handler --to lucidlabs-hq/internal-skills
+```
+
+#### Wann Clone vs Publish?
+
+| Situation | Command | Ergebnis |
+|-----------|---------|----------|
+| Ich brauche einen existierenden Skill | `/clone-skill` | Skill wird ins Projekt kopiert |
+| Ich habe einen coolen Skill gebaut | `/publish-skill` | PR zum zentralen Repo |
+| Skill aus Claude.ai Cloud | `/clone-skill --import` | Manueller Import via Clipboard |
+
+#### Qualitätskriterien für Publishing
+
+Bevor ein Skill gepublished wird:
+
+| Kriterium | Beschreibung |
+|-----------|--------------|
+| **Generisch** | Keine projekt-spezifische Logik |
+| **Getestet** | Im Projekt erfolgreich verwendet |
+| **Dokumentiert** | Usage, Examples, Error Handling |
+| **Sicher** | Keine Credentials, keine hardcoded Pfade |
+
+---
+
 ## Quick Reference
 
 ```bash

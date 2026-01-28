@@ -155,6 +155,8 @@ When called without argument, show this menu:
 │   /linear             Linear project management                                 │
 │   /productizer        Bridge Linear ↔ Productive.io                            │
 │   /notion-publish     Publish markdown to Notion (private)                      │
+│   /clone-skill        Clone skills from central repository                      │
+│   /publish-skill      Share your skills with the team                           │
 │   /agentdocs          This documentation browser                                │
 │                                                                                 │
 │   MAINTENANCE                                                                   │

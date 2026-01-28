@@ -15,60 +15,92 @@ Build comprehensive understanding of the codebase AND show current project statu
 
 ### 0. Session Intro & Begrüßung (ZUERST!)
 
-#### 0.1 ASCII Banner anzeigen
+#### 0.1 Boot Sequence
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                                                                                 │
-│                                                                                 │
-│      ╭─────────────────────────────────────────────────────────────────╮        │
-│      │                                                                 │        │
-│      │      lucid labs                                                 │        │
-│      │                                                                 │        │
-│      │       █████╗  ██████╗ ███████╗███╗   ██╗████████╗              │        │
-│      │      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝              │        │
-│      │      ███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║                 │        │
-│      │      ██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║                 │        │
-│      │      ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║                 │        │
-│      │      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝                 │        │
-│      │                                                                 │        │
-│      │      ██╗  ██╗██╗████████╗                                       │        │
-│      │      ██║ ██╔╝██║╚══██╔══╝                                       │        │
-│      │      █████╔╝ ██║   ██║                                          │        │
-│      │      ██╔═██╗ ██║   ██║                                          │        │
-│      │      ██║  ██╗██║   ██║                                          │        │
-│      │      ╚═╝  ╚═╝╚═╝   ╚═╝                                          │        │
-│      │                                                                 │        │
-│      ╰─────────────────────────────────────────────────────────────────╯        │
-│                                                                                 │
-│         A modular engineering toolkit for building AI agents                    │
-│                                                                                 │
-│   ─────────────────────────────────────────────────────────────────────────     │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
+**WICHTIG:** Der Name kommt IMMER aus `developer.json`. Kein Hardcoding!
+
+```bash
+TIME_DIR="$HOME/.claude-time"
+DEVELOPER_FILE="$TIME_DIR/developer.json"
+
+if [ -f "$DEVELOPER_FILE" ]; then
+  DEVELOPER_NAME=$(cat "$DEVELOPER_FILE" | jq -r '.name')
+fi
 ```
 
-**Alternativ (minimaler):**
+**Boot Sequence Output:**
 
 ```
+{ ──────────────── { * BOOT SEQUENCE * } ──────────────── }
 
-    lucid labs
-    ─────────────────────────────────────────────────────────
+{{BOOT_SUBLINE}}
 
-     █████╗  ██████╗ ███████╗███╗   ██╗████████╗    ██╗  ██╗██╗████████╗
-    ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝    ██║ ██╔╝██║╚══██╔══╝
-    ███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║       █████╔╝ ██║   ██║
-    ██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║       ██╔═██╗ ██║   ██║
-    ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║       ██║  ██╗██║   ██║
-    ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝       ╚═╝  ╚═╝╚═╝   ╚═╝
+Welcome back, {{developer.name}}.
 
-    A modular engineering toolkit for building AI agents
+lucid labs
+────────────────────────────────────────────────────────────────────────────
 
-    ─────────────────────────────────────────────────────────
+ █████╗  ██████╗ ███████╗███╗   ██╗████████╗    ██╗  ██╗██╗████████╗
+██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝    ██║ ██╔╝██║╚══██╔══╝
+███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║       █████╔╝ ██║   ██║
+██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║       ██╔═██╗ ██║   ██║
+██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║       ██║  ██╗██║   ██║
+╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝       ╚═╝  ╚═╝╚═╝   ╚═╝
 
+A modular engineering toolkit for building AI agents
+
+{{HUMOR_COMMENT}}
+
+────────────────────────────────────────────────────────────────────────────
+
+Type /docs to explore the Agent Kit documentation.
 ```
 
-#### 0.2 Developer-Check & Begrüßung
+#### 0.1.1 Boot Sublines (rotierend, zufällig wählen)
+
+**Technisch-trocken:**
+- `Initializing systems. Assumptions included.`
+- `Booting agent environment. No promises made.`
+- `Loading tools, patterns, and questionable decisions.`
+
+**Nerd-ironisch:**
+- `Compiling intent. Please stand by.`
+- `Starting session. This started as a small change.`
+- `Spinning up agents. Human supervision enabled.`
+
+**Meta/selbstironisch (Favoriten):**
+- `Initializing systems. Works on our machine.`
+- `Boot sequence complete. Reality may vary.`
+- `Systems ready. Optimism level: cautious.`
+
+#### 0.1.2 Humor Comments (rotierend, Kommentar-Syntax)
+
+- `// Temporary fix. Do not remove.`
+- `// This works. Do not touch.`
+- `// TODO: refactor later`
+- `// This started as a small change.`
+- `// Works on my machine.`
+- `// We'll clean this up in v2.`
+- `// The agent understands the system. Mostly.`
+- `// Human in the loop. For now.`
+- `// Autonomous, but not unsupervised.`
+- `// Designed for clarity. Reality may vary.`
+- `// Optimized for thinking, not speed.`
+- `// Fewer prompts. Better systems.`
+
+#### 0.1.3 Welcome Varianten
+
+Alle nutzen `{{developer.name}}` aus `developer.json`:
+
+- `Welcome back, {{developer.name}}.` (Default)
+- `Welcome, {{developer.name}}. Session initialized.`
+- `Welcome, {{developer.name}}. Ready when you are.`
+- `Welcome, {{developer.name}}. Systems over scripts.`
+- `Welcome, {{developer.name}}. Let's build something solid.`
+
+---
+
+#### 0.2 Developer-Check & Setup
 
 **Prüfe Developer-Konfiguration:**
 
@@ -85,41 +117,104 @@ fi
 **Falls KEIN Developer konfiguriert (erstes Mal):**
 
 ```
+{ ──────────────── { * BOOT SEQUENCE * } ──────────────── }
+
+First time setup detected.
+
+lucid labs
+────────────────────────────────────────────────────────────────────────────
+
+ █████╗  ██████╗ ███████╗███╗   ██╗████████╗    ██╗  ██╗██╗████████╗
+██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝    ██║ ██╔╝██║╚══██╔══╝
+███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║       █████╔╝ ██║   ██║
+██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║       ██╔═██╗ ██║   ██║
+██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║       ██║  ██╗██║   ██║
+╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝       ╚═╝  ╚═╝╚═╝   ╚═╝
+
+A modular engineering toolkit for building AI agents
+
+// Setting up your developer profile...
+
+────────────────────────────────────────────────────────────────────────────
+```
+
+**Setup-Fragen (AskUserQuestion verwenden):**
+
+```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                                                                                 │
-│   Willkommen beim Agent Kit!                                                    │
+│   DEVELOPER SETUP                                                               │
 │                                                                                 │
-│   Bevor wir loslegen, ein kurzes Setup für das Time Tracking:                  │
+│   ─────────────────────────────────────────────────────────────────────────     │
 │                                                                                 │
 │   Wie heißt du?                                                                 │
 │   > _                                                                           │
 │                                                                                 │
-│   (Wird in ~/.claude-time/developer.json gespeichert)                          │
+│   Deine E-Mail?                                                                 │
+│   > _                                                                           │
+│                                                                                 │
+│   Dein Kürzel (für Commits, z.B. "adam")?                                      │
+│   > _                                                                           │
+│                                                                                 │
+│   ─────────────────────────────────────────────────────────────────────────     │
+│                                                                                 │
+│   Linear & Productive.io werden später konfiguriert,                           │
+│   wenn du die entsprechenden Skills nutzt.                                     │
+│                                                                                 │
+│   (Gespeichert in ~/.claude-time/developer.json)                               │
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Dann speichern:
+Dann speichern in `~/.claude-time/developer.json`:
+
 ```json
 {
   "name": "Adam",
   "email": "adam@lucidlabs.de",
-  "created": "2026-01-28"
+  "handle": "adam",
+  "role": "engineer",
+  "created": "2026-01-28",
+
+  "linear": {
+    "user_id": "abc123",
+    "display_name": "Adam K.",
+    "default_team": "lucid-labs-agents"
+  },
+
+  "productive": {
+    "person_id": "12345",
+    "default_activity_type": "Development"
+  },
+
+  "preferences": {
+    "boot_humor": true,
+    "dashboard_style": "compact",
+    "auto_sync_time": false
+  }
 }
 ```
 
+**Felder-Erklärung:**
+
+| Feld | Zweck | Wann abfragen |
+|------|-------|---------------|
+| `name` | Begrüßung, Reports | Erstes Setup |
+| `email` | Identifikation | Erstes Setup |
+| `handle` | Kurz-ID für Commits | Erstes Setup |
+| `linear.user_id` | Linear API Queries | Bei erstem `/linear` |
+| `linear.display_name` | Ticket-Anzeige | Bei erstem `/linear` |
+| `productive.person_id` | Zeit-Sync | Bei erstem `/productive setup` |
+| `preferences.*` | UX-Anpassung | Optional, später |
+
 **Falls Developer EXISTIERT (normale Session):**
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                                                                                 │
-│   Hey Adam, willkommen zu deiner nächsten Coding-Session.                      │
-│                                                                                 │
-│   Projekt: customer-portal                                                      │
-│   Branch:  feature/login                                                        │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
+Zeige die Boot Sequence aus 0.1 mit:
+- Zufälliger Boot Subline
+- Welcome mit Developer-Name aus JSON
+- Zufälliger Humor Comment
+
+Dann direkt weiter zu **0.3 Session-Optionen** (Tickets, etc.).
 
 #### 0.3 Session-Optionen anzeigen
 

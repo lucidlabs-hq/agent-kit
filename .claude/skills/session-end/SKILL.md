@@ -53,34 +53,31 @@ if [ -f "$CURRENT_SESSION" ]; then
 fi
 ```
 
-**Session-Zusammenfassung anzeigen:**
+**Session-Zusammenfassung anzeigen (KOMPAKT):**
 
 ```
-╔═══════════════════════════════════════════════════════════════════════════════╗
-║                                                                               ║
-║   🕐 SESSION BEENDET                                       [project-name]    ║
-║                                                                               ║
-╠═══════════════════════════════════════════════════════════════════════════════╣
-║                                                                               ║
-║   Diese Session:                                                              ║
-║   ──────────────                                                              ║
-║                                                                               ║
-║   Start:      14:00 Uhr                                                       ║
-║   Ende:       17:30 Uhr                                                       ║
-║   Dauer:      3h 30min                                                        ║
-║                                                                               ║
-║   Linear:     CUS-42 (Delivery)                                               ║
-║   Commits:    3 (abc1234, def5678, ghi9012)                                  ║
-║                                                                               ║
-╠═══════════════════════════════════════════════════════════════════════════════╣
-║                                                                               ║
-║   Projekt-Gesamt:   28h 00min (+3h 30min heute)                              ║
-║                                                                               ║
-║   ████████████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 48%       ║
-║   Budget: 100h │ Verbraucht: 48h │ Verbleibend: 52h                          ║
-║                                                                               ║
-╚═══════════════════════════════════════════════════════════════════════════════╝
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  SESSION BEENDET                                              [project-name]    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  BEARBEITETE TICKETS                              ZEIT: 3h 30min               │
+│  ───────────────────────────────────────────────────────────────────────────── │
+│  ✓ CUS-42   Login Feature implementieren          Delivery      2h 15min       │
+│  ◐ CUS-45   Error Handling verbessern            In Progress    1h 15min       │
+│                                                                                 │
+│  COMMITS (4)                                                                    │
+│  ───────────────────────────────────────────────────────────────────────────── │
+│  abc1234  feat(auth): implement login flow                                      │
+│  def5678  fix(api): handle edge cases                                           │
+│  ghi9012  feat(prime): add ASCII banner                                         │
+│  jkl3456  docs: update time tracking                                            │
+│                                                                                 │
+│  BUDGET: ████████████████████░░░░░░░░░░░░░░░░░░░░░ 48% (48h/100h)              │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+**Wichtig:** Diese Zusammenfassung ist bewusst KOMPAKT gehalten. Details werden in Report-Datei gespeichert.
 
 **Session-Daten speichern:**
 
@@ -232,6 +229,203 @@ Use Linear MCP:
 
 **Quick Resume:** [One sentence for next session]
 ```
+
+---
+
+## 6. Improvement Analyzer (VOR Checkout!)
+
+**WICHTIG:** Dieser Schritt analysiert die Session und gibt dem Entwickler konkrete Verbesserungsvorschläge.
+
+### 6.1 Session-Analyse durchführen
+
+Analysiere während der Session:
+- Wie oft musste Claude nachfragen?
+- Welche Informationen fehlten?
+- Welche Anweisungen waren unklar?
+- Wie effizient war die Zusammenarbeit?
+
+### 6.2 Kompakte Ausgabe (im Terminal)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  IMPROVEMENT ANALYZER                                                           │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  SESSION SCORE: ████████░░ 78/100                                              │
+│                                                                                 │
+│  TOP 3 VERBESSERUNGEN FÜR NÄCHSTE SESSION:                                     │
+│  ─────────────────────────────────────────────────────────────────────────────  │
+│                                                                                 │
+│  1. ⚡ Mehr Kontext bei Feature-Requests                                        │
+│     → Nächstes Mal: "Kontext: [Situation], Problem: [X], Ziel: [Y]"            │
+│                                                                                 │
+│  2. 📋 Akzeptanzkriterien definieren                                           │
+│     → Nächstes Mal: Was muss funktionieren, damit Feature "fertig" ist?        │
+│                                                                                 │
+│  3. 🎯 Scope klar eingrenzen                                                   │
+│     → Nächstes Mal: "Nur X, nicht Y" explizit angeben                          │
+│                                                                                 │
+│  ─────────────────────────────────────────────────────────────────────────────  │
+│  📄 Vollständiger Report: ~/.claude-time/reports/[project]-[date].md           │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 6.3 Vollständiger Report (in Datei)
+
+Speichere detaillierten Report in `~/.claude-time/reports/[project]-YYYY-MM-DD.md`:
+
+```markdown
+# Session Report: [project-name]
+**Datum:** 2026-01-28
+**Dauer:** 3h 30min
+**Entwickler:** Adam
+
+---
+
+## Bearbeitete Tickets
+
+| Ticket | Titel | Status | Zeit |
+|--------|-------|--------|------|
+| CUS-42 | Login Feature | ✓ Erledigt | 2h 15min |
+| CUS-45 | Error Handling | ◐ In Progress | 1h 15min |
+
+---
+
+## Commits
+
+- `abc1234` feat(auth): implement login flow
+- `def5678` fix(api): handle edge cases
+- `ghi9012` feat(prime): add ASCII banner
+- `jkl3456` docs: update time tracking
+
+---
+
+## Improvement Patterns Analyzer
+
+### Top Recurring Issues (diese Session)
+
+| Pattern | Häufigkeit | Zeit-Impact |
+|---------|------------|-------------|
+| Missing Context | 3x | ~15min |
+| Vage Anforderungen | 2x | ~10min |
+| Fehlende Beispiele | 1x | ~5min |
+
+### Detaillierte Analyse
+
+#### 1. Missing Context (3x gefunden)
+
+**Was passiert ist:**
+- Anfrage ohne Hintergrund-Information
+- Claude musste Rückfragen stellen
+
+**Beispiele aus dieser Session:**
+- ❌ "Mach das Feature fertig"
+- ❌ "Fix den Bug"
+
+**Besser nächstes Mal:**
+```
+✅ "Kontext: [aktuelle Situation]
+   Problem: [konkretes Problem]
+   Ziel: [gewünschtes Ergebnis]
+   Einschränkungen: [falls vorhanden]"
+```
+
+**Geschätzter Zeitgewinn:** ~5min pro Anfrage
+
+---
+
+#### 2. Vage Anforderungen (2x gefunden)
+
+**Was passiert ist:**
+- Anforderungen waren interpretierbar
+- Mehrere Implementierungen wären möglich gewesen
+
+**Beispiele aus dieser Session:**
+- ❌ "Mach die UI besser"
+- ❌ "Optimiere das"
+
+**Besser nächstes Mal:**
+```
+✅ "Ändere den Button von grau auf blau"
+✅ "Reduziere die Ladezeit von 3s auf unter 1s"
+```
+
+**Geschätzter Zeitgewinn:** ~5min pro Anfrage
+
+---
+
+## Session-Metriken
+
+| Metrik | Wert | Benchmark |
+|--------|------|-----------|
+| Nachfragen von Claude | 4 | < 2 ideal |
+| Scope-Änderungen | 1 | 0 ideal |
+| Rework nötig | 0 | 0 ideal |
+| Effizienz-Score | 78% | > 85% ideal |
+
+---
+
+## Empfohlene Templates
+
+### Feature Request Template
+```
+Kontext: [Was ist die aktuelle Situation?]
+Problem: [Was funktioniert nicht / fehlt?]
+Ziel: [Was soll am Ende rauskommen?]
+Akzeptanzkriterien:
+- [ ] Kriterium 1
+- [ ] Kriterium 2
+Einschränkungen: [Was soll NICHT gemacht werden?]
+```
+
+### Bug Report Template
+```
+Erwartetes Verhalten: [Was sollte passieren?]
+Aktuelles Verhalten: [Was passiert stattdessen?]
+Reproduktion: [Schritte zum Reproduzieren]
+Relevanter Code: [Datei:Zeile oder Snippet]
+```
+
+---
+
+*Report generiert: 2026-01-28 17:30*
+```
+
+### 6.4 Pattern-Tracking über Zeit
+
+Die Improvement Patterns werden in `~/.claude-time/patterns/[project].json` aggregiert:
+
+```json
+{
+  "project": "customer-portal",
+  "patterns": {
+    "missing_context": {
+      "total_occurrences": 34,
+      "sessions_affected": 12,
+      "trend": "improving",
+      "last_30_days": 8
+    },
+    "vague_requirements": {
+      "total_occurrences": 26,
+      "sessions_affected": 10,
+      "trend": "stable",
+      "last_30_days": 6
+    }
+  },
+  "overall_score_trend": [72, 75, 78, 80, 78]
+}
+```
+
+### 6.5 Was wird analysiert?
+
+| Pattern | Erkennung |
+|---------|-----------|
+| **Missing Context** | Claude fragt "Was meinst du mit...?" oder "Kannst du mehr Kontext geben?" |
+| **Vage Anforderungen** | Mehrere Interpretationen möglich, Claude fragt nach Präferenz |
+| **Fehlende Beispiele** | Claude fragt "Hast du ein Beispiel?" |
+| **Scope Creep** | Anforderungen ändern sich während Implementierung |
+| **Fehlende Akzeptanzkriterien** | Unklar wann Feature "fertig" ist |
 
 ---
 

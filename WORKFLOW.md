@@ -4,15 +4,97 @@ This guide explains the complete development workflow for Agent Kit projects.
 
 ## Table of Contents
 
-1. [Linear Integration](#linear-integration)
-2. [Discovery-Driven Development](#discovery-driven-development)
-3. [Upstream/Downstream Model](#upstreamdownstream-model)
-4. [Quick Reference](#quick-reference)
-5. [PRD-First Development](#prd-first-development)
-6. [The PIV Loop](#the-piv-loop)
-7. [Skills](#skills)
-8. [Step-by-Step Workflow](#step-by-step-workflow)
-9. [Best Practices](#best-practices)
+1. [Session Start](#session-start)
+2. [Linear Integration](#linear-integration)
+3. [Discovery-Driven Development](#discovery-driven-development)
+4. [Upstream/Downstream Model](#upstreamdownstream-model)
+5. [Quick Reference](#quick-reference)
+6. [PRD-First Development](#prd-first-development)
+7. [The PIV Loop](#the-piv-loop)
+8. [Skills](#skills)
+9. [Step-by-Step Workflow](#step-by-step-workflow)
+10. [Session End](#session-end)
+11. [Best Practices](#best-practices)
+
+---
+
+## Session Start
+
+Every session begins with `/prime` which initializes your development environment.
+
+### Boot Sequence
+
+When you run `/prime`, you'll see:
+
+```
+{ ──────────────── { * BOOT SEQUENCE * } ──────────────── }
+
+Initializing systems. Works on our machine.
+
+Welcome back, Adam.
+
+lucid labs
+────────────────────────────────────────────────────────────────────────────
+
+ █████╗  ██████╗ ███████╗███╗   ██╗████████╗    ██╗  ██╗██╗████████╗
+██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝    ██║ ██╔╝██║╚══██╔══╝
+███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║       █████╔╝ ██║   ██║
+██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║       ██╔═██╗ ██║   ██║
+██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║       ██║  ██╗██║   ██║
+╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝       ╚═╝  ╚═╝╚═╝   ╚═╝
+
+A modular engineering toolkit for building AI agents
+
+// This started as a small change.
+
+────────────────────────────────────────────────────────────────────────────
+
+Type /docs to explore the Agent Kit documentation.
+```
+
+### First Time Setup
+
+On first run, you'll be asked to set up your developer profile:
+
+```
+Developer Name:     Adam
+Email:              adam@lucidlabs.de
+Handle:             adam (für Commits)
+```
+
+This is stored in `~/.claude-time/developer.json` and used for:
+- Personalized greeting
+- Time tracking
+- Linear assignment queries
+- Productive.io sync (later)
+
+### Session Options
+
+After the boot sequence, you'll see your work options:
+
+```
+MEINE LINEAR TICKETS (dir zugewiesen)
+─────────────────────────────────────
+[1] CUS-42  Login Feature implementieren          Delivery    ⏱ 5h 30min
+[2] CUS-45  Error Handling verbessern            Exploration  ⏱ 1h 15min
+
+WEITERE OPTIONEN
+────────────────
+[4] 📋 Future Plans      - Geplante Features & Verbesserungen
+[5] 📝 Lokale TODOs      - Deine persönlichen Notizen
+[6] 🆕 Neues Ticket      - Neues Linear Issue erstellen
+```
+
+### Documentation Browser
+
+Use `/docs` to browse documentation without leaving the terminal:
+
+```bash
+/docs                    # Show documentation overview
+/docs skills             # List all available skills
+/docs stack              # Tech stack overview
+/docs search "convex"    # Search across all docs
+```
 
 ---
 
@@ -1057,15 +1139,78 @@ cd frontend && pnpm install
 # → Saves progress state
 ```
 
-### End of Session Checklist
+---
+
+## Session End
+
+End every session with `/session-end` to maintain clean state and track progress.
+
+### What `/session-end` Does
+
+1. **Time Tracking** - Saves session duration
+2. **Git Check** - Ensures working tree is clean
+3. **Linear Update** - Updates ticket status and adds work summary
+4. **Improvement Analysis** - Analyzes session for efficiency tips
+
+### Session Summary (Compact)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  SESSION BEENDET                                              [project-name]    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  BEARBEITETE TICKETS                              ZEIT: 3h 30min               │
+│  ───────────────────────────────────────────────────────────────────────────── │
+│  ✓ CUS-42   Login Feature implementieren          Delivery      2h 15min       │
+│  ◐ CUS-45   Error Handling verbessern            In Progress    1h 15min       │
+│                                                                                 │
+│  COMMITS (4)                                                                    │
+│  ───────────────────────────────────────────────────────────────────────────── │
+│  abc1234  feat(auth): implement login flow                                      │
+│  def5678  fix(api): handle edge cases                                           │
+│                                                                                 │
+│  BUDGET: ████████████████████░░░░░░░░░░░░░░░░░░░░░ 48% (48h/100h)              │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Improvement Analyzer
+
+At session end, you get efficiency tips:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  IMPROVEMENT ANALYZER                                                           │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  SESSION SCORE: ████████░░ 78/100                                              │
+│                                                                                 │
+│  TOP 3 VERBESSERUNGEN FÜR NÄCHSTE SESSION:                                     │
+│                                                                                 │
+│  1. ⚡ Mehr Kontext bei Feature-Requests                                        │
+│     → Nächstes Mal: "Kontext: [Situation], Problem: [X], Ziel: [Y]"            │
+│                                                                                 │
+│  2. 📋 Akzeptanzkriterien definieren                                           │
+│     → Nächstes Mal: Was muss funktionieren, damit Feature "fertig" ist?        │
+│                                                                                 │
+│  ─────────────────────────────────────────────────────────────────────────────  │
+│  📄 Vollständiger Report: ~/.claude-time/reports/[project]-[date].md           │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+The full report is saved to `~/.claude-time/reports/` for later review.
+
+### Session End Checklist
 
 The `/session-end` command ensures:
 
+- [ ] Time tracking saved
 - [ ] Git working tree is clean
 - [ ] Last commit follows conventions
 - [ ] Linear ticket status is current
 - [ ] Work summary added as comment
-- [ ] PROJECT-STATUS.md updated
+- [ ] Improvement analysis generated
 
 ---
 

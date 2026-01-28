@@ -59,6 +59,54 @@ services:
     networks:
       - lucidlabs-network
 
+  # ===========================================================================
+  # PORTKEY AI GATEWAY (LLM Proxy)
+  # ===========================================================================
+  # Central AI Gateway for all projects - cost tracking, fallbacks, caching
+  # Dashboard: https://portkey.lucidlabs.de (add to Caddyfile)
+  # API: http://portkey:8787 (internal)
+  portkey:
+    image: portkeyai/gateway:latest
+    container_name: lucidlabs-portkey
+    restart: unless-stopped
+    environment:
+      - PORTKEY_LOG_LEVEL=info
+      # API Keys loaded from .env
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    networks:
+      - lucidlabs-network
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8787/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===========================================================================
+  # CONVEX LOCAL BACKEND (Self-Hosted Database)
+  # ===========================================================================
+  # Realtime database for all projects
+  # URL: http://convex:3210 (internal)
+  convex:
+    image: convex/convex-local-backend:latest
+    container_name: lucidlabs-convex
+    restart: unless-stopped
+    volumes:
+      - convex_data:/data
+    environment:
+      - CONVEX_SITE_URL=${CONVEX_SITE_URL:-http://convex:3210}
+    networks:
+      - lucidlabs-network
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3210/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 networks:
   lucidlabs-network:
     name: lucidlabs-network
@@ -69,3 +117,5 @@ volumes:
     name: lucidlabs-caddy-data
   caddy_config:
     name: lucidlabs-caddy-config
+  convex_data:
+    name: lucidlabs-convex-data

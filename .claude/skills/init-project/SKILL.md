@@ -412,52 +412,68 @@ Dokumentation: .claude/reference/n8n-workflows.md
 
 ---
 
-## Step 4: Provide Next Steps
+## Step 4: Kontext-Zusammenfassung für PRD
 
-After the script completes, tell the user:
+**WICHTIG:** Bevor die Session endet, fasse den gesammelten Kontext zusammen.
 
-```markdown
-## Projekt erstellt
+Dieser Kontext fließt in die PRD-Erstellung im neuen Projekt ein:
 
-**Projekt:** [project-name]
-**Pfad:** ../projects/[project-name]/
-**Stack:** [gewählte Komponenten auflisten]
+### 4.1 Kontext dokumentieren
 
-### WICHTIG: Neue Claude Session starten
+Erstelle eine Zusammenfassung mit:
 
-Claude Sessions sind verzeichnisgebunden. Um im neuen Projekt zu arbeiten:
-
-**Terminal:**
-\`\`\`bash
-cd ../projects/[project-name] && claude
-\`\`\`
-
-**VS Code:**
-1. Öffne den Ordner `../projects/[project-name]/` in VS Code
-2. Starte Claude über die Command Palette
-
-### Nach dem Start der neuen Session:
-
-1. Dependencies installieren:
-   \`\`\`bash
-   cd frontend && pnpm install
-   \`\`\`
-
-2. Kontext laden:
-   \`\`\`
-   /prime
-   \`\`\`
-
-3. PRD erstellen:
-   \`\`\`
-   /create-prd
-   \`\`\`
-
-4. Erste Feature planen:
-   \`\`\`
-   /plan-feature [feature-name]
-   \`\`\`
 ```
+KONTEXT FÜR PRD (aus Init-Gespräch):
+
+• Projekt-Beschreibung: [Was der User ursprünglich beschrieben hat]
+• Erkannte Stufe: [1-4]
+• Stack-Entscheidungen: [Was gewählt wurde und WARUM]
+• Architektur-Skizzen: [Falls erstellt]
+• Kunden-Anforderungen: [Spezifische Wünsche]
+• Offene Fragen: [Was noch geklärt werden muss]
+```
+
+### 4.2 Handoff-Nachricht
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                  │
+│  ✅ PROJEKT ERSTELLT: [project-name]                                            │
+│                                                                                  │
+│  Stack: [komponenten]                                                           │
+│                                                                                  │
+│  ═══════════════════════════════════════════════════════════════════════════   │
+│                                                                                  │
+│  NÄCHSTER SCHRITT:                                                              │
+│                                                                                  │
+│    cd ../projects/[project-name] && claude                                      │
+│                                                                                  │
+│  ═══════════════════════════════════════════════════════════════════════════   │
+│                                                                                  │
+│  IN DER NEUEN SESSION:                                                          │
+│                                                                                  │
+│    1. /prime                    ← Projekt-Kontext laden                         │
+│    2. /create-prd               ← PRD GEMEINSAM ausspezifizieren                │
+│                                                                                  │
+│  KONTEXT FÜR PRD:                                                               │
+│                                                                                  │
+│    [Zusammenfassung aus 4.1 hier einfügen]                                      │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.3 Wichtige Regel
+
+**KEINE Implementierung während /init-project!**
+
+| Erlaubt in Init | NICHT erlaubt in Init |
+|-----------------|----------------------|
+| Stack-Empfehlung | Code schreiben |
+| Architektur-Skizzen | Workflows erstellen |
+| Anforderungen sammeln | Components bauen |
+| Kontext dokumentieren | Dependencies installieren |
+
+Alles Konkrete passiert NACH dem Handoff, beginnend mit `/create-prd`.
 
 ---
 
@@ -467,58 +483,52 @@ cd ../projects/[project-name] && claude
 
 ### 5.1 Handoff-Nachricht ausgeben
 
-Führe diesen Bash-Befehl aus, um eine Nachricht zu hinterlassen die NACH dem Claude-Exit sichtbar bleibt:
+Führe den echo-Befehl aus Step 4.2 aus. Die Nachricht MUSS enthalten:
 
-```bash
-echo ""
-echo "───────────────────────────────────────────────────────────────────────────────"
-echo ""
-echo "  PROJEKT ERSTELLT: [project-name]"
-echo ""
-echo "  Nächster Schritt:"
-echo ""
-echo "    cd ../projects/[project-name] && claude"
-echo ""
-echo "  Dann in der neuen Session:"
-echo ""
-echo "    /prime"
-echo ""
-echo "───────────────────────────────────────────────────────────────────────────────"
-echo ""
+1. **Projekt-Name und Stack** - Was erstellt wurde
+2. **cd-Befehl** - Wie man ins neue Projekt wechselt
+3. **Erste Schritte** - `/prime` dann `/create-prd`
+4. **Kontext-Zusammenfassung** - Alles Wichtige aus dem Init-Gespräch
+
+### 5.2 Kernprinzip: PRD zuerst, gemeinsam
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                  │
+│  WORKFLOW NACH HANDOFF                                                           │
+│                                                                                  │
+│  1. /prime              ← Projekt-Kontext laden                                 │
+│                                                                                  │
+│  2. /create-prd         ← PRD GEMEINSAM ausspezifizieren                        │
+│        │                                                                         │
+│        ├─► Kontext aus Init-Gespräch einarbeiten                                │
+│        ├─► Offene Fragen klären                                                 │
+│        ├─► Scope definieren                                                     │
+│        └─► Erst wenn PRD fertig: Implementierung                                │
+│                                                                                  │
+│  3. /plan-feature       ← Erst NACH PRD-Approval                                │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 5.2 Session beenden
+### 5.3 Session beenden
 
 Nach der Ausgabe der Handoff-Nachricht:
 
-1. Sage dem User: "Projekt erstellt. Beende jetzt diese Session."
-2. Verwende `/exit` oder beende die Session
-3. Der User landet im Terminal mit der Handoff-Nachricht
+1. Sage dem User: "Projekt erstellt. Wechsle jetzt ins neue Verzeichnis."
+2. Der User führt `cd ../projects/[project-name] && claude` aus
+3. In der neuen Session: `/prime` → `/create-prd`
 
-### Ablauf
+### Warum dieser Workflow?
 
-```
-Projekt erstellt
-     ↓
-Handoff-Nachricht (echo)
-     ↓
-Session beenden (/exit)
-     ↓
-User sieht im Terminal:
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                                                                                 │
-│  PROJEKT ERSTELLT: customer-portal                                              │
-│                                                                                 │
-│  Nächster Schritt:                                                              │
-│                                                                                 │
-│    cd ../projects/customer-portal && claude                                     │
-│                                                                                 │
-│  Dann in der neuen Session:                                                     │
-│                                                                                 │
-│    /prime                                                                       │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
+| Ohne PRD zuerst | Mit PRD zuerst |
+|-----------------|----------------|
+| Sofort Code schreiben | Anforderungen klar |
+| Scope-Creep | Scope definiert |
+| Rework wahrscheinlich | Alignment von Anfang an |
+| "Das meinte ich nicht" | "Genau das wollte ich" |
+
+**Der PRD ist das Agreement zwischen Developer und Stakeholder.**
 
 ---
 

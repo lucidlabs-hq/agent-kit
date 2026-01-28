@@ -27,32 +27,70 @@ If no argument provided, ask for:
 - Project name (kebab-case, e.g., `customer-portal`)
 - Project description (one sentence)
 
-## Step 0: Onboarding Questions
+## Step 0: Stack Configuration
 
-Before creating the project, ask:
+The script asks for these configuration choices:
 
-1. **Project Name** (required)
-   - kebab-case, e.g., `customer-portal`
-   - Will be used for directory, package.json, Linear project
-
-2. **GitHub Repository?** (default: YES)
-   - Creates repo in `lucidlabs-hq` org
-   - Private by default
-
-3. **Linear Project?** (default: YES)
-   - Creates project in `lucid-labs-agents` workspace
-   - Format: `[Domain] Project Name`
-   - Ask for domain: Agents, AI, Platform, Integration, etc.
+### Core Stack (Choose one each)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  Project Onboarding                                              │
+│  STACK CONFIGURATION                                             │
 ├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  AI LAYER (wähle eins):                                          │
+│  ├─ [1] Mastra (Production Agents, Tools, Workflows)             │
+│  └─ [2] Vercel AI SDK (Schnelle Prototypen, Chat UI)             │
+│                                                                  │
+│  DATABASE (wähle eins):                                          │
+│  ├─ [1] Convex (Realtime, Simple Setup, Built-in Vector)         │
+│  └─ [2] Postgres (SQL Standard, Pinecone-kompatibel)             │
+│                                                                  │
+│  FRONTEND:                                                       │
+│  └─ [Y/n] Next.js 15 + shadcn/ui                                 │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Optional Components
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  OPTIONAL COMPONENTS                                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  [y/N] Portkey      - LLM Gateway, Cost Tracking, Guardrails     │
+│  [y/N] n8n          - Workflow Automation, Integrations          │
+│  [y/N] Python       - PDF Parsing, OCR, Statistics, ML           │
+│  [y/N] LangChain    - Complex Chains, LangGraph                  │
+│  [y/N] Terraform    - Infrastructure as Code                     │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Project Management
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  PROJECT MANAGEMENT                                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
 │  Name:    [project-name]                                         │
 │  GitHub:  [YES] lucidlabs-hq/[project-name]                     │
 │  Linear:  [YES] [Domain] Project Name                           │
+│                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+### Entscheidungshilfe
+
+| Was brauchst du? | AI Layer | Database |
+|------------------|----------|----------|
+| Chat Prototype | Vercel AI SDK | Convex |
+| Production Agent | Mastra | Convex |
+| SQL + Pinecone | Mastra | Postgres |
+| Simple RAG | Either | Convex (built-in vector) |
+| Complex Analysis | Mastra + Python | Either |
 
 ## Step 1: Run the Scaffolding Script
 

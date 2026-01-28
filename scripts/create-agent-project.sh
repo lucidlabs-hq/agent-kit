@@ -34,10 +34,15 @@ PROJECT_NAME=""
 INCLUDE_FRONTEND=true
 INCLUDE_MASTRA=true
 INCLUDE_CONVEX=true
+INCLUDE_POSTGRES=false
 INCLUDE_N8N=false
 INCLUDE_TERRAFORM=false
+INCLUDE_PORTKEY=false
+INCLUDE_LANGCHAIN=false
+INCLUDE_PYTHON_WORKERS=false
 NPM_SCOPE="@lucidlabs"
 AI_MODEL="anthropic"  # anthropic, openai, both
+AI_LAYER="mastra"     # mastra, vercel-ai-sdk
 INTERACTIVE=false
 GITHUB_REPO_URL=""
 CREATE_LINEAR_PROJECT=true
@@ -149,39 +154,115 @@ run_interactive() {
     fi
 
     echo ""
-    echo -e "${CYAN}Which components do you need?${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}                      STACK CONFIGURATION                       ${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
     echo ""
 
-    # Frontend
+    # ─────────────────────────────────────────────────────────────────
+    # AI LAYER (Choose one)
+    # ─────────────────────────────────────────────────────────────────
+    echo -e "${YELLOW}AI Layer (wähle eins):${NC}"
+    echo ""
+    echo "  1) Mastra (Production Agents, Tools, Workflows)"
+    echo "     → Für: Full Agents, Decision Layer, Structured Outputs"
+    echo ""
+    echo "  2) Vercel AI SDK (Schnelle Prototypen, Chat UI)"
+    echo "     → Für: Chat Interfaces, Streaming, Simple Prompts"
+    echo ""
+    read -p "Select (1-2, default: 1): " ai_layer_choice
+    case $ai_layer_choice in
+        2)
+            AI_LAYER="vercel-ai-sdk"
+            INCLUDE_MASTRA=false
+            ;;
+        *)
+            AI_LAYER="mastra"
+            INCLUDE_MASTRA=true
+            ;;
+    esac
+
+    # ─────────────────────────────────────────────────────────────────
+    # DATABASE (Choose one)
+    # ─────────────────────────────────────────────────────────────────
+    echo ""
+    echo -e "${YELLOW}Database (wähle eins):${NC}"
+    echo ""
+    echo "  1) Convex (Realtime, Simple Setup, Built-in Vector)"
+    echo "     → Für: Realtime Apps, schnelles Setup, Type-safe"
+    echo ""
+    echo "  2) Postgres (SQL Standard, Pinecone-kompatibel)"
+    echo "     → Für: SQL, Pinecone Vectors, maximale Kontrolle"
+    echo ""
+    read -p "Select (1-2, default: 1): " db_choice
+    case $db_choice in
+        2)
+            INCLUDE_POSTGRES=true
+            INCLUDE_CONVEX=false
+            ;;
+        *)
+            INCLUDE_POSTGRES=false
+            INCLUDE_CONVEX=true
+            ;;
+    esac
+
+    # ─────────────────────────────────────────────────────────────────
+    # FRONTEND
+    # ─────────────────────────────────────────────────────────────────
+    echo ""
+    echo -e "${YELLOW}Frontend:${NC}"
     if confirm "Include Frontend (Next.js 15 + shadcn/ui)?"; then
         INCLUDE_FRONTEND=true
     else
         INCLUDE_FRONTEND=false
     fi
 
-    # Mastra
-    if confirm "Include Mastra (AI Agents)?"; then
-        INCLUDE_MASTRA=true
-    else
-        INCLUDE_MASTRA=false
-    fi
+    # ─────────────────────────────────────────────────────────────────
+    # OPTIONAL COMPONENTS
+    # ─────────────────────────────────────────────────────────────────
+    echo ""
+    echo -e "${YELLOW}Optionale Komponenten:${NC}"
+    echo ""
 
-    # Convex
-    if confirm "Include Convex (Realtime Database)?"; then
-        INCLUDE_CONVEX=true
+    # Portkey (LLM Gateway)
+    echo -e "  ${CYAN}Portkey${NC} - LLM Gateway mit Cost Tracking, Multi-Model, Guardrails"
+    if confirm "  Include Portkey (LLM Gateway)?" "n"; then
+        INCLUDE_PORTKEY=true
     else
-        INCLUDE_CONVEX=false
+        INCLUDE_PORTKEY=false
     fi
 
     # n8n
-    if confirm "Include n8n (Workflow Automation)?" "n"; then
+    echo ""
+    echo -e "  ${CYAN}n8n${NC} - Workflow Automation, Integrations, Scheduling"
+    if confirm "  Include n8n (Workflow Automation)?" "n"; then
         INCLUDE_N8N=true
     else
         INCLUDE_N8N=false
     fi
 
+    # Python Workers
+    echo ""
+    echo -e "  ${CYAN}Python Workers${NC} - PDF Parsing, OCR, Statistics, ML"
+    if confirm "  Include Python Workers (Compute Layer)?" "n"; then
+        INCLUDE_PYTHON_WORKERS=true
+    else
+        INCLUDE_PYTHON_WORKERS=false
+    fi
+
+    # LangChain
+    echo ""
+    echo -e "  ${CYAN}LangChain${NC} - Complex Chains, LangGraph, erweiterte Agents"
+    if confirm "  Include LangChain/LangGraph?" "n"; then
+        INCLUDE_LANGCHAIN=true
+    else
+        INCLUDE_LANGCHAIN=false
+    fi
+
     # Terraform
-    if confirm "Include Terraform (Infrastructure as Code)?" "n"; then
+    echo ""
+    echo -e "  ${CYAN}Terraform${NC} - Infrastructure as Code für Deployment"
+    if confirm "  Include Terraform (IaC)?" "n"; then
         INCLUDE_TERRAFORM=true
     else
         INCLUDE_TERRAFORM=false
@@ -195,7 +276,7 @@ run_interactive() {
 
     # AI Model preference
     echo ""
-    echo "AI Model preference:"
+    echo -e "${YELLOW}LLM Provider:${NC}"
     echo "  1) Anthropic Claude (Recommended)"
     echo "  2) OpenAI GPT"
     echo "  3) Both"
@@ -248,18 +329,30 @@ run_interactive() {
     fi
 
     echo ""
-    echo -e "${CYAN}Configuration Summary:${NC}"
-    echo "──────────────────────────────────────"
-    echo "  Project:    $PROJECT_NAME"
-    echo "  Scope:      $NPM_SCOPE"
-    echo "  Frontend:   $([ "$INCLUDE_FRONTEND" = true ] && echo "Yes" || echo "No")"
-    echo "  Mastra:     $([ "$INCLUDE_MASTRA" = true ] && echo "Yes" || echo "No")"
-    echo "  Convex:     $([ "$INCLUDE_CONVEX" = true ] && echo "Yes" || echo "No")"
-    echo "  n8n:        $([ "$INCLUDE_N8N" = true ] && echo "Yes" || echo "No")"
-    echo "  Terraform:  $([ "$INCLUDE_TERRAFORM" = true ] && echo "Yes" || echo "No")"
-    echo "  AI Model:   $AI_MODEL"
-    echo "  Linear:     $([ "$CREATE_LINEAR_PROJECT" = true ] && echo "$LINEAR_PROJECT_NAME" || echo "No")"
-    echo "──────────────────────────────────────"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${CYAN}                    CONFIGURATION SUMMARY                       ${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo "  Project:         $PROJECT_NAME"
+    echo "  Scope:           $NPM_SCOPE"
+    echo ""
+    echo -e "  ${YELLOW}Core Stack:${NC}"
+    echo "  ├─ AI Layer:     $([ "$AI_LAYER" = "mastra" ] && echo "Mastra (Production)" || echo "Vercel AI SDK (Prototype)")"
+    echo "  ├─ Database:     $([ "$INCLUDE_CONVEX" = true ] && echo "Convex (Realtime)" || echo "Postgres (SQL)")"
+    echo "  ├─ Frontend:     $([ "$INCLUDE_FRONTEND" = true ] && echo "Yes (Next.js 15)" || echo "No")"
+    echo "  └─ LLM Provider: $AI_MODEL"
+    echo ""
+    echo -e "  ${YELLOW}Optional:${NC}"
+    echo "  ├─ Portkey:      $([ "$INCLUDE_PORTKEY" = true ] && echo "Yes (LLM Gateway)" || echo "No")"
+    echo "  ├─ n8n:          $([ "$INCLUDE_N8N" = true ] && echo "Yes (Automation)" || echo "No")"
+    echo "  ├─ Python:       $([ "$INCLUDE_PYTHON_WORKERS" = true ] && echo "Yes (Compute)" || echo "No")"
+    echo "  ├─ LangChain:    $([ "$INCLUDE_LANGCHAIN" = true ] && echo "Yes" || echo "No")"
+    echo "  └─ Terraform:    $([ "$INCLUDE_TERRAFORM" = true ] && echo "Yes (IaC)" || echo "No")"
+    echo ""
+    echo -e "  ${YELLOW}Project Management:${NC}"
+    echo "  └─ Linear:       $([ "$CREATE_LINEAR_PROJECT" = true ] && echo "$LINEAR_PROJECT_NAME" || echo "No")"
+    echo ""
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
     echo ""
 
     if ! confirm "Create project with these settings?"; then
@@ -503,12 +596,38 @@ EOF
 # =============================================================================
 # $PROJECT_NAME - Environment Variables
 # =============================================================================
+# Stack: AI Layer: $AI_LAYER | Database: $([ "$INCLUDE_CONVEX" = true ] && echo "Convex" || echo "Postgres")
+# =============================================================================
 
+EOF
+
+    # Database section
+    if [[ "$INCLUDE_CONVEX" = true ]]; then
+        cat >> ".env.example" << EOF
 # Database (Convex)
 NEXT_PUBLIC_CONVEX_URL=https://your-project.convex.cloud
 # Or for self-hosted:
 # NEXT_PUBLIC_CONVEX_URL=http://localhost:3210
 
+EOF
+    fi
+
+    if [[ "$INCLUDE_POSTGRES" = true ]]; then
+        cat >> ".env.example" << EOF
+# Database (Postgres)
+DATABASE_URL=postgresql://user:password@localhost:5432/dbname
+# For Prisma:
+# DIRECT_URL=postgresql://user:password@localhost:5432/dbname
+
+# Vector Database (Optional - wenn Pinecone genutzt wird)
+# PINECONE_API_KEY=your-pinecone-key
+# PINECONE_ENVIRONMENT=us-east-1
+
+EOF
+    fi
+
+    # AI Models section
+    cat >> ".env.example" << EOF
 # AI Models
 ANTHROPIC_API_KEY=sk-ant-...
 EOF
@@ -519,15 +638,38 @@ OPENAI_API_KEY=sk-...
 EOF
     fi
 
+    # Portkey section
+    if [[ "$INCLUDE_PORTKEY" = true ]]; then
+        cat >> ".env.example" << EOF
+
+# Portkey (LLM Gateway)
+# Self-hosted: http://localhost:8787
+# Cloud: https://api.portkey.ai
+PORTKEY_API_KEY=your-portkey-key
+PORTKEY_BASE_URL=https://api.portkey.ai/v1
+EOF
+    fi
+
+    # n8n section
     if [[ "$INCLUDE_N8N" = true ]]; then
         cat >> ".env.example" << EOF
 
-# n8n
+# n8n (Workflow Automation)
 N8N_BASIC_AUTH_USER=admin
 N8N_BASIC_AUTH_PASSWORD=changeme
 EOF
     fi
 
+    # Python Workers section
+    if [[ "$INCLUDE_PYTHON_WORKERS" = true ]]; then
+        cat >> ".env.example" << EOF
+
+# Python Workers (Compute Layer)
+PYTHON_WORKER_URL=http://localhost:8000
+EOF
+    fi
+
+    # Application section
     cat >> ".env.example" << EOF
 
 # Application

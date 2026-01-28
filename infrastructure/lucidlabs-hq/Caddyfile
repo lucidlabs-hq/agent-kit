@@ -1,7 +1,7 @@
 # =============================================================================
 # LUCIDLABS-HQ - Caddy Reverse Proxy Configuration
 #
-# Central routing for all projects on *.lucidlabs.app
+# Central routing for all projects on *.lucidlabs.de
 # Add new project blocks when deploying new projects.
 #
 # After changes: docker compose restart caddy
@@ -30,7 +30,7 @@
 # -----------------------------------------------------------------------------
 
 # === Invoice Accounting Assistant ===
-invoice.lucidlabs.app {
+invoice.lucidlabs.de {
 	# Frontend (Next.js)
 	reverse_proxy invoice-frontend:3000
 
@@ -49,7 +49,7 @@ invoice.lucidlabs.app {
 }
 
 # === Template for new projects ===
-# project-name.lucidlabs.app {
+# project-name.lucidlabs.de {
 #     reverse_proxy project-name-frontend:3000
 #
 #     handle /api/agent/* {
@@ -67,6 +67,6 @@ invoice.lucidlabs.app {
 # -----------------------------------------------------------------------------
 # SHARED N8N (uncomment if needed)
 # -----------------------------------------------------------------------------
-# n8n.lucidlabs.app {
+# n8n.lucidlabs.de {
 #     reverse_proxy lucidlabs-n8n:5678
 # }

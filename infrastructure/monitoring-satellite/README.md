@@ -17,7 +17,7 @@ The monitoring server **must** be separate from LUCIDLABS-HQ:
 | **Size** | SMALL-1C-2G |
 | **Architecture** | ARM64 (Ampere Altra) |
 | **Cost** | ~€15/month |
-| **Domain** | monitoring.lucidlabs.de or status.lucidlabs.app |
+| **Domain** | monitoring.lucidlabs.de or status.lucidlabs.de |
 
 ## Quick Start
 
@@ -48,8 +48,8 @@ After setup, add these monitors in Uptime Kuma:
 
 | Monitor | URL | Interval |
 |---------|-----|----------|
-| Invoice Frontend | `https://invoice.lucidlabs.app/api/health` | 60s |
-| Invoice Mastra | `https://invoice.lucidlabs.app/api/agent/health` | 60s |
+| Invoice Frontend | `https://invoice.lucidlabs.de/api/health` | 60s |
+| Invoice Mastra | `https://invoice.lucidlabs.de/api/agent/health` | 60s |
 
 ### Infrastructure
 
@@ -72,7 +72,7 @@ Uptime Kuma can serve a public status page:
 1. Go to Status Pages in Uptime Kuma
 2. Create "Lucid Labs Status"
 3. Add monitors
-4. Share URL: `https://status.lucidlabs.app`
+4. Share URL: `https://status.lucidlabs.de`
 
 ## Backup
 

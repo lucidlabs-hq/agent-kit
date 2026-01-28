@@ -15,7 +15,7 @@ Bei jedem Projekt muss entschieden werden, wo es deployt wird:
 │                                                                             │
 │  [1] LUCIDLABS-HQ (Recommended)                                             │
 │      Shared Elestio instance für alle Lucid Labs Projekte                   │
-│      → projects.lucidlabs.de / *.lucidlabs.app                              │
+│      → projects.lucidlabs.de / *.lucidlabs.de                              │
 │      → Ressourcen werden geteilt                                            │
 │      → Günstiger, schneller Setup                                           │
 │      → GitHub Actions deployt automatisch                                   │
@@ -50,9 +50,9 @@ Bei jedem Projekt muss entschieden werden, wo es deployt wird:
 │  ┌───────────────────────────────────────────────────────────────────────┐ │
 │  │                         Caddy (Reverse Proxy)                         │ │
 │  │                                                                       │ │
-│  │  invoice.lucidlabs.app  →  invoice-stack:3000                        │ │
-│  │  neola.lucidlabs.app    →  neola-stack:3000                          │ │
-│  │  casavi.lucidlabs.app   →  casavi-stack:3000                         │ │
+│  │  invoice.lucidlabs.de  →  invoice-stack:3000                        │ │
+│  │  neola.lucidlabs.de    →  neola-stack:3000                          │ │
+│  │  casavi.lucidlabs.de   →  casavi-stack:3000                         │ │
 │  │                                                                       │ │
 │  └───────────────────────────────────────────────────────────────────────┘ │
 │                                                                             │
@@ -68,8 +68,8 @@ Bei jedem Projekt muss entschieden werden, wo es deployt wird:
 │  ┌───────────────────────────────────────────────────────────────────────┐ │
 │  │                      Shared Services (optional)                       │ │
 │  │                                                                       │ │
-│  │  - Uptime Kuma (monitoring.lucidlabs.app)                            │ │
-│  │  - n8n Shared (n8n.lucidlabs.app) - für übergreifende Workflows      │ │
+│  │  - Uptime Kuma (monitoring.lucidlabs.de)                            │ │
+│  │  - n8n Shared (n8n.lucidlabs.de) - für übergreifende Workflows      │ │
 │  │                                                                       │ │
 │  └───────────────────────────────────────────────────────────────────────┘ │
 │                                                                             │
@@ -144,7 +144,7 @@ Bei jedem Projekt muss entschieden werden, wo es deployt wird:
   "projects": [
     {
       "name": "invoice-accounting-assistant",
-      "subdomain": "invoice.lucidlabs.app",
+      "subdomain": "invoice.lucidlabs.de",
       "port": 3001,
       "repo": "lucidlabs-hq/invoice-accounting-assistant",
       "status": "active",
@@ -160,7 +160,7 @@ Bei jedem Projekt muss entschieden werden, wo es deployt wird:
 # /opt/lucidlabs/caddy/Caddyfile
 
 # Invoice Accounting Assistant
-invoice.lucidlabs.app {
+invoice.lucidlabs.de {
     reverse_proxy invoice-accounting-assistant-frontend-1:3000
 
     handle /api/agent/* {
@@ -169,12 +169,12 @@ invoice.lucidlabs.app {
 }
 
 # Neola
-neola.lucidlabs.app {
+neola.lucidlabs.de {
     reverse_proxy neola-frontend-1:3000
 }
 
 # Monitoring
-monitoring.lucidlabs.app {
+monitoring.lucidlabs.de {
     reverse_proxy uptime-kuma:3001
 }
 ```
@@ -301,7 +301,7 @@ deployment:
   # Nur bei LUCIDLABS-HQ
   hq:
     subdomain: invoice
-    domain: lucidlabs.app
+    domain: lucidlabs.de
     port_offset: 1  # 3001, 4001, etc.
 
   # Nur bei DEDICATED
@@ -335,7 +335,7 @@ deployment:
 │  Wo soll das Projekt deployt werden?                                        │
 │                                                                             │
 │  [1] LUCIDLABS-HQ (Recommended)                                             │
-│      → invoice.lucidlabs.app                                                │
+│      → invoice.lucidlabs.de                                                │
 │      → Shared resources, schneller setup                                    │
 │                                                                             │
 │  [2] DEDICATED                                                              │
@@ -412,7 +412,7 @@ git push origin main
 
 ### Vor dem ersten Deploy
 - [ ] DEPLOYMENT-CONFIG.md existiert mit target: LUCIDLABS-HQ
-- [ ] Subdomain gewählt (z.B. invoice.lucidlabs.app)
+- [ ] Subdomain gewählt (z.B. invoice.lucidlabs.de)
 - [ ] .github/workflows/deploy-hq.yml existiert
 - [ ] Convex Projekt erstellt und CONVEX_DEPLOY_KEY als Repo Secret
 
@@ -423,7 +423,7 @@ git push origin main
 - [ ] Subdomain erreichbar
 
 ### Nach Deploy
-- [ ] Health Check: https://[subdomain].lucidlabs.app/api/health
+- [ ] Health Check: https://[subdomain].lucidlabs.de/api/health
 - [ ] Monitoring in Uptime Kuma hinzugefügt
 - [ ] registry.json aktualisiert
 ```

@@ -13,8 +13,8 @@
 │  ┌───────────────────────────────────────────────────────────────────────┐ │
 │  │                         Caddy (Reverse Proxy)                         │ │
 │  │                                                                       │ │
-│  │  invoice.lucidlabs.app  →  invoice-frontend:3000                     │ │
-│  │  project2.lucidlabs.app →  project2-frontend:3000                    │ │
+│  │  invoice.lucidlabs.de  →  invoice-frontend:3000                     │ │
+│  │  project2.lucidlabs.de →  project2-frontend:3000                    │ │
 │  │  ...                                                                  │ │
 │  │                                                                       │ │
 │  └───────────────────────────────────────────────────────────────────────┘ │
@@ -138,7 +138,7 @@ docker ps                 # Should show caddy + watchtower
 At your DNS provider, add:
 
 ```
-*.lucidlabs.app.  A  <server-ip>
+*.lucidlabs.de.  A  <server-ip>
 ```
 
 Or individual subdomains as needed.
@@ -218,14 +218,14 @@ Per-project secrets:
 Configure at your DNS provider:
 
 ```
-*.lucidlabs.app.  A  <server-ip>
+*.lucidlabs.de.  A  <server-ip>
 ```
 
 Or individual records:
 
 ```
-invoice.lucidlabs.app.  A  <server-ip>
-project2.lucidlabs.app. A  <server-ip>
+invoice.lucidlabs.de.  A  <server-ip>
+project2.lucidlabs.de. A  <server-ip>
 ```
 
 ## Monitoring
@@ -235,8 +235,8 @@ Monitoring (Uptime Kuma) runs on a **separate server** to ensure alerts work eve
 See: `infrastructure/monitoring-satellite/` (separate setup)
 
 The monitoring server checks:
-- `https://invoice.lucidlabs.app/api/health`
-- `https://<project>.lucidlabs.app/api/health`
+- `https://invoice.lucidlabs.de/api/health`
+- `https://<project>.lucidlabs.de/api/health`
 - Server SSH connectivity
 
 ## Backup Strategy

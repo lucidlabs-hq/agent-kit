@@ -78,6 +78,6 @@ jobs:
           sleep 10
 
           # Check frontend
-          curl -f https://${{ env.PROJECT_NAME }}.lucidlabs.app/api/health || exit 1
+          curl -f https://${{ env.PROJECT_NAME }}.lucidlabs.de/api/health || exit 1
 
           echo "✓ Deployment successful"

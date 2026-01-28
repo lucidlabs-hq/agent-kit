@@ -69,7 +69,7 @@ fi
 # -----------------------------------------------------------------------------
 CADDY_ENTRY="
 # === $PROJECT_NAME ===
-$SUBDOMAIN.lucidlabs.app {
+$SUBDOMAIN.lucidlabs.de {
     reverse_proxy $PROJECT_NAME-frontend:3000
 
     handle /api/agent/* {
@@ -100,7 +100,7 @@ cat << EOF
 {
   "name": "$PROJECT_NAME",
   "subdomain": "$SUBDOMAIN",
-  "url": "https://$SUBDOMAIN.lucidlabs.app",
+  "url": "https://$SUBDOMAIN.lucidlabs.de",
   "repo": "lucidlabs-hq/$PROJECT_NAME",
   "status": "pending",
   "services": {

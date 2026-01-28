@@ -10,14 +10,14 @@
     "network": "lucidlabs-network"
   },
   "domains": {
-    "primary": "lucidlabs.app",
-    "wildcard": "*.lucidlabs.app"
+    "primary": "lucidlabs.de",
+    "wildcard": "*.lucidlabs.de"
   },
   "projects": [
     {
       "name": "invoice-accounting-assistant",
       "subdomain": "invoice",
-      "url": "https://invoice.lucidlabs.app",
+      "url": "https://invoice.lucidlabs.de",
       "repo": "lucidlabs-hq/invoice-accounting-assistant",
       "status": "pending",
       "services": {

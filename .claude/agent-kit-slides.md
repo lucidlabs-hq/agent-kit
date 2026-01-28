@@ -809,6 +809,62 @@ Template:  ═══════════════════════
 
 ---
 
+## SLIDE 18b: n8n Workflow Generation (Optional)
+
+**Wenn Kunde n8n-Lösung erwartet:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                     N8N WORKFLOW GENERATION                                      │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  WANN N8N?                                                                       │
+│  ─────────                                                                       │
+│  • Kunde erwartet n8n-Lösung ("Wir wollen das in n8n haben")                    │
+│  • Wir demonstrieren n8n-Expertise                                               │
+│  • Externe Integrationen zentral (CRM, ERP, Email)                              │
+│  • Kunde soll Workflows selbst anpassen können                                   │
+│                                                                                  │
+│  WAS WIRD GENERIERT?                                                             │
+│  ───────────────────                                                             │
+│  • Vorkonfigurierter Workflow (JSON)                                            │
+│  • Mastra Agent Endpoints eingebaut                                              │
+│  • Dokumentierte Notes im Workflow                                               │
+│  • Import-ready für n8n                                                          │
+│                                                                                  │
+│  WORKFLOW-VARIANTEN:                                                             │
+│  ┌─────────────────────┬────────────────────────────────────────┐               │
+│  │ Basis               │ Webhook → Mastra Agent → Response       │               │
+│  │ Email-Trigger       │ IMAP/Email → Agent → Antwort           │               │
+│  │ Scheduled           │ Cron → Agent → Aktion                   │               │
+│  │ CRM Integration     │ HubSpot/Salesforce → Agent → Update    │               │
+│  └─────────────────────┴────────────────────────────────────────┘               │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Ablauf bei Projekt-Setup:**
+
+```
+/init-project customer-portal
+     ↓
+Stack-Empfehlung → n8n ausgewählt? → JA
+     ↓
+"Soll ich n8n Workflow generieren?"
+[1] Basis-Workflow
+[2] Email-Trigger
+[3] Scheduled
+[4] Später manuell
+     ↓
+n8n/workflows/agent-workflow.json erstellt
+     ↓
+Import in n8n → Credentials setzen → Fertig!
+```
+
+**Vorteil:** Kunde sieht sofort einen funktionierenden n8n Workflow mit unseren Agenten.
+
+---
+
 ## SLIDE 19: Qualitätssicherung
 
 **Validierung auf 4 Ebenen:**
@@ -1039,6 +1095,9 @@ Template:  ═══════════════════════
 │  │   │   • Scheduled Jobs & Cron                                            │ │  │
 │  │   │   • Webhook Handling                                                 │ │  │
 │  │   │   • Email/Slack Notifications                                        │ │  │
+│  │   │   • Kunde will n8n-Lösung sehen                                      │ │  │
+│  │   │                                                                      │ │  │
+│  │   │   → Workflow wird bei /init-project auto-generiert!                  │ │  │
 │  │   └─────────────────────────────────────────────────────────────────────┘ │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                  │

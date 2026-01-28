@@ -235,6 +235,129 @@ The script automatically creates the project in `../projects/`:
 
 ---
 
+## Step 2b: PROJECT-CONTEXT.md erstellen (PFLICHT!)
+
+**KRITISCH:** Nach dem Scaffolding MUSS `PROJECT-CONTEXT.md` erstellt werden.
+
+Erstelle `.claude/PROJECT-CONTEXT.md` im neuen Projekt:
+
+```yaml
+# Project Context
+
+> Identifiziert dieses Repository und sein Verhältnis zum Agent Kit.
+
+---
+
+## Repository Type
+
+type: downstream
+
+---
+
+## Upstream Reference
+
+upstream:
+  name: lucidlabs-agent-kit
+  repo: git@github.com:lucidlabs-hq/lucidlabs-agent-kit.git
+  local_path: ../../lucidlabs-agent-kit
+  last_sync: [HEUTE]
+
+---
+
+## Active Project
+
+project:
+  name: [project-name]
+  description: "[Beschreibung aus Step 0.1]"
+  client: [Kundenprojekt | Internes Projekt]
+  status: Initial
+  started: [HEUTE]
+
+---
+
+## Promotion Tracking
+
+Patterns die ins upstream promoted werden sollen:
+
+| Pattern | Status | Description |
+|---------|--------|-------------|
+| - | - | - |
+
+Nutze `/promote` um Patterns ins upstream zu übernehmen.
+```
+
+**Warum das wichtig ist:**
+- `/prime` erkennt dadurch, dass dies ein downstream Projekt ist
+- `/promote` weiß, wo das upstream liegt
+- Der User weiß, an welchem Projekt er arbeitet
+
+---
+
+## Step 2c: Initiales PRD aus Beschreibung erstellen (PFLICHT!)
+
+**KRITISCH:** Die Projekt-Beschreibung aus Step 0.1 wird zum initialen PRD.
+
+Erstelle `.claude/PRD.md` im neuen Projekt:
+
+```markdown
+# [project-name] - Product Requirements Document
+
+> **Status:** Initial - Ausspezifizierung mit /create-prd erforderlich
+
+**Version:** 0.1 (Initial)
+**Last Updated:** [HEUTE]
+**Client:** [Kundenprojekt | Internes Projekt]
+
+---
+
+## Project Description (aus Init-Gespräch)
+
+> "[Exakte Beschreibung die der User in Step 0.1 eingegeben hat]"
+
+---
+
+## Stack (gewählt in Init)
+
+| Component | Choice | Reason |
+|-----------|--------|--------|
+| AI Layer | [Mastra/Vercel AI SDK] | [Warum gewählt] |
+| Database | [Convex/Postgres] | [Warum gewählt] |
+| Frontend | Next.js 15 + shadcn/ui | Standard |
+| Optional | [n8n, Portkey, etc.] | [Warum gewählt] |
+
+---
+
+## Nächste Schritte
+
+**Dieses PRD ist ein Ausgangspunkt.** Es muss mit `/create-prd` ausspezifiziert werden:
+
+1. [ ] Problem & Solution detaillieren
+2. [ ] Target Users definieren
+3. [ ] MVP Scope festlegen
+4. [ ] User Stories schreiben
+5. [ ] Domain Model entwerfen
+6. [ ] AI Agent Specification
+7. [ ] Success Criteria
+
+---
+
+## Kontext aus Init-Gespräch
+
+[Hier wird die Zusammenfassung aus Step 4.1 eingefügt:]
+
+• Projekt-Beschreibung: [...]
+• Erkannte Stufe: [1-4]
+• Stack-Entscheidungen: [...]
+• Offene Fragen: [...]
+```
+
+**Warum das wichtig ist:**
+- Der User sieht beim nächsten `/prime` sofort den Kontext
+- `/create-prd` hat einen Ausgangspunkt
+- Nichts aus dem Init-Gespräch geht verloren
+
+---
+
 ## Step 3: Create Linear Project (if confirmed)
 
 If user confirmed Linear project creation:

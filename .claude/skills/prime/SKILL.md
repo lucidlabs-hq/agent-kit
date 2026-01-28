@@ -34,6 +34,85 @@ Deviation from the defined Agent Kit command set is considered an error.
 
 ## Process
 
+### -1. CONTEXT DETECTION (ALLERERSTER SCHRITT!)
+
+**KRITISCH:** Bevor irgendetwas anderes passiert, MUSS der Kontext erkannt werden.
+
+```bash
+# 1. Aktuelles Verzeichnis prüfen
+pwd
+
+# 2. Prüfen ob PROJECT-CONTEXT.md existiert
+cat .claude/PROJECT-CONTEXT.md 2>/dev/null
+```
+
+**Kontext-Entscheidungsbaum:**
+
+```
+Existiert .claude/PROJECT-CONTEXT.md?
+├── JA → Lese type: Feld
+│   ├── type: downstream → DOWNSTREAM PROJEKT
+│   │   └── Lese active_project.name und active_project.prd
+│   └── type: upstream → UPSTREAM (Agent Kit Template)
+│
+└── NEIN → Prüfe Verzeichnisname
+    ├── "lucidlabs-agent-kit" → Wahrscheinlich UPSTREAM
+    └── Anderer Name → Wahrscheinlich DOWNSTREAM (uninitialisiert)
+```
+
+**Context Header anzeigen (IMMER vor Boot Screen):**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  CONTEXT                                                                    │
+│  ───────                                                                    │
+│                                                                             │
+│  Working Directory: /Users/.../projects/invoice-accounting-assistant       │
+│  Repository Type:   DOWNSTREAM                                              │
+│  Active Project:    invoice-accounting-assistant                            │
+│  PRD:               .claude/PRD.md                                          │
+│  Upstream:          ../../lucidlabs-agent-kit                               │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Oder für Upstream:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  CONTEXT                                                                    │
+│  ───────                                                                    │
+│                                                                             │
+│  Working Directory: /Users/.../lucidlabs-agent-kit                          │
+│  Repository Type:   UPSTREAM (Agent Kit Template)                           │
+│                                                                             │
+│  ⚠️  Du bist im Agent Kit Template, nicht in einem Projekt.                 │
+│      Um an einem Projekt zu arbeiten, starte Claude im Projekt-Verzeichnis. │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Falls Downstream aber kein PROJECT-CONTEXT.md:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  CONTEXT                                                                    │
+│  ───────                                                                    │
+│                                                                             │
+│  Working Directory: /Users/.../projects/some-project                        │
+│  Repository Type:   DOWNSTREAM (uninitialisiert)                            │
+│                                                                             │
+│  ⚠️  PROJECT-CONTEXT.md fehlt. Erstelle es mit:                             │
+│      → Führe /init-project aus, oder                                        │
+│      → Erstelle .claude/PROJECT-CONTEXT.md manuell                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Nach Context-Erkennung:** Weiter mit Boot Sequence (0.1)
+
+---
+
 ### 0. Session Intro & Begrüßung (ZUERST!)
 
 #### 0.1 Boot Sequence

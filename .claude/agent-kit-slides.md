@@ -335,6 +335,170 @@ KEIN ZEITDRUCK          BEWUSSTE             VERBINDLICHE
 
 ---
 
+## SLIDE 12b: Convex - Die All-in-One Datenbank
+
+**Warum Convex unser Standard ist:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         CONVEX - BUILT FOR AI                                    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │                                                                          │    │
+│  │   EINE PLATTFORM - VIER FUNKTIONEN                                      │    │
+│  │                                                                          │    │
+│  │   ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌────────────┐  │    │
+│  │   │  DOCUMENT    │  │   REALTIME   │  │   VECTOR     │  │   FILE     │  │    │
+│  │   │  DATABASE    │  │   SYNC       │  │   SEARCH     │  │   STORAGE  │  │    │
+│  │   │              │  │              │  │              │  │            │  │    │
+│  │   │  NoSQL-like  │  │  WebSocket   │  │  Embeddings  │  │  S3-like   │  │    │
+│  │   │  Type-safe   │  │  Auto-sync   │  │  RAG-ready   │  │  Uploads   │  │    │
+│  │   │  Queries     │  │  to UI       │  │  Built-in    │  │  CDN       │  │    │
+│  │   └──────────────┘  └──────────────┘  └──────────────┘  └────────────┘  │    │
+│  │                                                                          │    │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
+│                                                                                  │
+│  VECTOR SEARCH - Was viele nicht wissen:                                        │
+│  ───────────────────────────────────────                                        │
+│                                                                                  │
+│  Convex hat NATIVE Vector-Fähigkeiten!                                         │
+│                                                                                  │
+│  • Embeddings direkt in der Datenbank speichern                                 │
+│  • Similarity Search ohne externe Services                                       │
+│  • Kein Pinecone nötig für Standard-RAG                                         │
+│  • Kombiniert mit Realtime = Live-updating RAG UI                               │
+│                                                                                  │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │  // Beispiel: RAG mit Convex Vector                                      │    │
+│  │                                                                          │    │
+│  │  // 1. Embedding speichern                                               │    │
+│  │  await ctx.db.insert("documents", {                                      │    │
+│  │    content: "...",                                                       │    │
+│  │    embedding: await embed(content)  // 1536-dim vector                   │    │
+│  │  });                                                                     │    │
+│  │                                                                          │    │
+│  │  // 2. Similarity Search                                                 │    │
+│  │  const results = await ctx.db                                            │    │
+│  │    .query("documents")                                                   │    │
+│  │    .withSearchIndex("embedding", q => q.vector(queryEmbedding, 10))     │    │
+│  │    .collect();                                                           │    │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Kein Pinecone, kein Weaviate, kein Qdrant nötig für 90% der Projekte!**
+
+---
+
+## SLIDE 12c: Stack-Vergleich - Wann was?
+
+**Trade-offs verstehen:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                      STACK TRADE-OFFS                                            │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  OPTION A: Convex + Mastra (UNSER STANDARD)                                     │
+│  ══════════════════════════════════════════                                     │
+│                                                                                  │
+│  ✅ VORTEILE:                              ❌ GRENZEN:                          │
+│  • Setup in Minuten                        • Kein SQL (NoSQL only)              │
+│  • Zero-Config Realtime                    • Vendor Lock-in (Convex)            │
+│  • Built-in Vector Search                  • Weniger Kontrolle                  │
+│  • Type-safe aus der Box                   • Pricing ab ~100k Users             │
+│  • Perfekt für AI-Prototypen                                                    │
+│  • Ein Service statt 4                                                          │
+│                                                                                  │
+│  → IDEAL FÜR: 90% unserer Projekte, bis ~50k aktive User                       │
+│                                                                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  OPTION B: Postgres + Pinecone + Mastra                                         │
+│  ══════════════════════════════════════                                         │
+│                                                                                  │
+│  ✅ VORTEILE:                              ❌ GRENZEN:                          │
+│  • Volle SQL-Power                         • Mehr Setup-Aufwand                 │
+│  • Enterprise-proven                       • Kein native Realtime               │
+│  • Keine Vendor Lock-in                    • 3 Services zu managen              │
+│  • Skaliert unbegrenzt                     • Mehr Kosten bei kleinen Projekten  │
+│  • Pinecone = Enterprise RAG                                                    │
+│                                                                                  │
+│  → IDEAL FÜR: Enterprise, >100k User, SQL-Requirements, GDPR                   │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## SLIDE 12d: Skalierungspfad
+
+**Wann upgraden wir den Stack?**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                      SKALIERUNGSPFAD                                             │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  PHASE 1: MVP & Early Stage                    PHASE 2: Growth                  │
+│  ═════════════════════════                     ═══════════════                  │
+│  Users: 0 - 10.000                             Users: 10.000 - 100.000          │
+│                                                                                  │
+│  ┌─────────────────────────────┐               ┌─────────────────────────────┐  │
+│  │  Convex + Mastra            │               │  Convex + Mastra            │  │
+│  │  Vercel (optional)          │       →       │  + Portkey (Cost Control)   │  │
+│  │                             │               │  + n8n (Integrations)       │  │
+│  │  Kosten: ~$50-200/Monat     │               │  Kosten: ~$500-2000/Monat   │  │
+│  └─────────────────────────────┘               └─────────────────────────────┘  │
+│                                                                                  │
+│  Fokus: Schnell launchen                       Fokus: Stabilisieren             │
+│  Speed > Perfektion                            Monitoring einführen             │
+│                                                                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  PHASE 3: Scale                                PHASE 4: Enterprise              │
+│  ══════════════                                ═══════════════════              │
+│  Users: 100.000 - 1.000.000                    Users: >1.000.000 oder GDPR      │
+│                                                                                  │
+│  ┌─────────────────────────────┐               ┌─────────────────────────────┐  │
+│  │  Convex ODER Postgres       │               │  Postgres + Pinecone        │  │
+│  │  + Portkey                  │       →       │  + Azure OpenAI (GDPR)      │  │
+│  │  + n8n                      │               │  + Portkey + n8n            │  │
+│  │  + Redis (Caching)          │               │  + Terraform (IaC)          │  │
+│  │  Kosten: ~$2000-10.000/M    │               │  Kosten: $10.000+/Monat     │  │
+│  └─────────────────────────────┘               └─────────────────────────────┘  │
+│                                                                                  │
+│  Fokus: Performance                            Fokus: Compliance                │
+│  Convex-Grenzen evaluieren                     Full Control, Self-hosted        │
+│                                                                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ENTSCHEIDUNGSMATRIX                                                            │
+│  ═══════════════════                                                            │
+│                                                                                  │
+│  "Wann wechseln wir von Convex zu Postgres?"                                    │
+│                                                                                  │
+│  ┌──────────────────────────────────┬─────────────────────────────────────────┐ │
+│  │  TRIGGER                         │  AKTION                                 │ │
+│  ├──────────────────────────────────┼─────────────────────────────────────────┤ │
+│  │  >100k aktive User               │  Kosten evaluieren, ggf. Postgres       │ │
+│  │  SQL zwingend nötig              │  Postgres von Anfang an                 │ │
+│  │  GDPR/Banken/Versicherung        │  Postgres + EU-Hosting                  │ │
+│  │  >10M Vektoren für RAG           │  Pinecone statt Convex Vectors          │ │
+│  │  Multi-Region nötig              │  Postgres + Custom Setup                │ │
+│  └──────────────────────────────────┴─────────────────────────────────────────┘ │
+│                                                                                  │
+│  WICHTIG: 90% der Projekte bleiben IMMER in Phase 1-2!                          │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Kernaussage:** Mit Convex + Mastra starten, bei Bedarf skalieren. Nicht voreilig Enterprise-Stack wählen!
+
+---
+
 ## SLIDE 13: Governance - Linear
 
 **Execution Tracking:**

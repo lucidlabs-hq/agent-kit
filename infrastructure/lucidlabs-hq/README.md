@@ -116,21 +116,48 @@ volumes:
 After Elestio shows "Running":
 
 ```bash
-# 1. Get SSH credentials from Elestio dashboard
-# 2. SSH into server
-ssh root@<server-ip>
+# 1. Via Elestio Web-Terminal (erstmal, bis SSH Key eingerichtet)
 
-# 3. Clone agent-kit
+# 2. Clone agent-kit
 git clone https://github.com/lucidlabs-hq/agent-kit.git /tmp/agent-kit
 
-# 4. Run setup script
+# 3. Run setup script
 cd /tmp/agent-kit/infrastructure/lucidlabs-hq
 chmod +x setup.sh scripts/*.sh
 ./setup.sh
 
-# 5. Verify
-curl http://localhost:80  # Should show health response
-docker ps                 # Should show caddy + watchtower
+# 4. Elestio nginx entfernen (belegt Port 80)
+docker stop elestio-nginx
+docker rm elestio-nginx
+
+# 5. Caddy starten
+cd /opt/lucidlabs/caddy
+docker compose up -d
+
+# 6. Verify
+curl http://localhost/health  # Should show "OK"
+docker ps                     # Should show caddy + watchtower
+```
+
+### Phase 2b: SSH absichern (Optional aber empfohlen)
+
+```bash
+# SSH Port auf 2222 ändern
+sed -i 's/#Port 22/Port 2222/' /etc/ssh/sshd_config
+
+# Systemd Socket Override (WICHTIG!)
+mkdir -p /etc/systemd/system/ssh.socket.d/
+cat > /etc/systemd/system/ssh.socket.d/port.conf << 'EOF'
+[Socket]
+ListenStream=
+ListenStream=0.0.0.0:2222
+ListenStream=[::]:2222
+EOF
+
+systemctl daemon-reload
+systemctl restart ssh.socket ssh.service
+
+# In Elestio Firewall: Port 2222 TCP hinzufügen!
 ```
 
 ### Phase 3: Configure DNS
@@ -258,6 +285,38 @@ When the server needs more resources:
 
 1. **Vertical scaling**: Upgrade to LARGE-4C-8G or XLARGE-8C-16G in Elestio
 2. **Horizontal scaling**: Move high-traffic projects to dedicated servers
+
+## Elestio Kompatibilität
+
+Wir haben Elestio's Standard-nginx durch unser Caddy ersetzt. **Elestio funktioniert weiterhin:**
+
+| Feature | Status |
+|---------|--------|
+| Dashboard | ✅ Funktioniert |
+| Web-Terminal | ✅ Funktioniert |
+| SSH Key Management | ✅ Funktioniert |
+| Firewall | ✅ Funktioniert |
+| Backups | ✅ Funktioniert |
+| Logs | ✅ Funktioniert |
+| Auto-SSL (Elestio) | ❌ Ersetzt durch Caddy |
+| nginx (Elestio) | ❌ Ersetzt durch Caddy |
+
+**Was wir geändert haben:**
+
+```bash
+# Elestio nginx entfernt (belegt Port 80/443)
+docker stop elestio-nginx
+docker rm elestio-nginx
+
+# Unser Caddy übernimmt Reverse Proxy + Auto-SSL
+```
+
+**SSH Port geändert:**
+- Standard: 22
+- Neu: **2222** (Sicherheit)
+- Systemd Socket Override in `/etc/systemd/system/ssh.socket.d/port.conf`
+
+---
 
 ## Troubleshooting
 

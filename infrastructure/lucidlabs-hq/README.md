@@ -153,11 +153,14 @@ project2.lucidlabs.app. A  <server-ip>
 
 ## Monitoring
 
-Uptime Kuma can be enabled for monitoring:
+Monitoring (Uptime Kuma) runs on a **separate server** to ensure alerts work even if HQ goes down.
 
-1. Uncomment `uptime-kuma` in `docker-compose.yml`
-2. Add Caddy entry for `monitoring.lucidlabs.app`
-3. Restart: `docker compose up -d`
+See: `infrastructure/monitoring-satellite/` (separate setup)
+
+The monitoring server checks:
+- `https://invoice.lucidlabs.app/api/health`
+- `https://<project>.lucidlabs.app/api/health`
+- Server SSH connectivity
 
 ## Backup Strategy
 

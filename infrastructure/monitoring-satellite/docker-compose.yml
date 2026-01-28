@@ -1,0 +1,56 @@
+# =============================================================================
+# MONITORING SATELLITE - Separate Monitoring Server
+#
+# Runs on a dedicated small server to monitor all Lucid Labs infrastructure.
+# Must be separate from HQ to detect HQ outages.
+#
+# Server: SMALL-1C-2G (~€15/mo)
+# Location: monitoring.lucidlabs.de or status.lucidlabs.app
+#
+# Usage:
+#   docker compose up -d
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # UPTIME KUMA (Monitoring Dashboard)
+  # ===========================================================================
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "80:3001"
+      - "443:3001"
+    volumes:
+      - uptime_kuma_data:/app/data
+    environment:
+      - TZ=Europe/Berlin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===========================================================================
+  # CADDY (Optional - for HTTPS)
+  # ===========================================================================
+  # Uncomment if you need custom domain with auto-HTTPS
+  # caddy:
+  #   image: caddy:2-alpine
+  #   container_name: monitoring-caddy
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./Caddyfile:/etc/caddy/Caddyfile:ro
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+  #   depends_on:
+  #     - uptime-kuma
+
+volumes:
+  uptime_kuma_data:
+  # caddy_data:
+  # caddy_config:

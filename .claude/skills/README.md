@@ -22,6 +22,7 @@ Skills extend Claude's capabilities in this project. Each skill is a directory w
 | `/screenshot` | Visual verification screenshots | Validation |
 | `/session-end` | **End session, update Linear, clean state** | Any |
 | `/productizer` | **Bridge Linear ↔ Productive.io for customer reporting** | Any |
+| `/notion-publish` | **Publish markdown to Notion (private pages)** | Any |
 | `/budget` | **Track customer kontingent from Productive.io** | Any |
 | `/n8n-workflow` | **Generate n8n workflows for agents** | Implementation |
 | `/promptfoo` | **LLM evaluation & self-learning prompts** | Validation |

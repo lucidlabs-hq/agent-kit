@@ -70,14 +70,15 @@ LUCID LABS
 
 ───────────────────────────────────────────────────────────────────────────────
 
-/agentdocs     Explore Agent Kit documentation
-/skills        List available Agent Kit skills
-/tickets       Show assigned Linear tickets
-/new-ticket    Create a new Linear issue
-/todos         Open local TODOs and notes
-/future        View planned features and improvements
-/status        Show system and session status
-/session-end   End session and persist context
+/agentdocs       Explore Agent Kit documentation
+/skills          List available Agent Kit skills
+/tickets         Show assigned Linear tickets
+/new-ticket      Create a new Linear issue
+/todos           Open local TODOs and notes
+/future          View planned features and improvements
+/status          Show system and session status
+/notion-publish  Publish markdown to Notion (private)
+/session-end     End session and persist context
 ───────────────────────────────────────────────────────────────────────────────
 Tip: Type a command or select an option number below.
 ```

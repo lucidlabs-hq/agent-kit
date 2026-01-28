@@ -239,6 +239,7 @@ Siehe `.claude/reference/productive-integration.md` für vollständige Dokumenta
 | `/linear update` | Update issue status |
 | `/linear sync` | Sync local work with Linear |
 | `/linear status` | Show current Linear state |
+| `/notion-publish` | Publish markdown to Notion |
 | `/session-end` | End session, update Linear |
 
 ---

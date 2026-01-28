@@ -712,6 +712,7 @@ This project uses Claude Code Skills. Skills follow the [Agent Skills](https://a
 | `/screenshot` | Visual verification screenshots | Validation |
 | `/session-end` | End session, update Linear, clean state | Any |
 | `/productizer` | Bridge Linear ↔ Productive.io for customer reporting | Any |
+| `/notion-publish` | Publish markdown to Notion (private pages) | Any |
 | `/promote` | Promote patterns to upstream | Any |
 | `/sync` | Sync updates from upstream | Any |
 

@@ -154,7 +154,8 @@ When called without argument, show this menu:
 │   INTEGRATION                                                                   │
 │   /linear             Linear project management                                 │
 │   /productizer        Bridge Linear ↔ Productive.io                            │
-│   /docs               This documentation browser                                │
+│   /notion-publish     Publish markdown to Notion (private)                      │
+│   /agentdocs          This documentation browser                                │
 │                                                                                 │
 │   MAINTENANCE                                                                   │
 │   /sync               Sync updates from upstream                                │

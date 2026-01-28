@@ -36,20 +36,28 @@ services:
       retries: 3
 
   # ===========================================================================
-  # WATCHTOWER (Auto-Update) - Optional
+  # WATCHTOWER (Auto-Update)
   # ===========================================================================
-  # Uncomment to enable automatic container updates
-  # watchtower:
-  #   image: containrrr/watchtower
-  #   container_name: lucidlabs-watchtower
-  #   restart: unless-stopped
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  #   environment:
-  #     - WATCHTOWER_CLEANUP=true
-  #     - WATCHTOWER_POLL_INTERVAL=300
-  #     - WATCHTOWER_LABEL_ENABLE=true
-  #   command: --label-enable
+  # Automatically updates containers with label "com.centurylinklabs.watchtower.enable=true"
+  # Only updates labeled containers (safe for production)
+  # See: .claude/reference/watchtower.md
+  watchtower:
+    image: containrrr/watchtower
+    container_name: lucidlabs-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=Europe/Berlin
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_LABEL_ENABLE=true
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      # Notifications (optional - configure in .env)
+      # - WATCHTOWER_NOTIFICATIONS=slack
+      # - WATCHTOWER_NOTIFICATION_SLACK_HOOK_URL=${SLACK_WEBHOOK_URL}
+    networks:
+      - lucidlabs-network
 
 networks:
   lucidlabs-network:

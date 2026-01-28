@@ -508,6 +508,7 @@ Status display → Badge (with border)
 | `.claude/reference/deployment-best-practices.md` | Docker, Caddy, Elestio, CI/CD |
 | `.claude/reference/deployment-targets.md` | **LUCIDLABS-HQ vs DEDICATED deployment** |
 | `.claude/reference/git-workflow.md` | Solo vs Team Git workflow, PRs |
+| `.claude/reference/ssh-keys.md` | **SSH Key Anleitung für Entwickler** |
 | `.claude/reference/watchtower.md` | **Automatic Docker container updates** |
 | `.claude/reference/scaling.md` | Stateless patterns, Convex scaling |
 | `.claude/reference/task-system.md` | Task tracking, custom subagents, Swarm |

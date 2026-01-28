@@ -499,6 +499,78 @@ vercel
 
 ## Tech Stack
 
+### Stack Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           LUCID LABS AI STACK                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                           CLIENTS                                    │    │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌────────────┐  │    │
+│  │  │  Web App    │  │  CLI Tool   │  │ Python SDK  │  │   Mobile   │  │    │
+│  │  │  (Next.js)  │  │  (Optional) │  │  (Optional) │  │  (Later)   │  │    │
+│  │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └─────┬──────┘  │    │
+│  └─────────┼────────────────┼────────────────┼───────────────┼─────────┘    │
+│            └────────────────┴────────────────┴───────────────┘              │
+│                                      │                                       │
+│                                      ▼                                       │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                      AI LAYER (WÄHLE EINS)                           │    │
+│  │                                                                      │    │
+│  │  ┌─────────────────────────┐    ┌─────────────────────────────┐     │    │
+│  │  │     VERCEL AI SDK       │ OR │         MASTRA              │     │    │
+│  │  │     (Prototypen)        │    │   (Production Agents)       │     │    │
+│  │  │                         │    │                             │     │    │
+│  │  │  • Schnelle Prototypen  │    │  • Decision & Explanation   │     │    │
+│  │  │  • Chat UI              │    │  • Tools & Workflows        │     │    │
+│  │  │  • Streaming            │    │  • Multi-Step Agents        │     │    │
+│  │  └─────────────────────────┘    └─────────────────────────────┘     │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                      │                                       │
+│                                      ▼                                       │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                      DATA LAYER (WÄHLE EINS)                         │    │
+│  │                                                                      │    │
+│  │  ┌─────────────────────────┐    ┌─────────────────────────────┐     │    │
+│  │  │        CONVEX           │ OR │       POSTGRES              │     │    │
+│  │  │   (Realtime, Simple)    │    │   (Classic, Flexible)       │     │    │
+│  │  │                         │    │                             │     │    │
+│  │  │  • Realtime Sync        │    │  • SQL Standard             │     │    │
+│  │  │  • Built-in Vector      │    │  • Mit Pinecone/pgvector    │     │    │
+│  │  │  • Type-safe Functions  │    │  • Prisma/Drizzle ORM       │     │    │
+│  │  └─────────────────────────┘    └─────────────────────────────┘     │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                           OPTIONAL COMPONENTS                                │
+│                                                                              │
+│  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐   │
+│  │   Portkey     │ │     n8n       │ │    Python     │ │  LangChain    │   │
+│  │ (LLM Gateway) │ │ (Automation)  │ │  (Compute)    │ │  (Chains)     │   │
+│  └───────────────┘ └───────────────┘ └───────────────┘ └───────────────┘   │
+│                                                                              │
+│  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌───────────────┐   │
+│  │   Pinecone    │ │   Greptile    │ │    MinIO      │ │  Terraform    │   │
+│  │  (Vectors)    │ │ (Code Review) │ │ (S3 Storage)  │ │    (IaC)      │   │
+│  └───────────────┘ └───────────────┘ └───────────────┘ └───────────────┘   │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Stack Selection Guide
+
+| Was brauchst du? | AI Layer | Database | Optional |
+|------------------|----------|----------|----------|
+| Chat Prototype | Vercel AI SDK | Convex | - |
+| Production Agent | Mastra | Convex | Portkey |
+| SQL + Pinecone | Mastra | Postgres | Pinecone |
+| Complex Analysis | Mastra | Either | Python Workers |
+| Automation | Mastra | Convex | n8n |
+
+Bei Projekt-Initialisierung (`./scripts/create-agent-project.sh --interactive`) wirst du durch alle Optionen geführt.
+
 ### Frontend
 - **Next.js 15** - App Router, Server Components
 - **React 19** - Latest React features
@@ -506,10 +578,13 @@ vercel
 - **Tailwind CSS 4** - Utility-first styling
 - **shadcn/ui** - Accessible component library
 
-### Backend
-- **Mastra** - AI agent framework
-- **Convex** - Reactive database + vector search
-- **n8n** - Workflow automation
+### AI Layer
+- **Mastra** - Production agents, tools, workflows, decision layer
+- **Vercel AI SDK** - Simple chat, streaming, quick prototypes
+
+### Database
+- **Convex** - Realtime sync, built-in vector search, type-safe
+- **Postgres** - SQL standard, Pinecone-kompatibel, maximale Kontrolle
 
 ### AI Models
 
@@ -518,9 +593,18 @@ vercel
 | **Anthropic** (Primary) | Claude Opus 4.5, Sonnet 4, Haiku | General purpose, complex reasoning |
 | **Azure OpenAI** (Optional) | GPT-4o, GPT-4 Turbo | GDPR-konform, EU Data Residency |
 
-**AI Frameworks:**
-- **Mastra** - Complex agents, tools, workflows
-- **Vercel AI SDK** - Simple chat, streaming (optional)
+### Optional Components
+
+| Component | Purpose |
+|-----------|---------|
+| **Portkey** | LLM Gateway, Cost Tracking, Multi-Model, Guardrails |
+| **n8n** | Workflow automation, integrations, scheduling |
+| **Python Workers** | PDF parsing, OCR, statistics, ML compute |
+| **LangChain** | Complex chains, LangGraph, advanced agents |
+| **Pinecone** | Vector database (with Postgres) |
+| **Greptile** | AI code review, bug detection |
+| **MinIO** | S3-compatible file storage |
+| **Terraform** | Infrastructure as Code |
 
 ### Deployment
 - **Docker** - Containerization

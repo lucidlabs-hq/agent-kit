@@ -310,6 +310,67 @@ cd ../projects/[project-name] && claude
 
 ---
 
+## Step 5: Session beenden und Handoff
+
+**WICHTIG:** Nach erfolgreicher Projekt-Erstellung MUSS die Claude Session beendet werden.
+
+### 5.1 Handoff-Nachricht ausgeben
+
+Führe diesen Bash-Befehl aus, um eine Nachricht zu hinterlassen die NACH dem Claude-Exit sichtbar bleibt:
+
+```bash
+echo ""
+echo "───────────────────────────────────────────────────────────────────────────────"
+echo ""
+echo "  PROJEKT ERSTELLT: [project-name]"
+echo ""
+echo "  Nächster Schritt:"
+echo ""
+echo "    cd ../projects/[project-name] && claude"
+echo ""
+echo "  Dann in der neuen Session:"
+echo ""
+echo "    /prime"
+echo ""
+echo "───────────────────────────────────────────────────────────────────────────────"
+echo ""
+```
+
+### 5.2 Session beenden
+
+Nach der Ausgabe der Handoff-Nachricht:
+
+1. Sage dem User: "Projekt erstellt. Beende jetzt diese Session."
+2. Verwende `/exit` oder beende die Session
+3. Der User landet im Terminal mit der Handoff-Nachricht
+
+### Ablauf
+
+```
+Projekt erstellt
+     ↓
+Handoff-Nachricht (echo)
+     ↓
+Session beenden (/exit)
+     ↓
+User sieht im Terminal:
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                 │
+│  PROJEKT ERSTELLT: customer-portal                                              │
+│                                                                                 │
+│  Nächster Schritt:                                                              │
+│                                                                                 │
+│    cd ../projects/customer-portal && claude                                     │
+│                                                                                 │
+│  Dann in der neuen Session:                                                     │
+│                                                                                 │
+│    /prime                                                                       │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Key Principle
 
 **Claude arbeitet immer im aktuellen Verzeichnis.** Eine Session die in `lucidlabs-agent-kit/` gestartet wurde, arbeitet am Template. Für Projekt-Arbeit muss eine neue Session im Projekt-Verzeichnis gestartet werden.

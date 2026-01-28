@@ -41,7 +41,7 @@ pnpm run dev
 # (Stop with Ctrl+C after confirming it works)
 ```
 
-### 3. Execute Tasks in Order
+### 3. Execute Tasks with TDD
 
 For EACH task in "Step by Step Tasks":
 
@@ -49,15 +49,46 @@ For EACH task in "Step by Step Tasks":
 - Identify the file and action required
 - Read existing related files if modifying
 
-#### b. Implement the task
+#### b. Apply TDD (Test-Driven Development)
+
+**For functions, utilities, schemas, API routes:**
+
+1. **RED - Write Test First**
+   ```bash
+   # Create test file: lib/__tests__/[name].test.ts
+   # Write tests that define expected behavior
+   # Run: pnpm run test
+   # Tests MUST fail (function doesn't exist yet)
+   ```
+
+2. **GREEN - Write Minimal Code**
+   ```bash
+   # Implement the function
+   # Run: pnpm run test
+   # Tests MUST pass
+   ```
+
+3. **REFACTOR - Improve Code**
+   ```bash
+   # Improve code quality
+   # Run: pnpm run test
+   # Tests MUST still pass
+   ```
+
+**Skip TDD for:**
+- UI styling (use `/visual-verify`)
+- Trivial getters/setters
+- Framework boilerplate
+
+#### c. Implement the task
 - Follow the detailed specifications exactly
 - Maintain consistency with existing code patterns
 - Include proper TypeScript types
 - Add structured logging where appropriate
 - Follow shadcn/ui patterns for UI components
 
-#### c. Verify as you go
-- After each file change, run the task's VALIDATE command
+#### d. Verify as you go
+- After each file change, run `pnpm run test`
 - Ensure TypeScript has no errors
 - Ensure imports are correct
 

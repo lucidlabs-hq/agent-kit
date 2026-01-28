@@ -250,6 +250,54 @@ Agent Kit follows the **AIDD methodology** - AI-driven, Decision-driven developm
 
 See `.claude/reference/aidd-methodology.md` for complete documentation.
 
+### PIV: Plan-Implement-Validate
+
+Agent Kit folgt dem **PIV-Workflow** - ein striktes Phasenmodell für AI-gestützte Entwicklung.
+
+#### Warum PIV?
+
+| Problem ohne PIV | Lösung mit PIV |
+|------------------|----------------|
+| AI implementiert ohne Plan | Erst planen, dann umsetzen |
+| Scope-Creep durch AI | Strenge Phasentrennung |
+| Qualitätsprobleme | Validation als Pflicht-Gate |
+| Unklare Erfolgskriterien | Tests definieren Erfolg |
+
+#### Die Phasen
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│    PLAN     │────▶│  IMPLEMENT  │────▶│  VALIDATE   │
+│ /plan-feature│     │  /execute   │     │  /validate  │
+└─────────────┘     └─────────────┘     └─────────────┘
+       │                                       │
+       └───────────── ITERATE ◀────────────────┘
+```
+
+| Phase | Erlaubt | Verboten |
+|-------|---------|----------|
+| **Plan** | Recherche, Analyse, Tests definieren | Code schreiben |
+| **Implement** | Tests schreiben, dann Code | Scope ändern |
+| **Validate** | Prüfen, Tests ausführen | Bugs fixen (→ neuer Zyklus) |
+
+**Regel:** Nie zwei Phasen gleichzeitig. Jeder Fix startet einen neuen PIV-Zyklus.
+
+#### TDD im PIV-Loop
+
+Wir nutzen **Test-Driven Development (TDD)** innerhalb des PIV-Loops:
+
+1. **Plan-Phase:** Testfälle als Acceptance Criteria definieren
+2. **Implement-Phase:** Test zuerst schreiben → Code implementieren → Test muss grün sein
+3. **Validate-Phase:** `pnpm run test` - alle Tests müssen bestehen
+
+```
+RED ──────▶ GREEN ──────▶ REFACTOR
+Test fails   Code passes   Improve code
+             the test      tests stay green
+```
+
+Siehe [WORKFLOW.md](./WORKFLOW.md#the-piv-loop) für Details.
+
 ### Discovery-Driven Development Status Flow
 
 ```

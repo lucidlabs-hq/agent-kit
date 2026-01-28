@@ -576,6 +576,209 @@ Agent Kit uses the **PIV (Plan-Implement-Validate)** workflow:
 
 ---
 
+## TDD: Test-Driven Development
+
+Agent Kit nutzt **Test-Driven Development (TDD)** als integralen Teil des PIV-Loops. Tests sind das **Erfolgskriterium** für AI-generierte Implementierungen.
+
+### Warum TDD mit AI?
+
+| Ohne TDD | Mit TDD |
+|----------|---------|
+| AI rät Verhalten | Tests definieren erwartetes Verhalten |
+| Nachträgliche Tests validieren Bugs | Tests fangen Bugs vor Merge |
+| Unklare Erfolgskriterien | Grüne Tests = Erfolg |
+| Viele Korrektur-Iterationen | AI hat klares Ziel |
+
+### TDD im PIV-Loop
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     PIV + TDD WORKFLOW                           │
+│                                                                  │
+│   PLAN                 IMPLEMENT               VALIDATE          │
+│   ────                 ─────────               ────────          │
+│   1. Feature specs     3. Write TEST first     5. pnpm run test  │
+│   2. Test cases        4. Write CODE until     6. All green?     │
+│      definieren           test passes                            │
+│                                                                  │
+│   "Was soll es tun?"   "Test → Code → Refactor" "Alles grün?"   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Der Red-Green-Refactor Zyklus
+
+```
+┌─────────┐        ┌─────────┐        ┌───────────┐
+│   RED   │───────▶│  GREEN  │───────▶│ REFACTOR  │
+│         │        │         │        │           │
+│ Write   │        │ Write   │        │ Improve   │
+│ failing │        │ minimal │        │ code,     │
+│ test    │        │ code to │        │ tests     │
+│         │        │ pass    │        │ stay green│
+└─────────┘        └─────────┘        └───────────┘
+     │                                      │
+     └──────────── Next Test ◀──────────────┘
+```
+
+### Wann TDD anwenden?
+
+| Situation | TDD? | Grund |
+|-----------|------|-------|
+| Neue Utility-Funktion | ✅ Ja | Klare Input/Output, testbar |
+| Zod Schema | ✅ Ja | Validation Edge Cases |
+| API Route | ✅ Ja | Request/Response Contract |
+| Mastra Tool | ✅ Ja | Input/Output definiert |
+| Business Logic | ✅ Ja | Kritisch, muss korrekt sein |
+| UI Component Logik | ✅ Ja | Interaktionen, States |
+| UI Styling | ❌ Nein | Visuell prüfen mit `/visual-verify` |
+| Triviale Getter/Setter | ❌ Nein | Kein Mehrwert |
+| Framework Boilerplate | ❌ Nein | Next.js kümmert sich |
+
+### TDD Workflow Schritt für Schritt
+
+#### In der Plan-Phase
+
+Definiere Testfälle als Teil der Acceptance Criteria:
+
+```markdown
+## Feature: calculateTotal
+
+### Test Cases
+- [ ] Returns 0 for empty cart
+- [ ] Sums item prices correctly
+- [ ] Applies discount percentage
+- [ ] Throws error for negative prices
+- [ ] Handles floating point precision
+```
+
+#### In der Implement-Phase
+
+**Schritt 1: Test schreiben (RED)**
+
+```typescript
+// lib/__tests__/calculate-total.test.ts
+import { describe, it, expect } from 'vitest';
+import { calculateTotal } from '../calculate-total';
+
+describe('calculateTotal', () => {
+  it('returns 0 for empty cart', () => {
+    expect(calculateTotal([])).toBe(0);
+  });
+
+  it('sums item prices correctly', () => {
+    const items = [{ price: 10 }, { price: 20 }];
+    expect(calculateTotal(items)).toBe(30);
+  });
+
+  it('applies discount percentage', () => {
+    const items = [{ price: 100 }];
+    expect(calculateTotal(items, 10)).toBe(90); // 10% off
+  });
+});
+```
+
+**Schritt 2: Test ausführen - muss fehlschlagen**
+
+```bash
+pnpm run test
+# ❌ FAIL - calculateTotal is not defined
+```
+
+**Schritt 3: Minimalen Code schreiben (GREEN)**
+
+```typescript
+// lib/calculate-total.ts
+interface CartItem {
+  price: number;
+}
+
+export function calculateTotal(
+  items: CartItem[],
+  discountPercent: number = 0
+): number {
+  const subtotal = items.reduce((sum, item) => sum + item.price, 0);
+  return subtotal * (1 - discountPercent / 100);
+}
+```
+
+**Schritt 4: Test ausführen - muss bestehen**
+
+```bash
+pnpm run test
+# ✅ PASS - All tests passing
+```
+
+**Schritt 5: Refactoren (optional)**
+
+Verbessere den Code, Tests müssen weiterhin grün bleiben.
+
+#### In der Validate-Phase
+
+```bash
+# Alle Tests ausführen
+pnpm run test
+
+# Mit Coverage
+pnpm run test -- --coverage
+
+# Spezifische Datei
+pnpm run test calculate-total
+```
+
+### Test-Datei-Struktur
+
+```
+frontend/
+├── lib/
+│   ├── __tests__/           # Unit Tests
+│   │   ├── utils.test.ts
+│   │   ├── schemas.test.ts
+│   │   └── calculate-total.test.ts
+│   ├── utils.ts
+│   ├── schemas.ts
+│   └── calculate-total.ts
+├── components/
+│   └── [Feature]/
+│       ├── __tests__/       # Component Tests
+│       │   └── feature.test.tsx
+│       └── index.tsx
+└── app/
+    └── api/
+        └── [route]/
+            ├── __tests__/   # API Tests
+            │   └── route.test.ts
+            └── route.ts
+```
+
+### Best Practices
+
+1. **Test-First, immer** - Schreibe den Test bevor du den Code schreibst
+2. **Ein Test, ein Verhalten** - Jeder Test prüft genau eine Sache
+3. **Aussagekräftige Namen** - `it('returns 0 for empty cart')` nicht `it('test1')`
+4. **Edge Cases zuerst** - Leere Arrays, null, undefined, Grenzwerte
+5. **Unabhängige Tests** - Tests dürfen nicht voneinander abhängen
+6. **Schnelle Tests** - Unit Tests sollten < 100ms dauern
+
+### AI-Prompt für TDD
+
+Wenn du AI bittest, eine Funktion zu implementieren:
+
+```
+Implementiere die Funktion calculateTotal mit TDD:
+
+1. Schreibe zuerst die Tests in lib/__tests__/calculate-total.test.ts
+2. Führe die Tests aus (sie müssen fehlschlagen)
+3. Implementiere die Funktion in lib/calculate-total.ts
+4. Führe die Tests erneut aus (sie müssen bestehen)
+
+Test Cases:
+- Returns 0 for empty cart
+- Sums item prices correctly
+- Applies discount percentage
+```
+
+---
+
 ## Task System & Custom Agents (v2.1.16+)
 
 Claude Code v2.1.16+ introduces native Task tracking and custom Subagents that integrate with the PIV workflow.

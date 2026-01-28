@@ -1,6 +1,7 @@
 # Agent Kit - Präsentation für NotebookLM
 
-> Dieses Dokument ist als Slide-Struktur für NotebookLM aufgebaut. Jeder Abschnitt entspricht einer Folie oder Foliengruppe.
+> **Zweck:** Diese Slides sind für die Präsentation an die Geschäftsführung gedacht.
+> Sie zeigen unseren Tech Stack, warum wir diese Tools gewählt haben, und welche Bereiche wir damit abdecken.
 
 ---
 
@@ -180,6 +181,118 @@ KEIN ZEITDRUCK          BEWUSSTE             VERBINDLICHE
 ```
 
 **Detaillierte Stack-Referenz:** Siehe Anhang A
+
+---
+
+## SLIDE 10b: Stack-Abdeckung - Alle Bereiche
+
+**Unser Stack deckt alle relevanten AI-Kategorien ab:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    LUCID LABS STACK - VOLLSTÄNDIGE ABDECKUNG                     │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ┌─────────────────────────────┐    ┌─────────────────────────────────────────┐ │
+│  │   FOUNDATION MODELS         │    │   AUTOMATION / AGENTEN                  │ │
+│  │   ════════════════════      │    │   ═══════════════════════               │ │
+│  │                             │    │                                         │ │
+│  │   ✅ Anthropic (Claude)     │    │   ✅ Mastra (Primary)                   │ │
+│  │   ✅ Azure OpenAI (GDPR)    │    │   ✅ n8n (Workflows)                    │ │
+│  │   ✅ Mistral (EU, schnell)  │    │   ⚪ LangChain (Complex)                │ │
+│  │   ⚪ OpenAI (via Portkey)   │    │                                         │ │
+│  │   ⚪ Gemini (via Portkey)   │    │   → 100% abgedeckt                      │ │
+│  │                             │    │                                         │ │
+│  │   → 100% abgedeckt          │    └─────────────────────────────────────────┘ │
+│  └─────────────────────────────┘                                                │
+│                                                                                  │
+│  ┌─────────────────────────────┐    ┌─────────────────────────────────────────┐ │
+│  │   ORCHESTRATION             │    │   EVALUATION & OBSERVABILITY           │ │
+│  │   ═════════════             │    │   ═══════════════════════════          │ │
+│  │                             │    │                                         │ │
+│  │   ✅ Vercel AI SDK          │    │   ✅ Promptfoo (Evaluation)             │ │
+│  │   ✅ Portkey (Gateway)      │    │   ⚪ Helicone (Observability)           │ │
+│  │   ✅ Mastra (Agents)        │    │   ⚪ Portkey (Cost Tracking)            │ │
+│  │                             │    │                                         │ │
+│  │   → 100% abgedeckt          │    │   → 80% abgedeckt (ausreichend)         │ │
+│  └─────────────────────────────┘    └─────────────────────────────────────────┘ │
+│                                                                                  │
+│  ┌─────────────────────────────┐    ┌─────────────────────────────────────────┐ │
+│  │   CLOUD / HOSTING           │    │   DATA / STORAGE                        │ │
+│  │   ══════════════            │    │   ══════════════                        │ │
+│  │                             │    │                                         │ │
+│  │   ✅ Elestio (Self-hosted)  │    │   ✅ Convex (Realtime + Vector)         │ │
+│  │   ✅ Azure (GDPR)           │    │   ⚪ Postgres (SQL)                     │ │
+│  │   ⚪ Vercel (Prototypen)    │    │   ⚪ Pinecone (Enterprise RAG)          │ │
+│  │                             │    │   ⚪ MinIO (S3 Storage)                 │ │
+│  │   → 100% abgedeckt          │    │                                         │ │
+│  │                             │    │   → 100% abgedeckt                      │ │
+│  └─────────────────────────────┘    └─────────────────────────────────────────┘ │
+│                                                                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│  LEGENDE:  ✅ = Im Stack (Standard/Gesetzt)   ⚪ = Optional (nach Bedarf)       │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## SLIDE 10c: Warum dieser Stack?
+
+**Unsere Entscheidungskriterien:**
+
+| Kriterium | Wie wir entscheiden |
+|-----------|---------------------|
+| **Geschwindigkeit** | Schnell starten, schnell iterieren |
+| **GDPR** | EU-Hosting möglich, deutsche Daten in Deutschland |
+| **Kosten** | Self-hosted wo sinnvoll, managed wo nötig |
+| **Flexibilität** | Modular - Komponenten austauschbar |
+| **Wartung** | Wenige Tools, die viel können |
+
+**Was wir NICHT machen:**
+- ❌ Zu viele Tools gleichzeitig einführen
+- ❌ Komplexität ohne klaren Nutzen
+- ❌ Vendor Lock-in
+
+---
+
+## SLIDE 10d: Foundation Models im Detail
+
+**Unsere LLM-Strategie:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    LLM PROVIDER STRATEGIE                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  PRIMARY (Standard)                                              │
+│  ─────────────────                                               │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │  ANTHROPIC CLAUDE                                           ││
+│  │  • Opus 4.5   → Komplexe Reasoning, höchste Qualität        ││
+│  │  • Sonnet 4   → Code, Balance aus Speed/Qualität            ││
+│  │  • Haiku      → Schnelle Tasks, hohe Volumen                ││
+│  └─────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  GDPR / EU (wenn nötig)                                          │
+│  ─────────────────────                                           │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │  AZURE OPENAI          │  MISTRAL                           ││
+│  │  • GPT-4o, GPT-4 Turbo │  • Mistral Large, Medium           ││
+│  │  • EU Data Residency   │  • EU Company (Paris)              ││
+│  │  • Für Banken/Vers.    │  • Schnell & günstig               ││
+│  └─────────────────────────────────────────────────────────────┘│
+│                                                                  │
+│  VIA PORTKEY (optional, alle anderen)                            │
+│  ────────────────────────────────────                            │
+│  OpenAI │ Google Gemini │ Llama │ 1,600+ weitere Models         │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Warum Mistral?**
+- EU-Unternehmen (Paris) → GDPR-freundlich
+- Sehr gute Performance bei niedrigeren Kosten
+- Wir haben es bereits erfolgreich eingesetzt
 
 ---
 
@@ -379,7 +492,40 @@ Patterns fließen zwischen Projekten!
 
 ---
 
-## SLIDE 23: Nächste Schritte
+## SLIDE 23: Was bewusst NICHT im Stack ist (noch)
+
+**Bewertung: Zusätzliche Tools**
+
+| Tool | Kategorie | Status | Begründung |
+|------|-----------|--------|------------|
+| **Langfuse** | Observability | 🔵 Future | Portkey + Promptfoo reichen erstmal |
+| **Temporal** | Workflows | ❌ Nicht nötig | n8n + Mastra decken das ab |
+| **LlamaIndex** | Orchestration | ❌ Nicht nötig | Mastra + Convex Vector reichen |
+| **OpenTelemetry** | Tracing | 🔵 Future | Erst bei komplexem Debugging |
+| **Autogen** | RPA | ❌ Nicht nötig | Mastra ist unser Agent Framework |
+
+**Prinzip:** Weniger Tools = schnellere Bewegung
+
+---
+
+## SLIDE 24: Future Plan (Nach Bedarf)
+
+**Diese Tools evaluieren wir, wenn der Bedarf entsteht:**
+
+| Tool | Wann relevant? | Trigger |
+|------|----------------|---------|
+| **Langfuse** | Tracing & Prompt-Mgmt | Multi-Step Agent Debugging nötig |
+| **OpenTelemetry** | Full-Stack Tracing | Performance-Probleme in Prod |
+| **Helicone** | LLM Observability | Portkey reicht nicht mehr |
+
+**Nicht auf der Roadmap:**
+- Temporal (n8n reicht)
+- LlamaIndex (Mastra reicht)
+- Autogen (Mastra ist besser)
+
+---
+
+## SLIDE 25: Nächste Schritte
 
 1. Agent Kit Repository klonen
 2. `/init-project` ausführen
@@ -570,6 +716,16 @@ Patterns fließen zwischen Projekten!
 | **Productive.io** | Customer Value | [productive.io](https://productive.io) |
 | **Tailwind CSS 4** | Styling | [tailwindcss.com](https://tailwindcss.com) |
 | **shadcn/ui** | UI Components | [ui.shadcn.com](https://ui.shadcn.com) |
+
+### LLM PROVIDER (Alle verfügbar)
+
+| Provider | Rolle | Wann? | Website |
+|----------|-------|-------|---------|
+| **Anthropic Claude** | Primary LLM | Standard, höchste Qualität | [anthropic.com](https://anthropic.com) |
+| **Mistral** | EU LLM | GDPR-freundlich, schnell, günstig | [mistral.ai](https://mistral.ai) |
+| **Azure OpenAI** | GDPR LLM | Banken, Versicherungen, EU Data | [azure.microsoft.com](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |
+| **OpenAI** | Via Portkey | Wenn Claude nicht passt | [openai.com](https://openai.com) |
+| **Google Gemini** | Via Portkey | Spezialfälle | [ai.google.dev](https://ai.google.dev) |
 
 ### WÄHLBAR (Eins pro Kategorie)
 

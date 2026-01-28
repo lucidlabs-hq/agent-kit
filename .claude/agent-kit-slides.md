@@ -922,6 +922,191 @@ Import in n8n → Credentials setzen → Fertig!
 
 ---
 
+## SLIDE 19b: Self-Learning Loop mit PromptFoo
+
+**Agenten, die sich selbst verbessern:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         SELF-LEARNING LOOP                                       │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│                    ┌─────────────────────────────────┐                          │
+│                    │                                 │                          │
+│                    │      PRODUCTION AGENT           │                          │
+│                    │                                 │                          │
+│                    │   "Klassifiziere dieses Ticket" │                          │
+│                    │                                 │                          │
+│                    └───────────────┬─────────────────┘                          │
+│                                    │                                             │
+│                                    │ Real-World Usage                            │
+│                                    ▼                                             │
+│    ┌───────────────────────────────────────────────────────────────────────┐    │
+│    │                                                                        │    │
+│    │                         PROMPTFOO                                      │    │
+│    │                    (Evaluation Engine)                                 │    │
+│    │                                                                        │    │
+│    │   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐              │    │
+│    │   │   TEST       │   │   MEASURE    │   │   COMPARE    │              │    │
+│    │   │              │   │              │   │              │              │    │
+│    │   │ • Test Cases │   │ • Accuracy   │   │ • v1 vs v2   │              │    │
+│    │   │ • Edge Cases │   │ • Latency    │   │ • Models     │              │    │
+│    │   │ • Red Team   │   │ • Cost       │   │ • Prompts    │              │    │
+│    │   └──────────────┘   └──────────────┘   └──────────────┘              │    │
+│    │                                                                        │    │
+│    └───────────────────────────────┬────────────────────────────────────────┘    │
+│                                    │                                             │
+│                                    │ Insights & Improvements                     │
+│                                    ▼                                             │
+│                    ┌─────────────────────────────────┐                          │
+│                    │                                 │                          │
+│                    │      IMPROVED AGENT v2          │                          │
+│                    │                                 │                          │
+│                    │   Bessere Prompts               │                          │
+│                    │   Optimierte Parameter          │                          │
+│                    │   Weniger Fehler                │                          │
+│                    │                                 │                          │
+│                    └─────────────────────────────────┘                          │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## SLIDE 19c: PromptFoo - Wie wir es einsetzen
+
+**Drei Einsatzbereiche:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                      PROMPTFOO EINSATZBEREICHE                                   │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  1. PROMPT EVALUATION                                                            │
+│  ════════════════════                                                            │
+│                                                                                  │
+│  "Funktioniert mein Prompt?"                                                    │
+│                                                                                  │
+│  ┌────────────────────────────────────────────────────────────────────────────┐ │
+│  │  Test Cases           │  Expected Output      │  Result                    │ │
+│  │  ─────────────────────┼───────────────────────┼─────────────────────────── │ │
+│  │  "Rechnung bezahlen"  │  billing              │  ✓ billing                 │ │
+│  │  "Passwort vergessen" │  account              │  ✓ account                 │ │
+│  │  "API funktioniert n" │  technical            │  ✗ billing (FEHLER!)       │ │
+│  └────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                  │
+│  → Fehler gefunden! Prompt anpassen, erneut testen.                             │
+│                                                                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  2. MODEL COMPARISON                                                             │
+│  ═══════════════════                                                             │
+│                                                                                  │
+│  "Welches Modell ist besser für diese Aufgabe?"                                 │
+│                                                                                  │
+│  ┌────────────────────────────────────────────────────────────────────────────┐ │
+│  │  Model              │  Accuracy  │  Latency    │  Cost/1000   │  Winner   │ │
+│  │  ───────────────────┼────────────┼─────────────┼──────────────┼────────── │ │
+│  │  Claude Sonnet      │  94%       │  1.2s       │  $0.15       │           │ │
+│  │  Claude Haiku       │  89%       │  0.4s       │  $0.02       │  ← BEST   │ │
+│  │  GPT-4o             │  91%       │  0.8s       │  $0.10       │           │ │
+│  └────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                  │
+│  → Haiku reicht für Klassifikation! 85% Kostenersparnis.                        │
+│                                                                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  3. RED TEAMING (Security)                                                       │
+│  ═════════════════════════                                                       │
+│                                                                                  │
+│  "Kann der Agent manipuliert werden?"                                           │
+│                                                                                  │
+│  ┌────────────────────────────────────────────────────────────────────────────┐ │
+│  │  Attack Vector           │  Agent Response        │  Status                │ │
+│  │  ────────────────────────┼────────────────────────┼─────────────────────── │ │
+│  │  Prompt Injection        │  Blocked               │  ✓ SAFE                │ │
+│  │  Jailbreak Attempt       │  Refused               │  ✓ SAFE                │ │
+│  │  Data Exfiltration       │  Leaked user email!    │  ✗ VULNERABLE          │ │
+│  └────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                  │
+│  → Sicherheitslücke gefunden! Guardrails hinzufügen.                            │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## SLIDE 19d: PromptFoo - Der Workflow
+
+**Integration in den Entwicklungsprozess:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                     PROMPTFOO WORKFLOW                                           │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  DEVELOPMENT                          PRODUCTION                                 │
+│  ───────────                          ──────────                                 │
+│                                                                                  │
+│  ┌─────────────────┐                  ┌─────────────────┐                       │
+│  │ 1. Agent bauen  │                  │ 4. Agent live   │                       │
+│  │                 │                  │                 │                       │
+│  │ Mastra Agent    │                  │ Real Users      │                       │
+│  │ + Prompts       │                  │ Real Data       │                       │
+│  └────────┬────────┘                  └────────┬────────┘                       │
+│           │                                    │                                 │
+│           ▼                                    │                                 │
+│  ┌─────────────────┐                          │                                 │
+│  │ 2. Tests        │                          │                                 │
+│  │    definieren   │                          │                                 │
+│  │                 │                          │                                 │
+│  │ promptfooconfig │                          │                                 │
+│  │ + test cases    │                          │                                 │
+│  └────────┬────────┘                          │                                 │
+│           │                                    │                                 │
+│           ▼                                    │                                 │
+│  ┌─────────────────┐                          │                                 │
+│  │ 3. Evaluation   │◀─────────────────────────┘                                 │
+│  │    ausführen    │     Feedback Loop                                          │
+│  │                 │     (neue Edge Cases)                                       │
+│  │ npx promptfoo   │                                                            │
+│  │ eval            │                                                            │
+│  └────────┬────────┘                                                            │
+│           │                                                                      │
+│           ▼                                                                      │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │                                                                          │    │
+│  │   ERGEBNIS: 94% Accuracy │ 0.8s Latency │ $0.05/Request │ 0 Vulnerab.  │    │
+│  │                                                                          │    │
+│  │   ✓ Alle Tests bestanden → Deploy!                                      │    │
+│  │   ✗ Tests fehlgeschlagen → Prompt verbessern, zurück zu Schritt 1       │    │
+│  │                                                                          │    │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
+│                                                                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  COMMANDS:                                                                       │
+│                                                                                  │
+│  /promptfoo init      Projekt initialisieren (erstellt promptfooconfig.yaml)   │
+│  /promptfoo eval      Tests ausführen                                           │
+│  /promptfoo compare   Modelle/Prompts vergleichen                               │
+│  /promptfoo redteam   Security-Scan durchführen                                 │
+│                                                                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  CI/CD INTEGRATION:                                                              │
+│                                                                                  │
+│  • GitHub Action: Tests laufen bei jedem PR                                     │
+│  • Blocking: PR wird nur gemerged wenn Tests grün                               │
+│  • Monthly: Automatischer Red-Team Scan                                         │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Kernidee:** Agenten sind nie "fertig" - sie werden kontinuierlich besser.
+
+---
+
 ## SLIDE 20: Vorteile
 
 **Für alle Stakeholder:**

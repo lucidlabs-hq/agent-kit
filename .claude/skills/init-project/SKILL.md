@@ -196,6 +196,34 @@ Falls User "Anpassen" wählt, zeige die manuelle Konfiguration:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+### Deployment Target
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  DEPLOYMENT TARGET                                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Wo soll das Projekt deployt werden?                             │
+│                                                                  │
+│  [1] LUCIDLABS-HQ (Recommended)                                  │
+│      → [project].lucidlabs.app                                   │
+│      → Shared Elestio, schneller Setup                           │
+│      → GitHub Actions deployt automatisch                        │
+│                                                                  │
+│  [2] DEDICATED                                                   │
+│      → Eigener Elestio Server via Terraform                      │
+│      → Für Kunden mit Compliance/Isolation                       │
+│      → Höhere Kosten, volle Kontrolle                            │
+│                                                                  │
+│  [3] LOCAL-ONLY                                                  │
+│      → Kein Cloud-Deployment (Prototyp/Demo)                     │
+│      → Später konfigurierbar                                     │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Siehe:** `.claude/reference/deployment-targets.md` für Details.
+
 ### Entscheidungshilfe (Quick Reference)
 
 | Was brauchst du? | AI Layer | Database | LLM | Optional |
@@ -355,6 +383,148 @@ Erstelle `.claude/PRD.md` im neuen Projekt:
 - Der User sieht beim nächsten `/prime` sofort den Kontext
 - `/create-prd` hat einen Ausgangspunkt
 - Nichts aus dem Init-Gespräch geht verloren
+
+---
+
+## Step 2d: DEPLOYMENT-CONFIG.md erstellen (PFLICHT!)
+
+**KRITISCH:** Nach der Deployment-Target Auswahl MUSS die Config erstellt werden.
+
+Erstelle `.claude/DEPLOYMENT-CONFIG.md` im neuen Projekt:
+
+### Bei LUCIDLABS-HQ:
+
+```yaml
+# .claude/DEPLOYMENT-CONFIG.md
+
+deployment:
+  target: LUCIDLABS-HQ
+  configured: [HEUTE]
+
+hq:
+  subdomain: [project-name]
+  domain: lucidlabs.app
+  url: https://[project-name].lucidlabs.app
+
+convex:
+  project: [project-name]
+  team: lucid-labs
+
+github_actions:
+  workflow: deploy-hq.yml
+  secrets_required:
+    - LUCIDLABS_HQ_HOST (org secret)
+    - LUCIDLABS_HQ_SSH_KEY (org secret)
+    - CONVEX_DEPLOY_KEY (repo secret)
+    - ANTHROPIC_API_KEY (repo secret)
+```
+
+### Bei DEDICATED:
+
+```yaml
+# .claude/DEPLOYMENT-CONFIG.md
+
+deployment:
+  target: DEDICATED
+  configured: [HEUTE]
+
+dedicated:
+  terraform_env: [customer-name]
+  domain: app.[customer].com
+  server_name: [customer]-prod
+
+convex:
+  project: [project-name]
+  team: lucid-labs
+
+github_actions:
+  workflow: deploy-dedicated.yml
+  secrets_required:
+    - DEDICATED_HOST (repo secret)
+    - DEDICATED_SSH_KEY (repo secret)
+    - CONVEX_DEPLOY_KEY (repo secret)
+    - ANTHROPIC_API_KEY (repo secret)
+```
+
+### Bei LOCAL-ONLY:
+
+```yaml
+# .claude/DEPLOYMENT-CONFIG.md
+
+deployment:
+  target: LOCAL-ONLY
+  configured: [HEUTE]
+  note: "Kein Cloud-Deployment konfiguriert. Später änderbar."
+
+convex:
+  project: null
+  note: "Lokale Entwicklung mit npx convex dev"
+```
+
+---
+
+## Step 2e: GitHub Actions Workflow erstellen (wenn nicht LOCAL-ONLY)
+
+Erstelle `.github/workflows/deploy.yml` basierend auf Deployment Target.
+
+### Für LUCIDLABS-HQ:
+
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy to Lucid Labs HQ
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: cd frontend && pnpm install
+      - run: cd frontend && pnpm run lint
+      - run: cd frontend && pnpm run type-check
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Lucid Labs HQ
+        env:
+          HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
+          HQ_SSH_KEY: ${{ secrets.LUCIDLABS_HQ_SSH_KEY }}
+          PROJECT_NAME: ${{ github.event.repository.name }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$HQ_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $HQ_HOST >> ~/.ssh/known_hosts
+
+          rsync -avz --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.next' \
+            ./ root@$HQ_HOST:/opt/lucidlabs/projects/$PROJECT_NAME/
+
+          ssh root@$HQ_HOST << EOF
+            cd /opt/lucidlabs/projects/$PROJECT_NAME
+            docker compose -p $PROJECT_NAME up -d --build
+          EOF
+```
+
+**Dokumentation:** `.claude/reference/deployment-targets.md`
 
 ---
 

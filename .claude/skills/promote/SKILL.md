@@ -54,10 +54,75 @@ lucidlabs/
 
 ## Promotion Flow
 
-1. **DETECT** - Script finds new/modified files in promotable paths
-2. **SELECT** - You choose which changes to promote
-3. **REVIEW** - See diffs and confirm
-4. **PROMOTE** - Files copied, branch created, PR optional
+**WICHTIG: Promotions gehen IMMER über Pull Requests, NIE direkt auf main!**
+
+**WICHTIG: VOR jeder Promotion MUSS ein Abgleich mit Upstream erfolgen!**
+
+```
+1. FETCH     → Upstream holen: git fetch origin (PFLICHT!)
+2. DIFF      → Änderungen prüfen: Hat sich upstream was geändert? (PFLICHT!)
+3. SYNC      → Falls Änderungen: Erst downstream syncen
+4. DETECT    → Promotable Änderungen finden
+5. SELECT    → Auswählen was promoted wird
+6. BRANCH    → Feature Branch im Upstream erstellen
+7. COPY      → Dateien übertragen
+8. PR        → Pull Request erstellen (PFLICHT!)
+9. REVIEW    → Code Review durch Team
+10. MERGE    → Nach Approval mergen
+```
+
+### Step 1-3: Upstream-Abgleich (PFLICHT vor jeder Promotion!)
+
+```bash
+# Im Upstream Repo
+cd /path/to/lucidlabs-agent-kit
+
+# 1. FETCH - Aktuellen Stand holen
+git fetch origin
+
+# 2. DIFF - Prüfen ob Änderungen seit letztem Sync
+git log HEAD..origin/main --oneline
+
+# Wenn Ausgabe NICHT leer:
+# → Es gibt neue Commits im Upstream!
+# → ERST syncen, DANN promoten
+```
+
+**Wenn Upstream-Änderungen existieren:**
+
+```
+╔════════════════════════════════════════════════════════════════╗
+║  ⚠️  UPSTREAM HAT NEUE ÄNDERUNGEN                              ║
+╠════════════════════════════════════════════════════════════════╣
+║                                                                 ║
+║  Seit deinem letzten Sync wurden 3 Commits gemacht:            ║
+║                                                                 ║
+║  abc1234 feat: add new skill                                   ║
+║  def5678 docs: update readme                                   ║
+║  ghi9012 fix: typo in reference                                ║
+║                                                                 ║
+║  AKTION ERFORDERLICH:                                          ║
+║  1. Führe /sync aus um Downstream zu aktualisieren             ║
+║  2. Teste ob alles funktioniert                                ║
+║  3. Dann erst /promote ausführen                               ║
+║                                                                 ║
+╚════════════════════════════════════════════════════════════════╝
+```
+
+**Wenn keine Änderungen:**
+
+```
+✓ Upstream ist aktuell. Promotion kann fortfahren.
+```
+
+### Warum kein direkter Push?
+
+| Direkter Push | Pull Request |
+|---------------|--------------|
+| ❌ Keine Review | ✅ Code wird geprüft |
+| ❌ Konflikte möglich | ✅ Konflikte vor Merge sichtbar |
+| ❌ Fehler gehen direkt live | ✅ CI/CD Tests laufen |
+| ❌ Keine Dokumentation | ✅ PR dokumentiert Änderung |
 
 ## Domain Keyword Warning
 
@@ -86,7 +151,7 @@ These indicate the code may not be generic enough for the template.
 ℹ Downstream: ~/coding/repos/lucidlabs/projects/customer-portal
 ℹ Upstream:   ~/coding/repos/lucidlabs/lucidlabs-agent-kit
 
-▶ Scanning for promotable changes...
+▶ Step 1: Scanning for promotable changes...
 
 Promotable changes found:
 
@@ -96,14 +161,66 @@ Promotable changes found:
 
 Enter numbers to promote (e.g., 1,2 or 'all'): 1,2
 
-▶ Creating branch: promote/20260127-from-customer-portal
-✔ Copied: .claude/skills/code-review/SKILL.md
-✔ Copied: .claude/reference/api-patterns.md
-✔ Committed 2 files
+▶ Step 2: Checking upstream main status...
 
-Create GitHub PR? [Y/n] y
-✔ PR created: https://github.com/lucidlabs-hq/agent-kit/pull/42
+  Last commit: abc1234 "docs: update readme" (2 hours ago)
+  Your local:  In sync ✓
+
+▶ Step 3: Creating promotion branch...
+
+  Branch: promote/20260128-code-review-api-patterns
+
+▶ Step 4: Copying files to upstream...
+
+  ✔ Copied: .claude/skills/code-review/SKILL.md
+  ✔ Copied: .claude/reference/api-patterns.md
+
+▶ Step 5: Creating Pull Request...
+
+  ✔ Branch pushed: promote/20260128-code-review-api-patterns
+  ✔ PR created: https://github.com/lucidlabs-hq/agent-kit/pull/42
+
+╔════════════════════════════════════════════════════════════════╗
+║  ✓ PROMOTION COMPLETE                                          ║
+║                                                                 ║
+║  PR: https://github.com/lucidlabs-hq/agent-kit/pull/42         ║
+║                                                                 ║
+║  Next steps:                                                    ║
+║  1. Review the PR                                               ║
+║  2. Request team review if needed                               ║
+║  3. Merge after approval                                        ║
+╚════════════════════════════════════════════════════════════════╝
 ```
+
+## Manuelle Promotion (Schritt für Schritt)
+
+Falls das Script nicht verfügbar ist:
+
+```bash
+# 1. Upstream aktualisieren
+cd /path/to/lucidlabs-agent-kit
+git fetch origin
+git checkout main
+git pull origin main
+
+# 2. Promotion Branch erstellen
+git checkout -b promote/$(date +%Y%m%d)-pattern-name
+
+# 3. Dateien kopieren
+cp /path/to/downstream/.claude/skills/my-skill/SKILL.md .claude/skills/my-skill/
+
+# 4. Committen
+git add .
+git commit -m "feat: promote [pattern] from [project]"
+
+# 5. Branch pushen
+git push -u origin promote/$(date +%Y%m%d)-pattern-name
+
+# 6. PR erstellen (PFLICHT!)
+gh pr create --title "Promote: [Pattern Name]" --body "..."
+```
+
+**⚠️ NIEMALS `git push origin main` im Upstream!**
 
 ## When to Promote
 
@@ -133,3 +250,62 @@ Do NOT promote:
 3. **Test in isolation** - Verify patterns work without project context
 4. **Document changes** - Add comments explaining the pattern
 5. **Small promotions** - Promote one pattern at a time for easier review
+6. **IMMER PRs verwenden** - Nie direkt auf main pushen
+
+---
+
+## Schutz vor direktem Push
+
+### GitHub Branch Protection (empfohlen)
+
+Aktiviere Branch Protection für `main` im Agent Kit:
+
+```bash
+# Via GitHub CLI
+gh repo edit lucidlabs-hq/agent-kit --enable-branch-protection
+
+# Oder via GitHub UI:
+# Settings → Branches → Add rule → main
+# ✓ Require pull request before merging
+# ✓ Require approvals (1)
+```
+
+### Claude Verhalten
+
+**Bei Promotions prüft Claude automatisch:**
+
+1. Ist dies das Upstream-Repo?
+2. Bin ich auf `main`?
+3. → Wenn ja: Branch erstellen, NICHT direkt pushen
+
+```
+IF upstream AND on_main THEN
+  → create branch
+  → commit to branch
+  → create PR
+  → NEVER push to main directly
+```
+
+### Fehlermeldung bei direktem Push-Versuch
+
+Wenn jemand versucht direkt zu pushen (und Branch Protection aktiv):
+
+```
+remote: error: GH006: Protected branch update failed
+remote: At least 1 approving review is required
+```
+
+---
+
+## Checkliste vor Promotion
+
+```markdown
+## Pre-Promotion Checklist
+
+- [ ] Ist das Pattern wirklich generisch?
+- [ ] Keine Domain-Keywords (invoice, customer, etc.)?
+- [ ] Upstream main ist aktuell (`git fetch && git status`)?
+- [ ] Feature Branch erstellt (nicht auf main)?
+- [ ] PR wird erstellt (nicht direkter Push)?
+- [ ] PR Description erklärt das Pattern?
+```

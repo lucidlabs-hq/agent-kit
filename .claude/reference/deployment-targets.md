@@ -76,16 +76,40 @@ Bei jedem Projekt muss entschieden werden, wo es deployt wird:
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Server-Spezifikation
+### Server-Spezifikation & Kosten
 
-| Komponente | Empfehlung |
-|------------|------------|
-| Provider | Elestio |
-| vCPU | 4-8 (skalierbar) |
-| RAM | 16-32 GB |
-| Storage | 100 GB SSD |
-| OS | Ubuntu 22.04 |
-| Region | EU (Frankfurt) |
+**Empfohlene Konfiguration:**
+
+| Komponente | Empfehlung | Notizen |
+|------------|------------|---------|
+| **Provider** | Hetzner (via Elestio) | Bestes Preis/Leistung in EU |
+| **CPU Arch** | **Ampere Altra (ARM64)** | Besser als Intel/AMD für unseren Stack |
+| **Region** | Falkenstein (fsn1) | EU/GDPR compliant |
+
+**Server-Größen & Kosten:**
+
+| Größe | Specs | Kosten/Monat | Use Case |
+|-------|-------|--------------|----------|
+| **SMALL-1C-2G** | 1 vCPU, 2GB RAM, 20GB | ~€15 | Monitoring, kleine Tools |
+| **MEDIUM-2C-4G** | 2 vCPU, 4GB RAM, 40GB | ~€29 | 3-5 Projekte (Start) |
+| **LARGE-4C-8G** | 4 vCPU, 8GB RAM, 80GB | ~€59 | 5-10 Projekte |
+| **XLARGE-8C-16G** | 8 vCPU, 16GB RAM, 160GB | ~€99 | 10+ Projekte, High Traffic |
+
+**Empfehlung für LUCIDLABS-HQ:**
+- Start: **MEDIUM-2C-4G-CAX** (Ampere) ~€29/mo
+- Bei >5 Projekten: Upgrade auf LARGE
+- Monitoring Satellite: SMALL-1C-2G ~€15/mo
+
+**Warum Ampere Altra?**
+- 20-30% günstiger bei gleicher Leistung
+- Energieeffizienter
+- Node.js/Next.js/Caddy/n8n alle ARM64-kompatibel
+- Zukunftssicher (ARM ist der Trend)
+
+**Wann Intel/AMD wählen?**
+- Legacy Software ohne ARM-Support
+- Spezielle x86-only Dependencies
+- Kunde verlangt es explizit
 
 ### Verzeichnisstruktur auf Server
 

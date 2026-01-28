@@ -10,10 +10,11 @@ Clean up and sync state before ending a development session.
 
 ## Why Session End?
 
-1. **Linear Visibility** - Team knows current status
-2. **Clean State** - Next session can resume easily
-3. **Compliance Check** - Catch issues before they accumulate
-4. **Reporting** - Enable progress tracking and analytics
+1. **Time Tracking** - Session-Dauer wird gespeichert
+2. **Linear Visibility** - Team knows current status
+3. **Clean State** - Next session can resume easily
+4. **Compliance Check** - Catch issues before they accumulate
+5. **Reporting** - Enable progress tracking and analytics
 
 ---
 
@@ -23,6 +24,7 @@ Clean up and sync state before ending a development session.
 ┌─────────────────────────────────────────────────────────────────┐
 │                     SESSION END CHECKLIST                        │
 ├─────────────────────────────────────────────────────────────────┤
+│  [ ] 0. Time Tracking - Session gespeichert                     │
 │  [ ] 1. Git Status Clean                                        │
 │  [ ] 2. Linear Ticket Updated                                   │
 │  [ ] 3. Work Summary Added                                      │
@@ -34,6 +36,82 @@ Clean up and sync state before ending a development session.
 ---
 
 ## Process
+
+### 0. Time Tracking - Session speichern (ZUERST!)
+
+**Session-Dauer berechnen und speichern:**
+
+```bash
+TIME_DIR="$HOME/.claude-time"
+PROJECT_NAME=$(basename "$(pwd)")
+SESSION_FILE="$TIME_DIR/sessions/$PROJECT_NAME.json"
+CURRENT_SESSION="$TIME_DIR/current-session.txt"
+
+# Lies Session-Startzeit
+if [ -f "$CURRENT_SESSION" ]; then
+  START_TIME=$(grep "Session gestartet:" "$CURRENT_SESSION" | head -1 | cut -d: -f2-)
+fi
+```
+
+**Session-Zusammenfassung anzeigen:**
+
+```
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                                                               ║
+║   🕐 SESSION BEENDET                                       [project-name]    ║
+║                                                                               ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║   Diese Session:                                                              ║
+║   ──────────────                                                              ║
+║                                                                               ║
+║   Start:      14:00 Uhr                                                       ║
+║   Ende:       17:30 Uhr                                                       ║
+║   Dauer:      3h 30min                                                        ║
+║                                                                               ║
+║   Linear:     CUS-42 (Delivery)                                               ║
+║   Commits:    3 (abc1234, def5678, ghi9012)                                  ║
+║                                                                               ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║   Projekt-Gesamt:   28h 00min (+3h 30min heute)                              ║
+║                                                                               ║
+║   ████████████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 48%       ║
+║   Budget: 100h │ Verbraucht: 48h │ Verbleibend: 52h                          ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+```
+
+**Session-Daten speichern:**
+
+Die Session wird in `~/.claude-time/sessions/[project].json` gespeichert:
+
+```json
+{
+  "sessions": [
+    {
+      "date": "2026-01-28",
+      "start": "14:00",
+      "end": "17:30",
+      "duration_minutes": 210,
+      "linear_issue": "CUS-42",
+      "commits": ["abc1234", "def5678", "ghi9012"],
+      "synced_to_productive": false
+    }
+  ]
+}
+```
+
+**Frage nach Productive.io Sync:**
+
+```
+Soll ich die Session zu Productive.io synchronisieren? [Y/n]
+
+→ JA: /time-sync wird ausgeführt
+→ NEIN: Session bleibt als "pending" markiert
+```
+
+---
 
 ### 1. Check Git Status
 

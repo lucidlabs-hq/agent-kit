@@ -2,7 +2,7 @@
 name: prime
 description: Load project context and show current status. Use at the start of a session or when context is needed.
 disable-model-invocation: true
-allowed-tools: Read, Bash, Glob
+allowed-tools: Read, Bash, Glob, Write
 ---
 
 # Prime: Load Project Context
@@ -13,7 +13,120 @@ Build comprehensive understanding of the codebase AND show current project statu
 
 ## Process
 
-### 1. Check Linear for Active Work (FIRST!)
+### 0. Session Dashboard anzeigen (ZUERST!)
+
+**WICHTIG:** Zeige bei jedem Session-Start das Time Tracking Dashboard!
+
+#### 0.1 Session-Daten laden
+
+```bash
+# Prüfe ob Time Tracking Verzeichnis existiert
+TIME_DIR="$HOME/.claude-time"
+PROJECT_NAME=$(basename "$(pwd)")
+
+# Erstelle Verzeichnis falls nicht vorhanden
+mkdir -p "$TIME_DIR/sessions"
+
+# Lade Session-Daten für dieses Projekt
+SESSION_FILE="$TIME_DIR/sessions/$PROJECT_NAME.json"
+```
+
+#### 0.2 Dashboard anzeigen
+
+Zeige das Dashboard im folgenden Format:
+
+```
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                                                               ║
+║   🕐 SESSION DASHBOARD                                     [project-name]    ║
+║                                                                               ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║   AKTIVITÄT (letzte 8 Wochen)                                                 ║
+║   ───────────────────────────────────────────────────────────────────────     ║
+║                                                                               ║
+║        Dez    Jan    Jan    Jan    Jan                                        ║
+║        W49    W01    W02    W03    W04                                        ║
+║                                                                               ║
+║   Mo   ·  ·   ░  ·   ▒  ·   ░  ▒   █  ░                                       ║
+║   Di   ·  ·   ·  ░   ▒  ░   ▒  ░   ░  █                                       ║
+║   Mi   ·  ·   ░  ░   █  ▒   ░  █   ▒  ░                                       ║
+║   Do   ·  ·   ·  ▒   ░  █   ▒  ░   █  ▒                                       ║
+║   Fr   ·  ·   ░  ░   ▒  ░   █  ▒   ░  ░                                       ║
+║                                                                               ║
+║   Legende:  ·  keine   ░  < 1h   ▒  1-3h   █  > 3h                           ║
+║                                                                               ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║   STATISTIK                                                                   ║
+║   ─────────                                                                   ║
+║                                                                               ║
+║   Gesamtzeit:        24h 30min      │  Sessions:           12                 ║
+║   Diese Woche:       5h 15min       │  Aktive Tage:        8/30               ║
+║   Heute:             0h 00min       │  Ø pro Session:      2h 02min           ║
+║                                                                               ║
+║   Längste Session:   4h 30min       │  Peak Hour:          10:00-11:00        ║
+║   Aktueller Streak:  3 Tage         │  Längster Streak:    7 Tage             ║
+║                                                                               ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║   LETZTE SESSIONS                                                             ║
+║   ───────────────                                                             ║
+║                                                                               ║
+║   27.01.2026   Mo   14:00 - 17:30   3h 30min   CUS-42   ✓ synced              ║
+║   26.01.2026   So   10:15 - 12:45   2h 30min   CUS-41   ✓ synced              ║
+║   24.01.2026   Fr   09:00 - 11:00   2h 00min   CUS-40   ✓ synced              ║
+║   23.01.2026   Do   13:30 - 15:15   1h 45min   CUS-39   ○ pending             ║
+║                                                                               ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║   KONTINGENT (via Productive.io)                      [Acme Corp]             ║
+║   ──────────────────────────────                                              ║
+║                                                                               ║
+║   Budget:     100h    Verbraucht:    45h    Verbleibend:    55h              ║
+║                                                                               ║
+║   ████████████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  45%    ║
+║                                                                               ║
+║   Prognose: Bei aktuellem Tempo noch ~4 Wochen bis Budget aufgebraucht       ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+```
+
+#### 0.3 Neue Session starten
+
+Nach dem Dashboard automatisch neue Session registrieren:
+
+```bash
+# Session-Start Zeit speichern
+echo "Session gestartet: $(date -Iseconds)" >> "$TIME_DIR/current-session.txt"
+echo "Project: $PROJECT_NAME" >> "$TIME_DIR/current-session.txt"
+```
+
+**Falls keine Daten vorhanden (erstes Mal):**
+
+```
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                                                               ║
+║   🕐 SESSION DASHBOARD                                     [project-name]    ║
+║                                                                               ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║   Willkommen! Dies ist deine erste Session in diesem Projekt.                ║
+║                                                                               ║
+║   Das Time Tracking wird automatisch gestartet.                              ║
+║   Am Ende der Session: /session-end                                          ║
+║                                                                               ║
+║   ────────────────────────────────────────────────────────────────────────   ║
+║                                                                               ║
+║   Für Kontingent-Tracking:                                                   ║
+║   Konfiguriere ~/.claude-time/project-mapping.json                           ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+### 1. Check Linear for Active Work
 
 Query Linear for issues assigned to you or recently updated:
 

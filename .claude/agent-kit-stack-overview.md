@@ -1,395 +1,9 @@
-# Agent Kit - Präsentation für NotebookLM
+# Lucid Labs AI Stack 2026
 
-> Dieses Dokument ist als Slide-Struktur für NotebookLM aufgebaut. Jeder Abschnitt entspricht einer Folie oder Foliengruppe.
-
----
-
-## SLIDE 1: Titelfolie
-
-**Agent Kit**
-*AI-Gestützte Softwareentwicklung*
-
-Lucid Labs GmbH
-Januar 2026
+> **Vollständige Referenz für den Tech Stack**
+> Was ist Standard? Was ist optional? Wann nutze ich was?
 
 ---
-
-## SLIDE 2: Das Problem
-
-**AI-Projekte scheitern oft an:**
-
-1. **Fehlender Struktur**
-   - Jedes Projekt startet bei Null
-   - Wissen geht verloren
-
-2. **AI-Qualitätsrisiken**
-   - AI generiert Code ohne Kontext
-   - Keine systematische Validierung
-
-3. **Ineffiziente Workflows**
-   - Vermischung von Planung und Umsetzung
-   - Scope Creep durch AI
-
-4. **Fehlende Transparenz**
-   - Fortschritt schwer messbar
-   - Kunden verstehen AI-Arbeit nicht
-
----
-
-## SLIDE 3: Die Lösung
-
-**Agent Kit - Drei Säulen:**
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                                                          │
-│  METHODOLOGY     TECHNOLOGY      GOVERNANCE              │
-│                                                          │
-│  Wie wir         Womit wir       Wie wir                 │
-│  arbeiten        bauen           liefern                 │
-│                                                          │
-│  • AIDD          • Mastra        • Linear                │
-│  • PIV Loop      • Convex        • Productive.io         │
-│  • TDD           • Next.js       • Code Review           │
-│                                                          │
-└─────────────────────────────────────────────────────────┘
-```
-
----
-
-## SLIDE 4: Philosophie - Kernprinzipien
-
-**5 Grundprinzipien:**
-
-1. **Explizite Phasen** - Keine Vermischung von Arbeitsschritten
-2. **AI als Decision Layer** - AI entscheidet, rechnet nicht
-3. **Tests definieren Erfolg** - Tests vor Code
-4. **Exploration vs Delivery** - Trennung von Forschung und Umsetzung
-5. **Wert vor Tasks** - Fokus auf Liefereinheiten
-
----
-
-## SLIDE 5: AIDD Methodik - Übersicht
-
-**Adaptive AI Discovery & Delivery**
-
-```
-EXPLORATION      →      DECISION      →      DELIVERY
-─────────────           ─────────            ────────
-
-Recherche               Proceed?             Implementieren
-Prototypen              Pivot?               Testen
-Validieren              Drop?                Deployen
-Lernen                  Iterate?
-
-KEIN ZEITDRUCK          BEWUSSTE             VERBINDLICHE
-                        ENTSCHEIDUNG         TIMELINE
-```
-
----
-
-## SLIDE 6: AIDD - Entscheidungspunkte
-
-**Am Decision-Punkt gibt es 4 Optionen:**
-
-| Option | Bedeutung | Nächster Schritt |
-|--------|-----------|------------------|
-| **Proceed** | Weiter zur Delivery | Implementierung starten |
-| **Pivot** | Richtung ändern | Zurück zu Exploration |
-| **Drop** | Arbeit stoppen | Valides Ende |
-| **Iterate** | Weiterforschen | In Exploration bleiben |
-
-**Wichtig:** "Drop" ist ein gültiges Ergebnis, kein Scheitern.
-
----
-
-## SLIDE 7: PIV Loop - Der operative Zyklus
-
-**Plan - Implement - Validate**
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│             │     │             │     │             │
-│    PLAN     │────▶│  IMPLEMENT  │────▶│  VALIDATE   │
-│             │     │             │     │             │
-└─────────────┘     └─────────────┘     └─────────────┘
-       │                                       │
-       └───────────── ITERATE ◀────────────────┘
-```
-
-**Regel:** Nie zwei Phasen gleichzeitig. Jeder Fix = neuer Zyklus.
-
----
-
-## SLIDE 8: PIV Loop - Phasenregeln
-
-**Was ist in jeder Phase erlaubt?**
-
-| Phase | ✅ Erlaubt | ❌ Verboten |
-|-------|-----------|------------|
-| **PLAN** | Recherche, Analyse, Tests definieren | Code schreiben |
-| **IMPLEMENT** | Tests schreiben, Code schreiben | Scope ändern |
-| **VALIDATE** | Prüfen, Tests ausführen | Bugs fixen |
-
-**Bei Bugs:** Neuen PIV-Zyklus starten, nicht innerhalb Validate fixen.
-
----
-
-## SLIDE 9: TDD - Test Driven Development
-
-**Warum TDD mit AI?**
-
-```
-┌─────────┐        ┌─────────┐        ┌───────────┐
-│   RED   │───────▶│  GREEN  │───────▶│ REFACTOR  │
-│         │        │         │        │           │
-│  Test   │        │  Code   │        │  Improve  │
-│  fails  │        │  passes │        │  Code     │
-└─────────┘        └─────────┘        └───────────┘
-```
-
-| Ohne TDD | Mit TDD |
-|----------|---------|
-| AI rät Verhalten | Tests definieren Verhalten |
-| Nachträgliche Tests | Tests fangen Bugs vorher |
-| Unklare Erfolge | Grüne Tests = Erfolg |
-
----
-
-## SLIDE 10: Tech Stack - Kurzübersicht
-
-**Das Gesamtsystem auf einen Blick:**
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     LUCID LABS AI STACK 2026                     │
-├─────────────────────────────────────────────────────────────────┤
-│  STANDARD (immer dabei)                                          │
-│  ───────────────────────                                         │
-│  Next.js 15 │ Claude │ Linear │ Productive.io                   │
-├─────────────────────────────────────────────────────────────────┤
-│  WÄHLBAR (eins pro Kategorie)                                    │
-│  ─────────────────────────────                                   │
-│  AI:   Mastra (Production)  │  Vercel AI SDK (Prototype)        │
-│  DB:   Convex (Realtime)    │  Postgres (SQL)                   │
-├─────────────────────────────────────────────────────────────────┤
-│  OPTIONAL (nach Bedarf)                                          │
-│  ───────────────────────                                         │
-│  Portkey │ n8n │ Python │ LangChain │ Pinecone │ Terraform      │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**Detaillierte Stack-Referenz:** Siehe Anhang A
-
----
-
-## SLIDE 11: Wer macht was?
-
-**Verantwortlichkeiten im Stack:**
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  MASTRA            PYTHON WORKERS      CONVEX/POSTGRES          │
-│  ──────            ──────────────      ────────────────         │
-│  Decision Layer    Computation         State & Sync             │
-│                                                                  │
-│  • Entscheidet     • Rechnet           • Speichert              │
-│  • Erklärt         • Parst             • Synchronisiert         │
-│  • Formuliert      • Aggregiert        • Realtime               │
-├─────────────────────────────────────────────────────────────────┤
-│  N8N               PORTKEY             LINEAR/PRODUCTIVE        │
-│  ───               ───────             ─────────────────        │
-│  Automation        Gateway             Governance               │
-│                                                                  │
-│  • Webhooks        • Routing           • Tracking               │
-│  • Scheduling      • Cost Tracking     • Reporting              │
-│  • Integrations    • Fallbacks         • Budgets                │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## SLIDE 12: Projektkomplexität
-
-**Welcher Stack für welches Projekt?**
-
-| Stufe | Projekt-Typ | Stack |
-|-------|-------------|-------|
-| **1** | MVP/Prototype | Vercel AI SDK + Convex |
-| **2** | Standard Agent | Mastra + Convex |
-| **3** | Enterprise | + Portkey + n8n |
-| **4** | GDPR/Compliance | + Azure OpenAI + Postgres |
-
----
-
-## SLIDE 13: Governance - Linear
-
-**Execution Tracking:**
-
-```
-Backlog → Exploration → Decision → Delivery → Review → Done
-                           ↓
-                        Dropped
-```
-
-| Status | Deadline? | Zweck |
-|--------|-----------|-------|
-| Exploration | Nein | Zeitboxed Recherche |
-| Decision | Nein | Steuerungspunkt |
-| **Delivery** | **Ja** | Implementierung |
-| Review | Nein | QA und Validation |
-
----
-
-## SLIDE 14: Governance - Productive.io
-
-**Customer Value Tracking:**
-
-| Konzept | Bedeutung |
-|---------|-----------|
-| **Company** | Kundenorganisation |
-| **Project** | Kundenengagement |
-| **Delivery Unit** | Was wir liefern |
-| **Budget** | Verfügbare Zeit/Geld |
-
-**Beziehung:**
-- Productive.io = WAS wir für Wert liefern
-- Linear = WIE wir die Arbeit ausführen
-
----
-
-## SLIDE 15: Delivery Units
-
-**Was wir an Kunden liefern:**
-
-| Typ | Beschreibung | Beispiel |
-|-----|--------------|----------|
-| **Agent** | Produktiver KI-Agent | Ticket-Klassifikation |
-| **Workflow** | Automatisierte Abläufe | Onboarding-Prozess |
-| **GPT/Prompt** | Prompt oder Set | Meeting Summarizer |
-| **Integration** | Externe Anbindung | CRM-Connector |
-| **Workshop** | Einzelner Workshop | AI Strategy |
-| **Advisory** | Analyse, Beratung | Readiness Assessment |
-
----
-
-## SLIDE 16: Der Entwicklungsworkflow
-
-**Session-basiertes Arbeiten:**
-
-```
-SESSION START
-/prime
-→ Check Linear für aktive Issues
-→ "Woran möchtest du arbeiten?"
-
-            ↓
-
-DEVELOPMENT
-/plan-feature → /execute → /validate → /commit
-
-            ↓
-
-SESSION END
-/session-end
-→ Linear Ticket aktualisieren
-→ Git Compliance prüfen
-```
-
----
-
-## SLIDE 17: Upstream/Downstream Modell
-
-**Template-basierte Entwicklung:**
-
-```
-┌──────────────────────────────────────────────────────────┐
-│                                                           │
-│  UPSTREAM                         DOWNSTREAM              │
-│  (Agent Kit)                      (Projekte)              │
-│                                                           │
-│  • Generic Skills     ──SYNC──▶   • Domain Logic          │
-│  • Boilerplate                    • Project PRD           │
-│  • Best Practices    ◀─PROMOTE─   • Custom Agents         │
-│                                                           │
-└──────────────────────────────────────────────────────────┘
-```
-
-Patterns fließen zwischen Projekten!
-
----
-
-## SLIDE 18: Projekt-Setup
-
-**In unter 10 Minuten:**
-
-```bash
-./scripts/create-agent-project.sh --interactive
-```
-
-**Intelligente Empfehlung:**
-1. Beschreibe dein Projekt
-2. Erhalte Stack-Empfehlung basierend auf Komplexität
-3. Bestätige oder passe an
-4. Projekt wird erstellt
-
----
-
-## SLIDE 19: Qualitätssicherung
-
-**Validierung auf 4 Ebenen:**
-
-| Ebene | Tool | Prüft |
-|-------|------|-------|
-| **Automatisch** | TypeScript, ESLint | Syntax, Types |
-| **TDD** | Vitest | Funktionalität |
-| **AI Review** | Greptile | Bugs, Security |
-| **Human Review** | GitHub PR | Architektur |
-
----
-
-## SLIDE 20: Vorteile
-
-**Für alle Stakeholder:**
-
-| Rolle | Vorteil |
-|-------|---------|
-| **Entwickler** | Schneller Start, klare Patterns |
-| **Tech Lead** | Konsistenz, Governance |
-| **PM** | Transparenz, Phasen |
-| **Kunde** | Qualität, Nachvollziehbarkeit |
-
----
-
-## SLIDE 21: Zusammenfassung
-
-**Agent Kit ist:**
-
-1. **Ein Framework** - Plattform für viele Projekte
-2. **Methodengetrieben** - AIDD, PIV, TDD
-3. **Modular** - Wähle passende Komponenten
-4. **Wiederverwendbar** - Promote/Sync
-5. **Transparent** - Linear + Productive.io
-
----
-
-## SLIDE 22: In einem Satz
-
-> **Agent Kit ermöglicht es Teams, AI-gestützte Anwendungen schnell, konsistent und qualitativ hochwertig zu entwickeln - mit klaren Methoden, bewährten Technologien und transparenter Governance.**
-
----
-
-## SLIDE 23: Nächste Schritte
-
-1. Agent Kit Repository klonen
-2. `/init-project` ausführen
-3. Projektbeschreibung eingeben
-4. Stack-Empfehlung erhalten
-5. Loslegen!
-
----
-
-# ANHANG A: Vollständige Stack-Referenz
 
 ## Das Gesamtbild
 
@@ -470,6 +84,11 @@ Patterns fließen zwischen Projekten!
 │  │   │   • Chat-UI                 │    │   • Tools & Workflows       │      │  │
 │  │   │   • Keine Tools nötig       │    │   • Multi-Step Agents       │      │  │
 │  │   │   • POC in 1-2 Tagen        │    │   • Structured Outputs      │      │  │
+│  │   │                             │    │                             │      │  │
+│  │   │   Features:                 │    │   Features:                 │      │  │
+│  │   │   • Streaming out-of-box    │    │   • Decision Layer          │      │  │
+│  │   │   • useChat Hook            │    │   • Type-safe Tools         │      │  │
+│  │   │   • Minimal Setup           │    │   • Workflow Engine         │      │  │
 │  │   └─────────────────────────────┘    └─────────────────────────────┘      │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │                                       │                                          │
@@ -485,6 +104,13 @@ Patterns fließen zwischen Projekten!
 │  │   │   • Realtime UI nötig       │    │   • SQL-Anforderungen       │      │  │
 │  │   │   • Schnelles Setup         │    │   • Pinecone gewünscht      │      │  │
 │  │   │   • Built-in Vectors ok     │    │   • Max. Kontrolle          │      │  │
+│  │   │   • Type-safety wichtig     │    │   • Bestehende DB           │      │  │
+│  │   │                             │    │                             │      │  │
+│  │   │   Features:                 │    │   Features:                 │      │  │
+│  │   │   • Automatic Sync          │    │   • SQL Standard            │      │  │
+│  │   │   • Built-in Vector Search  │    │   • Prisma/Drizzle ORM      │      │  │
+│  │   │   • File Storage            │    │   • pgvector oder Pinecone  │      │  │
+│  │   │   • Type-safe Functions     │    │   • Migrations              │      │  │
 │  │   └─────────────────────────────┘    └─────────────────────────────┘      │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                  │
@@ -503,6 +129,9 @@ Patterns fließen zwischen Projekten!
 │  │   │   • Multi-Model Routing (1,600+ Models)                              │ │  │
 │  │   │   • Guardrails & Rate Limiting                                       │ │  │
 │  │   │   • Fallback & Load Balancing                                        │ │  │
+│  │   │                                                                      │ │  │
+│  │   │   → Ohne Portkey: Direkt zu Anthropic/OpenAI API                     │ │  │
+│  │   │   → Self-hosted möglich (Open Source)                                │ │  │
 │  │   └─────────────────────────────────────────────────────────────────────┘ │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                  │
@@ -518,6 +147,11 @@ Patterns fließen zwischen Projekten!
 │  │   │   • Data Aggregation & Statistik                                     │ │  │
 │  │   │   • ML Models (nicht LLM)                                            │ │  │
 │  │   │   • Heavy Computation                                                │ │  │
+│  │   │                                                                      │ │  │
+│  │   │   Prinzip:                                                           │ │  │
+│  │   │   → Mastra bekommt NUR strukturiertes JSON                           │ │  │
+│  │   │   → Nie Rohdaten (PDFs, CSVs) an LLM                                 │ │  │
+│  │   │   → Deterministische Logik hier, nicht im Agent                      │ │  │
 │  │   └─────────────────────────────────────────────────────────────────────┘ │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                  │
@@ -531,7 +165,11 @@ Patterns fließen zwischen Projekten!
 │  │   │   • Externe Integrationen (CRM, ERP, etc.)                           │ │  │
 │  │   │   • Scheduled Jobs & Cron                                            │ │  │
 │  │   │   • Webhook Handling                                                 │ │  │
+│  │   │   • Komplexe Automatisierungen                                       │ │  │
 │  │   │   • Email/Slack Notifications                                        │ │  │
+│  │   │                                                                      │ │  │
+│  │   │   → Self-hosted via Elestio                                          │ │  │
+│  │   │   → Visual Workflow Builder                                          │ │  │
 │  │   └─────────────────────────────────────────────────────────────────────┘ │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                  │
@@ -540,7 +178,12 @@ Patterns fließen zwischen Projekten!
 │  │                                                                            │  │
 │  │   ┌─────────────────────────┐    ┌─────────────────────────────┐          │  │
 │  │   │       LANGCHAIN         │    │        PINECONE             │          │  │
-│  │   │   Komplexe Chains       │    │   Enterprise Vector DB      │          │  │
+│  │   │                         │    │                             │          │  │
+│  │   │   Wann:                 │    │   Wann:                     │          │  │
+│  │   │   • Mastra reicht nicht │    │   • Convex Vector zu klein  │          │  │
+│  │   │   • Complex Chains      │    │   • Enterprise RAG          │          │  │
+│  │   │   • LangGraph Stateful  │    │   • Millionen Vektoren      │          │  │
+│  │   │                         │    │   • Mit Postgres             │          │  │
 │  │   └─────────────────────────┘    └─────────────────────────────┘          │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                  │
@@ -549,7 +192,11 @@ Patterns fließen zwischen Projekten!
 │  │                                                                            │  │
 │  │   ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐           │  │
 │  │   │    TERRAFORM    │  │      MINIO      │  │    GREPTILE     │           │  │
-│  │   │   IaC, Deploy   │  │   S3 Storage    │  │   Code Review   │           │  │
+│  │   │                 │  │                 │  │                 │           │  │
+│  │   │   Wann:         │  │   Wann:         │  │   Wann:         │           │  │
+│  │   │   • Production  │  │   • File Storage│  │   • Auto PR     │           │  │
+│  │   │   • Multi-Env   │  │   • S3-compat   │  │     Reviews     │           │  │
+│  │   │   • IaC nötig   │  │   • Self-hosted │  │   • Bug Detect  │           │  │
 │  │   └─────────────────┘  └─────────────────┘  └─────────────────┘           │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                  │
@@ -558,98 +205,242 @@ Patterns fließen zwischen Projekten!
 
 ---
 
-## ANHANG B: Komponenten-Referenz mit Links
+## Komponenten-Referenz
 
 ### STANDARD (Immer dabei)
 
-| Komponente | Rolle | Website |
-|------------|-------|---------|
-| **Next.js 15** | Frontend Framework | [nextjs.org](https://nextjs.org) |
-| **Claude** | LLM Provider | [anthropic.com](https://www.anthropic.com) |
-| **Linear** | Issue Tracking | [linear.app](https://linear.app) |
-| **Productive.io** | Customer Value | [productive.io](https://productive.io) |
-| **Tailwind CSS 4** | Styling | [tailwindcss.com](https://tailwindcss.com) |
-| **shadcn/ui** | UI Components | [ui.shadcn.com](https://ui.shadcn.com) |
+| Komponente | Rolle | Was es macht |
+|------------|-------|--------------|
+| **Next.js 15** | Frontend | Web App mit App Router, Server Components, shadcn/ui |
+| **Claude** | LLM | Primärer AI Provider - Opus (Qualität), Sonnet (Code), Haiku (Speed) |
+| **Linear** | Execution | Issue Tracking, AIDD Status Flow, Sprint Planning |
+| **Productive.io** | Customer Value | Delivery Units, Budgets, Kunden-Reporting |
 
 ### WÄHLBAR (Eins pro Kategorie)
 
-| Komponente | Rolle | Wann? | Website |
-|------------|-------|-------|---------|
-| **Mastra** | AI Agents (Production) | Tools, Workflows, Multi-Step | [mastra.ai](https://mastra.ai) |
-| **Vercel AI SDK** | AI (Prototype) | Chat, Streaming, Quick POC | [sdk.vercel.ai](https://sdk.vercel.ai) |
-| **Convex** | Database (Realtime) | Realtime, Built-in Vector | [convex.dev](https://convex.dev) |
-| **Postgres** | Database (SQL) | SQL, Pinecone, Max Control | [postgresql.org](https://postgresql.org) |
+| Kategorie | Option A | Option B | Default |
+|-----------|----------|----------|---------|
+| **AI Layer** | Vercel AI SDK (Prototyp) | Mastra (Production) | Mastra |
+| **Database** | Convex (Realtime) | Postgres (SQL) | Convex |
 
 ### OPTIONAL (Nach Bedarf)
 
-| Komponente | Rolle | Wann? | Website |
-|------------|-------|-------|---------|
-| **Portkey** | LLM Gateway | Cost Tracking, Multi-Model | [portkey.ai](https://portkey.ai) |
-| **n8n** | Automation | Externe Integrationen | [n8n.io](https://n8n.io) |
-| **Python Workers** | Compute | PDF, OCR, ML | - |
-| **LangChain** | Advanced AI | Complex Chains | [langchain.com](https://langchain.com) |
-| **Pinecone** | Vector DB | Enterprise RAG | [pinecone.io](https://pinecone.io) |
-| **Terraform** | IaC | Production Deploy | [terraform.io](https://terraform.io) |
-| **MinIO** | Storage | S3-compatible | [min.io](https://min.io) |
-| **Greptile** | Code Review | Auto PR Reviews | [greptile.com](https://greptile.com) |
-| **Azure OpenAI** | GDPR LLM | EU Data Residency | [azure.microsoft.com](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |
-| **Elestio** | Hosting | Self-hosted | [elest.io](https://elest.io) |
+| Komponente | Wann hinzufügen? | Typischer Use Case |
+|------------|------------------|---------------------|
+| **Portkey** | Cost Tracking, Multi-Model | Enterprise, Multi-Tenant |
+| **Python Workers** | PDF/OCR, ML, Statistik | Dokumentenverarbeitung |
+| **n8n** | Externe Integrationen | CRM/ERP Anbindung |
+| **LangChain** | Mastra reicht nicht | Komplexe Agent-Chains |
+| **Pinecone** | Große Vector DBs | Enterprise RAG |
+| **Terraform** | Production Deploy | Multi-Environment |
+| **MinIO** | File Storage | S3-kompatibel, Self-hosted |
+| **Greptile** | Auto Code Review | CI/CD Pipeline |
+| **Azure OpenAI** | GDPR-Compliance | EU Data Residency |
 
 ---
 
-## ANHANG C: Entscheidungsmatrix
+## Verantwortlichkeiten: Wer macht was?
 
-### Nach Projektkomplexität
-
-| Stufe | Projekttyp | Stack | Zeitrahmen |
-|-------|------------|-------|------------|
-| **1** | MVP/Prototype | Vercel AI SDK + Convex | 1-2 Wochen |
-| **2** | Standard Agent | Mastra + Convex | 2-8 Wochen |
-| **3** | Enterprise | + Portkey + n8n | 8+ Wochen |
-| **4** | GDPR/Compliance | + Azure OpenAI + Postgres | 8+ Wochen |
-
-### Quick Decision Trees
-
-**AI Layer:**
 ```
-Brauche ich Tools/Workflows? → JA → Mastra
-                             → NEIN → Vercel AI SDK
-```
-
-**Database:**
-```
-Brauche ich Realtime? → JA → Convex
-                      → NEIN → Brauche ich SQL? → JA → Postgres
-                                                → NEIN → Convex
-```
-
-**Optional Components:**
-```
-Cost Tracking?        → Portkey
-Externe APIs?         → n8n
-PDF/ML Processing?    → Python Workers
-EU Data Residency?    → Azure OpenAI
-Enterprise Vectors?   → Pinecone
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    WER MACHT WAS IM STACK?                                       │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│   MASTRA / VERCEL AI SDK        PYTHON WORKERS          CONVEX / POSTGRES       │
+│   ══════════════════════        ══════════════          ════════════════        │
+│   "Decision & Explanation"      "Computation"           "State & Sync"          │
+│                                                                                  │
+│   • Entscheidet                 • Rechnet               • Speichert             │
+│   • Erklärt                     • Parst                 • Versioniert           │
+│   • Formuliert                  • Aggregiert            • Synchronisiert        │
+│   • Validiert Kontext           • Statistik             • Realtime Updates      │
+│                                                                                  │
+│   INPUT:                        INPUT:                  INPUT:                  │
+│   Strukturiertes JSON           Rohdaten (PDF, etc.)    Alles                   │
+│                                                                                  │
+│   OUTPUT:                       OUTPUT:                 OUTPUT:                 │
+│   Entscheidung + Begründung     Reines Analyse-JSON     Queries & Mutations     │
+│                                                                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│   N8N                           PORTKEY                 LINEAR / PRODUCTIVE     │
+│   ═══                           ═══════                 ═══════════════════     │
+│   "Automation"                  "Gateway"               "Governance"            │
+│                                                                                  │
+│   • Webhooks                    • Routing               • Tracking              │
+│   • Scheduling                  • Cost Tracking         • Reporting             │
+│   • Integrations                • Rate Limiting         • Budgets               │
+│   • Notifications               • Fallbacks             • Customer Value        │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## ANHANG D: Glossar
+## Entscheidungsmatrix: Projekt-Komplexität
 
-| Begriff | Definition |
-|---------|------------|
-| **AIDD** | Adaptive AI Discovery & Delivery - Methodik |
-| **PIV** | Plan-Implement-Validate Loop |
-| **TDD** | Test-Driven Development |
-| **Mastra** | AI Agent Framework für Production |
-| **Convex** | Realtime Database mit Vector Search |
-| **Skill** | Claude Code Befehl (z.B. `/prime`) |
-| **Delivery Unit** | Liefereinheit (Agent, Workflow, etc.) |
-| **Upstream** | Agent Kit Template |
-| **Downstream** | Abgeleitetes Projekt |
-| **Decision Layer** | AI evaluiert, rechnet nicht |
+### Stufe 1: MVP / Prototype (1-2 Wochen)
+
+```
+✅ Next.js + Vercel AI SDK + Convex
+❌ Kein Mastra, keine Workers, kein n8n
+```
+
+| Komponente | Status |
+|------------|--------|
+| Frontend | Next.js 15 |
+| AI Layer | Vercel AI SDK |
+| Database | Convex |
+| LLM | Claude direkt |
+| Extras | Keine |
+
+**Beispiele:** Chat-Demo, Quick POC, interne Tools
 
 ---
 
-*Diese Slide-Struktur ist für NotebookLM optimiert.*
-*Lucid Labs GmbH - Januar 2026*
+### Stufe 2: Standard Projekt (2-8 Wochen)
+
+```
+✅ Next.js + Mastra + Convex
+⚪ Optional: n8n für Integrationen
+```
+
+| Komponente | Status |
+|------------|--------|
+| Frontend | Next.js 15 |
+| AI Layer | **Mastra** |
+| Database | Convex |
+| LLM | Claude direkt |
+| Extras | n8n (optional) |
+
+**Beispiele:** Ticket-Agent, Klassifikations-Agent, Workflow-Automation
+
+---
+
+### Stufe 3: Enterprise Projekt (8+ Wochen)
+
+```
+✅ Next.js + Mastra + Convex/Postgres + Portkey + n8n
+⚪ Optional: Python Workers, Pinecone
+```
+
+| Komponente | Status |
+|------------|--------|
+| Frontend | Next.js 15 |
+| AI Layer | **Mastra** |
+| Database | Convex oder **Postgres** |
+| LLM | Claude via **Portkey** |
+| Automation | **n8n** |
+| Compute | Python Workers (optional) |
+| Vectors | Pinecone (optional) |
+| IaC | **Terraform** |
+
+**Beispiele:** Multi-Tenant SaaS, Enterprise RAG, komplexe Analyse-Plattform
+
+---
+
+### Stufe 4: GDPR / Compliance Projekt
+
+```
+✅ Alles von Stufe 3 + Azure OpenAI
+```
+
+| Komponente | Status |
+|------------|--------|
+| LLM | **Azure OpenAI** (primär) |
+| Fallback | Claude via Portkey |
+| Data | **Postgres** (EU-hosted) |
+| Hosting | **Elestio** (EU) |
+
+**Beispiele:** Banken, Versicherungen, Healthcare
+
+---
+
+## Quick Reference: Wann was?
+
+### AI Layer Entscheidung
+
+```
+Brauche ich Tools/Agents/Workflows?
+│
+├─ NEIN → Vercel AI SDK
+│         • Chat UI, Streaming
+│         • Minimal Setup
+│
+└─ JA → Mastra
+        • Structured Tools
+        • Multi-Step Workflows
+        • Type-safe Outputs
+```
+
+### Database Entscheidung
+
+```
+Brauche ich Realtime Sync?
+│
+├─ JA → Convex
+│       • Automatic UI Updates
+│       • Built-in Vector Search
+│       • Type-safe Functions
+│
+└─ NEIN → Postgres
+          │
+          ├─ SQL nötig? → Postgres + Prisma
+          │
+          └─ Pinecone gewünscht? → Postgres + Pinecone
+```
+
+### Optional Components Entscheidung
+
+```
+Brauche ich...
+
+Cost Tracking pro Kunde?      → Portkey
+PDF/OCR/ML Processing?        → Python Workers
+Externe Integrationen?        → n8n
+Millionen Vektoren?           → Pinecone
+GDPR/EU Data Residency?       → Azure OpenAI
+Auto Code Reviews?            → Greptile
+S3-compatible Storage?        → MinIO
+Multi-Environment Deploy?     → Terraform
+```
+
+---
+
+## Init-Projekt Empfehlung
+
+Bei `/init-project` wird nach Projektbeschreibung gefragt und eine Empfehlung gegeben:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  PROJEKT SETUP                                                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Beschreibe dein Projekt in 1-2 Sätzen:                         │
+│  > _                                                             │
+│                                                                  │
+│  Beispiele:                                                      │
+│  • "Chat-Bot für Kundenservice"                                  │
+│  • "Ticket-Klassifikation mit CRM-Integration"                   │
+│  • "Enterprise RAG für interne Dokumente"                        │
+│                                                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Basierend auf deiner Beschreibung empfehle ich:                │
+│                                                                  │
+│  STUFE 2: Standard Projekt                                       │
+│                                                                  │
+│  ✅ Next.js 15 (Frontend)                                        │
+│  ✅ Mastra (AI Layer) - wegen Tools                              │
+│  ✅ Convex (Database) - Realtime für UI                          │
+│  ⚪ n8n - für CRM-Integration                                    │
+│                                                                  │
+│  Einverstanden? [Y/n]                                            │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+*Lucid Labs GmbH - AI Stack 2026*
+*Letzte Aktualisierung: Januar 2026*

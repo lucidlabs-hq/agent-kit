@@ -695,18 +695,23 @@ This project uses Claude Code Skills. Skills follow the [Agent Skills](https://a
 
 ### Available Skills
 
-| Skill | Purpose | PIV Phase |
-|-------|---------|-----------|
+| Skill | Purpose | Phase |
+|-------|---------|-------|
 | `/start` | Entry point - create or open project | Any |
 | `/checkout-project` | Clone existing project from GitHub | Any |
+| `/prime` | Load project context + check Linear | Any |
+| `/linear` | Linear project management (create/update/sync) | Any |
 | `/create-prd` | Create Product Requirements | Planning |
 | `/plan-feature` | Plan feature implementation | Planning |
+| `/init-project` | Initialize new project | Planning |
 | `/execute` | Execute implementation plan | Implementation |
 | `/commit` | Create formatted commit | Implementation |
-| `/prime` | Load project context | Any |
-| `/init-project` | Initialize new project | Planning |
-| `/screenshot` | Visual verification | Validation |
 | `/update-readme` | Update documentation | Implementation |
+| `/visual-verify` | UI verification via agent-browser (fast) | Validation |
+| `/pre-production` | Security & Quality Check before deploy | Validation |
+| `/screenshot` | Visual verification screenshots | Validation |
+| `/session-end` | End session, update Linear, clean state | Any |
+| `/productizer` | Bridge Linear ↔ Productive.io for customer reporting | Any |
 | `/promote` | Promote patterns to upstream | Any |
 | `/sync` | Sync updates from upstream | Any |
 

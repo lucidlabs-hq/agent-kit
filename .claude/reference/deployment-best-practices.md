@@ -1,20 +1,55 @@
 # Deployment Best Practices Reference
 
-Best practices for deploying Neola AI projects with Docker and Elestio.
+Best practices for deploying Agent Kit projects with Docker and Elestio.
 
 ---
 
 ## Table of Contents
 
-1. [Docker Setup](#1-docker-setup)
-2. [Elestio Configuration](#2-elestio-configuration)
-3. [Environment Management](#3-environment-management)
-4. [CI/CD with GitHub Actions](#4-cicd-with-github-actions)
-5. [Production Checklist](#5-production-checklist)
+1. [Deployment Philosophy](#1-deployment-philosophy)
+2. [Docker Setup](#2-docker-setup)
+3. [Elestio Configuration](#3-elestio-configuration)
+4. [Environment Management](#4-environment-management)
+5. [CI/CD with GitHub Actions](#5-cicd-with-github-actions)
+6. [Monitoring & Logging](#6-monitoring--logging)
+7. [Production Checklist](#7-production-checklist)
 
 ---
 
-## 1. Docker Setup
+## 1. Deployment Philosophy
+
+### Local Equals Production
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     LOCAL DEV                           │
+│                                                         │
+│    docker compose -f docker-compose.dev.yml up          │
+│    Same topology, local URLs                            │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│                     PRODUCTION                          │
+│                                                         │
+│    docker compose up -d                                 │
+│    Same topology, production URLs                       │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Push-Based Deployment
+
+1. Push to `main` branch
+2. GitHub Actions triggers
+3. SSH to Elestio
+4. `docker compose up -d --build`
+
+No additional tooling required.
+
+---
+
+## 2. Docker Setup
 
 ### Frontend Dockerfile
 
@@ -38,8 +73,11 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build arguments for environment
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_CONVEX_URL
+ENV NEXT_PUBLIC_CONVEX_URL=$NEXT_PUBLIC_CONVEX_URL
+
+ARG NEXT_PUBLIC_MASTRA_URL
+ENV NEXT_PUBLIC_MASTRA_URL=$NEXT_PUBLIC_MASTRA_URL
 
 RUN pnpm run build
 
@@ -67,10 +105,10 @@ ENV HOSTNAME="0.0.0.0"
 CMD ["node", "server.js"]
 ```
 
-### Backend Dockerfile (Mastra)
+### Mastra Dockerfile
 
 ```dockerfile
-# backend/Dockerfile
+# mastra/Dockerfile
 FROM node:22-alpine AS base
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -106,81 +144,92 @@ ENV PORT=4000
 CMD ["node", "dist/index.js"]
 ```
 
-### Docker Compose
+### Docker Compose (Production)
 
 ```yaml
 # docker-compose.yml
 services:
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
   frontend:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: http://backend:4000
-    ports:
-      - "3000:3000"
+        NEXT_PUBLIC_CONVEX_URL: ${NEXT_PUBLIC_CONVEX_URL}
+        NEXT_PUBLIC_MASTRA_URL: ${NEXT_PUBLIC_MASTRA_URL}
     environment:
       - NODE_ENV=production
     depends_on:
-      - backend
+      - mastra
     restart: unless-stopped
 
-  backend:
+  mastra:
     build:
-      context: ./backend
-    ports:
-      - "4000:4000"
+      context: ./mastra
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres:password@db:5432/Neola
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-
-  db:
-    image: pgvector/pgvector:pg16
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=Neola
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - CONVEX_URL=${CONVEX_URL}
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  caddy_data:
+  caddy_config:
 ```
 
-### Development Docker Compose
+### Docker Compose (Development)
 
 ```yaml
 # docker-compose.dev.yml
 services:
-  db:
-    image: pgvector/pgvector:pg16
+  # Only services needed for local development
+  # Convex runs via `npx convex dev`
+  # Frontend runs via `pnpm run dev`
+  # Mastra runs via `pnpm run dev`
+
+  # Optional: n8n for workflow development
+  n8n:
+    image: n8nio/n8n
     ports:
-      - "5432:5432"
+      - "5678:5678"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=Neola_dev
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=changeme
     volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
+      - n8n_data:/home/node/.n8n
 
 volumes:
-  postgres_dev_data:
+  n8n_data:
+```
+
+### Caddyfile
+
+```
+{$DOMAIN} {
+    # Frontend
+    reverse_proxy frontend:3000
+
+    # Mastra API
+    handle /api/agent/* {
+        reverse_proxy mastra:4000
+    }
+}
 ```
 
 ---
 
-## 2. Elestio Configuration
+## 3. Elestio Configuration
 
 ### elestio.yml
 
@@ -194,103 +243,58 @@ ports:
   - protocol: "HTTPS"
     targetProtocol: "HTTP"
     listeningPort: "443"
-    targetPort: "3000"
+    targetPort: "80"
     public: true
     path: "/"
-    isAuth: false
-
-  - protocol: "HTTPS"
-    targetProtocol: "HTTP"
-    listeningPort: "444"
-    targetPort: "4000"
-    public: true
-    path: "/api"
     isAuth: false
 
 environments:
   - key: "NODE_ENV"
     value: "production"
-  - key: "DATABASE_URL"
-    value: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+  - key: "NEXT_PUBLIC_CONVEX_URL"
+    value: ""
+  - key: "CONVEX_URL"
+    value: ""
   - key: "ANTHROPIC_API_KEY"
     value: ""
   - key: "OPENAI_API_KEY"
     value: ""
+  - key: "DOMAIN"
+    value: ""
 
 lifeCycle:
-  postInstall: "docker compose exec backend pnpm run db:push"
-  postUpdate: "docker compose exec backend pnpm run db:push"
-```
-
-### Production Docker Compose for Elestio
-
-```yaml
-# docker-compose.prod.yml
-services:
-  frontend:
-    image: ${CI_REGISTRY_IMAGE}/frontend:${CI_COMMIT_SHA}
-    ports:
-      - "172.17.0.1:3000:3000"
-    environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=https://${DOMAIN}:444
-    restart: always
-
-  backend:
-    image: ${CI_REGISTRY_IMAGE}/backend:${CI_COMMIT_SHA}
-    ports:
-      - "172.17.0.1:4000:4000"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-    restart: always
-
-  db:
-    image: pgvector/pgvector:pg16
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB:-Neola}
-    volumes:
-      - ./postgres_data:/var/lib/postgresql/data
-    restart: always
+  postInstall: "docker compose up -d --build"
+  postUpdate: "docker compose up -d --build"
 ```
 
 ---
 
-## 3. Environment Management
+## 4. Environment Management
 
 ### Environment Variables Structure
 
-```
-# .env.local (Development)
-NODE_ENV=development
-DATABASE_URL=postgresql://postgres:password@localhost:5432/Neola_dev
+```env
+# .env.example (committed to repo)
 
-# AI
-ANTHROPIC_API_KEY=sk-ant-...
-OPENAI_API_KEY=sk-...
+# Convex (Required)
+NEXT_PUBLIC_CONVEX_URL=
+CONVEX_URL=
+CONVEX_DEPLOY_KEY=
 
-# Next.js
-NEXT_PUBLIC_API_URL=http://localhost:4000
+# AI Models (Required)
+ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
 
-# Optional: Integrations
-CASAVI_API_KEY=
-CASAVI_API_URL=
+# Mastra
+NEXT_PUBLIC_MASTRA_URL=http://localhost:4000
+PORT=4000
 
-# .env.production (Production - in Elestio)
-NODE_ENV=production
-DATABASE_URL=postgresql://...
+# Domain (Production)
+DOMAIN=
 
-ANTHROPIC_API_KEY=...
-OPENAI_API_KEY=...
-
-NEXT_PUBLIC_API_URL=https://api.Neola.example.com
-
-CASAVI_API_KEY=...
-CASAVI_API_URL=https://api.casavi.de
+# n8n (Optional)
+N8N_BASIC_AUTH_USER=admin
+N8N_BASIC_AUTH_PASSWORD=
 ```
 
 ### Environment Validation
@@ -301,32 +305,30 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  DATABASE_URL: z.string().url(),
+  NEXT_PUBLIC_CONVEX_URL: z.string().url(),
   ANTHROPIC_API_KEY: z.string().min(1),
   OPENAI_API_KEY: z.string().optional(),
-  NEXT_PUBLIC_API_URL: z.string().url(),
+  NEXT_PUBLIC_MASTRA_URL: z.string().url(),
 });
 
 export type Env = z.infer<typeof envSchema>;
 
 export function validateEnv(): Env {
   const parsed = envSchema.safeParse(process.env);
-  
+
   if (!parsed.success) {
     console.error('❌ Invalid environment variables:');
     console.error(parsed.error.format());
     throw new Error('Invalid environment variables');
   }
-  
+
   return parsed.data;
 }
-
-export const env = validateEnv();
 ```
 
 ---
 
-## 4. CI/CD with GitHub Actions
+## 5. CI/CD with GitHub Actions
 
 ### Build and Deploy Workflow
 
@@ -349,226 +351,102 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 9
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'pnpm'
-          
+
       - name: Install dependencies
         run: |
           cd frontend && pnpm install
-          cd ../backend && pnpm install
-          
+          cd ../mastra && pnpm install
+
       - name: Lint
         run: |
           cd frontend && pnpm run lint
-          cd ../backend && pnpm run lint
-          
+          cd ../mastra && pnpm run lint
+
       - name: Type check
         run: |
-          cd frontend && pnpm exec tsc --noEmit
-          cd ../backend && pnpm exec tsc --noEmit
-          
+          cd frontend && pnpm run type-check
+          cd ../mastra && pnpm exec tsc --noEmit
+
       - name: Test
         run: |
           cd frontend && pnpm run test
-          cd ../backend && pnpm run test
 
-  build:
+  deploy:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    permissions:
-      contents: read
-      packages: write
-      
+
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Build and push frontend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}
-          
-      - name: Build and push backend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:${{ github.sha }}
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
       - name: Deploy to Elestio
-        uses: elestio/actions-deploy@v1
-        with:
-          api-key: ${{ secrets.ELESTIO_API_KEY }}
-          project-id: ${{ secrets.ELESTIO_PROJECT_ID }}
-          image-tag: ${{ github.sha }}
-```
+        env:
+          ELESTIO_HOST: ${{ secrets.ELESTIO_HOST }}
+          ELESTIO_SSH_KEY: ${{ secrets.ELESTIO_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$ELESTIO_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $ELESTIO_HOST >> ~/.ssh/known_hosts
 
-### PR Preview Workflow
-
-```yaml
-# .github/workflows/pr-preview.yml
-name: PR Preview
-
-on:
-  pull_request:
-    types: [opened, synchronize]
-
-jobs:
-  preview:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Deploy PR Preview
-        # Use your preview deployment service
-        run: echo "Deploy preview for PR ${{ github.event.pull_request.number }}"
-```
-
----
-
-## 5. Production Checklist
-
-### Before Deployment
-
-```markdown
-## Pre-Deployment Checklist
-
-### Code Quality
-- [ ] All tests passing
-- [ ] No TypeScript errors
-- [ ] No linting errors
-- [ ] Code review completed
-- [ ] Security vulnerabilities checked
-
-### Environment
-- [ ] All required env vars documented
-- [ ] Secrets stored securely (not in repo)
-- [ ] Production env vars set in Elestio
-
-### Database
-- [ ] Migrations tested on staging
-- [ ] Backup strategy in place
-- [ ] Connection pooling configured
-
-### Performance
-- [ ] Images optimized
-- [ ] Bundle size checked
-- [ ] Caching configured
-
-### Security
-- [ ] HTTPS enforced
-- [ ] CORS configured correctly
-- [ ] API rate limiting in place
-- [ ] Input validation on all endpoints
-
-### Monitoring
-- [ ] Error tracking configured (Sentry)
-- [ ] Logging configured
-- [ ] Health checks in place
-- [ ] Alerting set up
-```
-
-### Health Check Endpoint
-
-```typescript
-// app/api/health/route.ts
-export async function GET() {
-  const checks = {
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    services: {
-      database: await checkDatabase(),
-      mastra: await checkMastra(),
-    },
-  };
-
-  const allHealthy = Object.values(checks.services).every(s => s === 'ok');
-
-  return Response.json(checks, {
-    status: allHealthy ? 200 : 503,
-  });
-}
-
-async function checkDatabase(): Promise<'ok' | 'error'> {
-  try {
-    await db.execute(sql`SELECT 1`);
-    return 'ok';
-  } catch {
-    return 'error';
-  }
-}
-
-async function checkMastra(): Promise<'ok' | 'error'> {
-  try {
-    const agent = mastra.getAgent('sabine');
-    return agent ? 'ok' : 'error';
-  } catch {
-    return 'error';
-  }
-}
-```
-
-### Rollback Strategy
-
-```bash
-# Rollback to previous version
-docker compose down
-docker compose -f docker-compose.prod.yml up -d --pull always
-
-# Or with specific image tag
-CI_COMMIT_SHA=previous_hash docker compose -f docker-compose.prod.yml up -d
-```
-
----
-
-## Commands
-
-```bash
-# Local development with Docker
-docker compose -f docker-compose.dev.yml up -d  # Start DB
-cd frontend && bun dev                           # Start frontend
-cd backend && bun run dev                        # Start backend
-
-# Build for production
-docker compose build
-
-# Deploy locally
-docker compose up -d
-
-# View logs
-docker compose logs -f
-
-# Stop all services
-docker compose down
+          ssh root@$ELESTIO_HOST << 'EOF'
+            cd /opt/app
+            git pull origin main
+            docker compose up -d --build
+          EOF
 ```
 
 ---
 
 ## 6. Monitoring & Logging
+
+### Monitoring Strategy
+
+**Phase 1 (Current):**
+- Uptime Kuma for health monitoring
+- Structured logging to stdout
+- Basic health check endpoints
+
+**Phase 2 (Optional later):**
+- Sentry for error tracking
+- LogTail for log aggregation
+- Prometheus metrics
+
+### Uptime Kuma Setup
+
+Uptime Kuma provides simple, self-hosted uptime monitoring.
+
+```yaml
+# Add to docker-compose.yml (or run separately)
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    volumes:
+      - uptime-kuma-data:/app/data
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+volumes:
+  uptime-kuma-data:
+```
+
+**Configure monitors:**
+1. Access Uptime Kuma at `http://localhost:3001`
+2. Add HTTP monitor for `/api/health` endpoint
+3. Set check interval (e.g., every 60 seconds)
+4. Configure notifications (Email, Slack, Discord, etc.)
 
 ### Structured Logging
 
@@ -601,6 +479,46 @@ console.log(JSON.stringify({
 }))
 ```
 
+### Health Check Endpoint
+
+```typescript
+// app/api/health/route.ts
+export async function GET() {
+  const checks = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    services: {
+      convex: await checkConvex(),
+      mastra: await checkMastra(),
+    },
+  };
+
+  const allHealthy = Object.values(checks.services).every(s => s === 'ok');
+
+  return Response.json(checks, {
+    status: allHealthy ? 200 : 503,
+  });
+}
+
+async function checkConvex(): Promise<'ok' | 'error'> {
+  try {
+    // Convex health check via a simple query
+    return 'ok';
+  } catch {
+    return 'error';
+  }
+}
+
+async function checkMastra(): Promise<'ok' | 'error'> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_MASTRA_URL}/health`);
+    return response.ok ? 'ok' : 'error';
+  } catch {
+    return 'error';
+  }
+}
+```
+
 ### Sentry Integration
 
 ```bash
@@ -618,90 +536,100 @@ Sentry.init({
 })
 ```
 
-### Prometheus Metrics (Optional)
+---
 
-```typescript
-// app/api/metrics/route.ts
-export async function GET() {
-  const metrics = `
-# HELP http_requests_total Total HTTP requests
-# TYPE http_requests_total counter
-http_requests_total{method="GET",status="200"} 1234
+## 7. Production Checklist
 
-# HELP http_request_duration_seconds Request duration
-# TYPE http_request_duration_seconds histogram
-http_request_duration_seconds{method="GET",le="0.1"} 1000
-  `.trim()
+### Before Deployment
 
-  return new Response(metrics, {
-    headers: { 'Content-Type': 'text/plain' }
-  })
-}
+```markdown
+## Pre-Deployment Checklist
+
+### Code Quality
+- [ ] All tests passing
+- [ ] No TypeScript errors
+- [ ] No linting errors
+- [ ] Code review completed
+- [ ] Security vulnerabilities checked
+
+### Environment
+- [ ] All required env vars documented in .env.example
+- [ ] Secrets stored in GitHub Secrets (not in repo)
+- [ ] Production env vars set in Elestio
+
+### Convex
+- [ ] Schema deployed: `npx convex deploy`
+- [ ] Functions tested
+- [ ] Vector indexes created (if using RAG)
+
+### Mastra
+- [ ] Agents tested
+- [ ] Tools validated
+- [ ] Health endpoint working
+
+### Performance
+- [ ] Images optimized
+- [ ] Bundle size checked
+- [ ] Caching configured
+
+### Security
+- [ ] HTTPS enforced (Caddy handles this)
+- [ ] CORS configured correctly
+- [ ] API rate limiting in place
+- [ ] Input validation on all endpoints
+
+### Monitoring
+- [ ] Error tracking configured (Sentry)
+- [ ] Logging configured
+- [ ] Health checks in place
+- [ ] Alerting set up
 ```
 
-### Readiness Check
+### Rollback Strategy
 
-```typescript
-// app/api/ready/route.ts
-export async function GET() {
-  const isReady = await checkReadiness()
-
-  return Response.json({ ready: isReady }, {
-    status: isReady ? 200 : 503
-  })
-}
+```bash
+# Rollback to previous commit
+ssh root@$ELESTIO_HOST << 'EOF'
+  cd /opt/app
+  git checkout HEAD~1
+  docker compose up -d --build
+EOF
 ```
 
 ---
 
-## 7. Troubleshooting
+## Commands Summary
 
-### Health Check Fails
+```bash
+# Local development
+docker compose -f docker-compose.dev.yml up -d  # Start optional services
+cd frontend && pnpm run dev                      # Start frontend
+cd mastra && pnpm run dev                        # Start Mastra
+npx convex dev                                   # Start Convex dev
 
-**Symptoms:** Elestio reports unhealthy service
+# Build for production
+docker compose build
 
-**Solution:**
-- Check `/api/health` endpoint returns 200
-- Verify all dependencies accessible
-- Check logs: `docker compose logs -f`
+# Deploy locally
+docker compose up -d
 
-### Environment Variables Not Set
+# View logs
+docker compose logs -f
 
-**Symptoms:** Application fails to start
-
-**Solution:**
-- Verify all required ENV vars set in Elestio
-- Check ENV var names (case-sensitive)
-- Restart service after setting ENV vars
-
-### Database Connection Fails
-
-**Symptoms:** Health check reports database: error
-
-**Solution:**
-- Verify `DATABASE_URL` format
-- Check PostgreSQL service is running
-- Verify network connectivity
+# Stop all services
+docker compose down
+```
 
 ---
 
 ## Related References
 
-- `scaling.md` - Scaling considerations
-- `database-strategy.md` - PostgreSQL setup
+- `architecture.md` - Platform architecture
+- `scaling.md` - Stateless patterns
 - `error-handling.md` - Error patterns
-
----
-
-## Resources
-
-- [Docker Documentation](https://docs.docker.com)
-- [Elestio Documentation](https://docs.elest.io)
-- [GitHub Actions](https://docs.github.com/en/actions)
-- [Next.js Deployment](https://nextjs.org/docs/deployment)
 
 ---
 
 **Version:** 2.0
 **Last Updated:** January 2026
-**Maintainer:** KI-Schmiede
+**Maintainer:** Lucid Labs GmbH

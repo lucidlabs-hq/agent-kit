@@ -8,13 +8,11 @@
 
 1. [Overview](#1-overview)
 2. [Stateless Containers](#2-stateless-containers)
-3. [Session Storage](#3-session-storage)
-4. [Caching Strategy](#4-caching-strategy)
-5. [Database Connections](#5-database-connections)
-6. [Static Assets](#6-static-assets)
-7. [Load Balancing](#7-load-balancing)
-8. [Monitoring](#8-monitoring)
-9. [Best Practices](#9-best-practices)
+3. [Convex for State](#3-convex-for-state)
+4. [Static Assets](#4-static-assets)
+5. [Load Balancing](#5-load-balancing)
+6. [Monitoring](#6-monitoring)
+7. [Best Practices](#7-best-practices)
 
 ---
 
@@ -25,7 +23,7 @@
 ### Horizontal Scaling
 
 ```
-                    Load Balancer
+                    Load Balancer (Caddy)
                          │
          ┌───────────────┼───────────────┐
          │               │               │
@@ -33,17 +31,18 @@
          │               │               │
          └───────────────┴───────────────┘
                          │
-                    PostgreSQL
+                       Convex
                   (shared state)
 ```
 
 ### Requirements for Scaling
 
 - ✅ Stateless containers
-- ✅ Shared session storage (PostgreSQL)
-- ✅ Shared cache (PostgreSQL)
-- ✅ Connection pooling
+- ✅ Shared state in Convex (reactive, real-time)
+- ✅ Shared cache in Convex
+- ✅ Sessions handled by Convex Auth
 - ✅ Health checks
+- ✅ No local file storage
 
 ---
 
@@ -60,13 +59,18 @@ export async function saveFile(file: File) {
   // Files lost when container restarts
 }
 
-// ✅ Good: Object storage (S3/MinIO)
+// ✅ Good: Convex file storage
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+
+const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+
 export async function saveFile(file: File) {
-  await s3.putObject({
-    Bucket: 'files',
-    Key: file.name,
-    Body: file
-  })
+  const uploadUrl = await generateUploadUrl();
+  await fetch(uploadUrl, {
+    method: 'POST',
+    body: file,
+  });
 }
 ```
 
@@ -81,10 +85,13 @@ export function getCached(key: string) {
   // Lost when container restarts
 }
 
-// ✅ Good: PostgreSQL cache (table-based)
-export async function getCached(key: string) {
-  return await db.select().from(cache).where(eq(cache.key, key))
-  // Persistent across containers
+// ✅ Good: Convex for shared state
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+
+export function useCachedData(key: string) {
+  // Convex handles caching and real-time updates
+  return useQuery(api.cache.get, { key });
 }
 ```
 
@@ -99,172 +106,124 @@ export function getSession(id: string) {
   // Lost when container restarts
 }
 
-// ✅ Good: PostgreSQL sessions (via BetterAuth)
-export async function getSession(id: string) {
-  return await db.select().from(sessions).where(eq(sessions.id, id))
-  // Shared across containers
+// ✅ Good: Better Auth + Convex handles sessions
+import { authClient } from '@/lib/auth-client';
+
+export function useSession() {
+  const { data: session, isPending } = authClient.useSession();
+  // Session stored in Convex, shared across all containers
+  return { session, isPending };
 }
 ```
 
 ---
 
-## 3. Session Storage
+## 3. Convex for State
 
-### PostgreSQL Sessions (BetterAuth)
+### Why Convex for Scaling
 
-**PostgreSQL-First Strategy:** Sessions stored in PostgreSQL via BetterAuth.
+| Feature | Benefit |
+|---------|---------|
+| **Managed service** | No infrastructure to manage |
+| **Real-time sync** | Automatic updates across containers |
+| **Built-in auth** | Sessions handled automatically |
+| **File storage** | No S3 setup needed |
+| **Vector search** | Built-in for RAG |
+| **Transactional** | ACID guarantees |
+
+### Session Storage (Better Auth + Convex)
+
+Better Auth with Convex adapter stores sessions in Convex tables, providing:
+- Automatic scaling across containers
+- Real-time session sync
+- Type-safe session data
 
 ```typescript
-// BetterAuth handles sessions automatically
-import { auth } from '@/lib/auth'
+// lib/auth-client.ts
+import { createAuthClient } from 'better-auth/react';
 
-const session = await auth.api.getSession({
-  headers: await import('next/headers').then(m => m.headers()),
-})
+export const authClient = createAuthClient({
+  baseURL: process.env.NEXT_PUBLIC_APP_URL,
+});
+
+// Frontend: Check authentication
+function ProtectedPage() {
+  const { data: session, isPending } = authClient.useSession();
+
+  if (isPending) return <Loading />;
+  if (!session) return <Redirect to="/login" />;
+
+  return <ProtectedContent />;
+}
 ```
 
-**Benefits:**
-- ✅ Persistent across container restarts
-- ✅ Shared across multiple containers
-- ✅ No Redis dependency
-- ✅ Single database backup
-
-### Session Table (BetterAuth)
+### Cache Pattern with Convex
 
 ```typescript
-// Created automatically by BetterAuth
-export const sessions = pgTable('sessions', {
-  id: text('id').primaryKey(),
-  userId: text('user_id').notNull(),
-  expiresAt: timestamp('expires_at').notNull(),
-  token: text('token').notNull(),
-})
+// convex/schema.ts
+import { defineSchema, defineTable } from 'convex/server';
+import { v } from 'convex/values';
+
+export default defineSchema({
+  cache: defineTable({
+    key: v.string(),
+    value: v.any(),
+    expiresAt: v.number(),
+  }).index('by_key', ['key']),
+});
+
+// convex/functions/cache.ts
+import { query, mutation } from './_generated/server';
+import { v } from 'convex/values';
+
+export const get = query({
+  args: { key: v.string() },
+  handler: async (ctx, args) => {
+    const cached = await ctx.db
+      .query('cache')
+      .withIndex('by_key', (q) => q.eq('key', args.key))
+      .first();
+
+    if (!cached) return null;
+    if (cached.expiresAt < Date.now()) {
+      // Expired - will be cleaned up by scheduled function
+      return null;
+    }
+
+    return cached.value;
+  },
+});
+
+export const set = mutation({
+  args: {
+    key: v.string(),
+    value: v.any(),
+    ttlSeconds: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query('cache')
+      .withIndex('by_key', (q) => q.eq('key', args.key))
+      .first();
+
+    const data = {
+      key: args.key,
+      value: args.value,
+      expiresAt: Date.now() + args.ttlSeconds * 1000,
+    };
+
+    if (existing) {
+      await ctx.db.patch(existing._id, data);
+    } else {
+      await ctx.db.insert('cache', data);
+    }
+  },
+});
 ```
 
 ---
 
-## 4. Caching Strategy
-
-### PostgreSQL Cache (Table-Based)
-
-**PostgreSQL-First Strategy:** Use PostgreSQL tables for caching.
-
-```typescript
-// db/schema/cache.ts
-export const cache = pgTable('cache', {
-  key: text('key').primaryKey(),
-  value: jsonb('value').notNull(),
-  expiresAt: timestamp('expires_at').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-})
-```
-
-### Cache Implementation
-
-```typescript
-// lib/cache.ts
-export async function getCached<T>(
-  key: string,
-  fetcher: () => Promise<T>,
-  ttl: number = 3600
-): Promise<T> {
-  // Check cache
-  const cached = await db
-    .select()
-    .from(cache)
-    .where(sql`key = ${key} AND expires_at > NOW()`)
-    .limit(1)
-
-  if (cached.length > 0) {
-    return cached[0].value as T
-  }
-
-  // Fetch and cache
-  const data = await fetcher()
-  const expiresAt = new Date(Date.now() + ttl * 1000)
-
-  await db.insert(cache).values({
-    key,
-    value: data as any,
-    expiresAt,
-  }).onConflictDoUpdate({
-    target: cache.key,
-    set: { value: data as any, expiresAt },
-  })
-
-  return data
-}
-
-// Cleanup expired entries
-export async function cleanupCache() {
-  await db.delete(cache).where(sql`expires_at < NOW()`)
-}
-```
-
-### Next.js Caching
-
-```typescript
-// Use Next.js built-in caching
-export const revalidate = 60 // Revalidate every 60 seconds
-
-export default async function Page() {
-  const data = await fetchData() // Cached by Next.js
-  return <Component data={data} />
-}
-```
-
----
-
-## 5. Database Connections
-
-### Connection Pooling
-
-```typescript
-// lib/db.ts
-import { drizzle } from 'drizzle-orm/postgres-js'
-import postgres from 'postgres'
-
-const client = postgres(process.env.DATABASE_URL!, {
-  max: 20, // Max connections per container
-  idle_timeout: 30,
-  connect_timeout: 10,
-})
-
-export const db = drizzle(client)
-```
-
-### Connection Limits
-
-| Scenario | Max Connections |
-|----------|-----------------|
-| Single container | 20 |
-| 3 containers | 60 (20 × 3) |
-| PostgreSQL default | 100 |
-
-**Configure PostgreSQL:**
-
-```sql
--- Increase max connections if needed
-ALTER SYSTEM SET max_connections = 200;
-```
-
-### Error Handling
-
-```typescript
-try {
-  const result = await db.select().from(resources)
-  return result
-} catch (error) {
-  if (error.code === 'ECONNREFUSED') {
-    console.error('[Database] Connection refused')
-  }
-  throw error
-}
-```
-
----
-
-## 6. Static Assets
+## 4. Static Assets
 
 ### CDN (Recommended)
 
@@ -278,35 +237,31 @@ const nextConfig = {
 }
 ```
 
-### Object Storage (S3/MinIO)
+### Convex File Storage
+
+For user uploads, use Convex File Storage:
 
 ```typescript
-// lib/storage.ts
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+// convex/functions/files.ts
+import { mutation, query } from './_generated/server';
 
-const s3 = new S3Client({
-  endpoint: process.env.S3_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY!,
-    secretAccessKey: process.env.S3_SECRET_KEY!,
-  }
-})
+export const generateUploadUrl = mutation({
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
 
-export async function uploadFile(file: File, key: string) {
-  await s3.send(new PutObjectCommand({
-    Bucket: process.env.S3_BUCKET!,
-    Key: key,
-    Body: file,
-    ContentType: file.type
-  }))
-
-  return `${process.env.CDN_URL}/${key}`
-}
+export const getFileUrl = query({
+  args: { storageId: v.id('_storage') },
+  handler: async (ctx, args) => {
+    return await ctx.storage.getUrl(args.storageId);
+  },
+});
 ```
 
 ---
 
-## 7. Load Balancing
+## 5. Load Balancing
 
 ### Elestio Load Balancing
 
@@ -314,7 +269,7 @@ Elestio handles load balancing automatically for multiple containers.
 
 **Requirements:**
 - Stateless containers
-- Shared session storage (PostgreSQL)
+- Shared state in Convex
 - Health checks implemented
 
 ### Health Checks
@@ -323,33 +278,37 @@ Elestio handles load balancing automatically for multiple containers.
 // app/api/health/route.ts
 export async function GET() {
   const checks = {
-    database: await checkDatabase(),
-    cache: await checkPostgresCache(),
-    timestamp: new Date().toISOString()
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    services: {
+      convex: await checkConvex(),
+      mastra: await checkMastra(),
+    }
   }
 
-  const healthy = checks.database && checks.cache
+  const healthy = Object.values(checks.services).every(s => s === 'ok');
 
   return Response.json(checks, {
     status: healthy ? 200 : 503
   })
 }
 
-async function checkDatabase(): Promise<boolean> {
+async function checkConvex(): Promise<'ok' | 'error'> {
   try {
-    await db.execute(sql`SELECT 1`)
-    return true
+    // Simple query to verify Convex connection
+    const response = await fetch(process.env.NEXT_PUBLIC_CONVEX_URL!);
+    return response.ok ? 'ok' : 'error';
   } catch {
-    return false
+    return 'error';
   }
 }
 
-async function checkPostgresCache(): Promise<boolean> {
+async function checkMastra(): Promise<'ok' | 'error'> {
   try {
-    await db.select().from(cache).limit(1)
-    return true
+    const response = await fetch(`${process.env.NEXT_PUBLIC_MASTRA_URL}/health`);
+    return response.ok ? 'ok' : 'error';
   } catch {
-    return false
+    return 'error';
   }
 }
 ```
@@ -369,39 +328,47 @@ export async function GET() {
 
 ---
 
-## 8. Monitoring
+## 6. Monitoring
 
-### Application Metrics
+### Monitoring Strategy
 
-Track these metrics:
-- Request rate (requests/second)
-- Response time (p50, p95, p99)
-- Error rate (errors/second)
-- Database query time
-- Cache hit rate
-- Active connections
+**Phase 1 (Current):**
+- Uptime Kuma for health monitoring and alerting
+- Structured logging to stdout
+- Convex Dashboard for database metrics
 
-### Prometheus Metrics (Optional)
+**Phase 2 (Optional later):**
+- Sentry for error tracking
+- LogTail for log aggregation
 
-```typescript
-// app/api/metrics/route.ts
-export async function GET() {
-  const metrics = `
-# HELP http_requests_total Total HTTP requests
-# TYPE http_requests_total counter
-http_requests_total{method="GET",status="200"} ${requestCount}
+### Uptime Kuma
 
-# HELP http_request_duration_seconds Request duration
-# TYPE http_request_duration_seconds histogram
-http_request_duration_seconds{method="GET",le="0.1"} ${fastRequests}
-http_request_duration_seconds{method="GET",le="0.5"} ${mediumRequests}
-  `.trim()
+Simple, self-hosted uptime monitoring:
 
-  return new Response(metrics, {
-    headers: { 'Content-Type': 'text/plain' }
-  })
-}
+```yaml
+# Can run alongside project stack or separately
+uptime-kuma:
+  image: louislam/uptime-kuma:1
+  volumes:
+    - uptime-kuma-data:/app/data
+  ports:
+    - "3001:3001"
+  restart: unless-stopped
 ```
+
+**Configure monitors for:**
+- `/api/health` - Main application health
+- `/api/ready` - Readiness check
+- Mastra `/health` - AI agent service
+
+### Key Metrics to Track
+
+| Metric | Source | Purpose |
+|--------|--------|---------|
+| Uptime | Uptime Kuma | Service availability |
+| Response time | Uptime Kuma | Performance baseline |
+| Query performance | Convex Dashboard | Database health |
+| Function execution | Convex Dashboard | Backend performance |
 
 ### Structured Logging
 
@@ -417,19 +384,26 @@ console.log(JSON.stringify({
 }))
 ```
 
+### Convex Dashboard
+
+Use the Convex Dashboard for:
+- Query performance monitoring
+- Function execution logs
+- Database usage metrics
+- Real-time debugging
+
 ---
 
-## 9. Best Practices
+## 7. Best Practices
 
 ### Summary
 
 | Category | DO | DON'T |
 |----------|-------|---------|
-| **State** | PostgreSQL for sessions/cache | In-memory state |
-| **Files** | S3/MinIO for uploads | Local filesystem |
-| **Sessions** | BetterAuth + PostgreSQL | Local session storage |
-| **Cache** | PostgreSQL tables | In-memory cache |
-| **Connections** | Connection pooling (max 20) | Unlimited connections |
+| **State** | Convex for all shared state | In-memory state |
+| **Files** | Convex File Storage | Local filesystem |
+| **Sessions** | Better Auth + Convex | Local session storage |
+| **Cache** | Convex tables | In-memory cache |
 | **Assets** | CDN for static files | Serve from container |
 
 ### Scaling Checklist
@@ -438,9 +412,8 @@ Before scaling to multiple containers:
 
 - [ ] No local file storage?
 - [ ] No in-memory state?
-- [ ] Sessions in PostgreSQL (BetterAuth)?
-- [ ] Cache in PostgreSQL?
-- [ ] Connection pooling configured?
+- [ ] Sessions via Better Auth + Convex?
+- [ ] Cache in Convex tables?
 - [ ] Health check implemented?
 - [ ] Structured logging?
 - [ ] CDN for static assets?
@@ -448,30 +421,44 @@ Before scaling to multiple containers:
 ### Troubleshooting
 
 **Issue: Session lost between requests**
-- Ensure BetterAuth is using PostgreSQL adapter
-- Check session table exists
-- Verify DATABASE_URL is correct
+- Ensure using Convex Auth (not local sessions)
+- Check Convex connection URL is correct
+- Verify `ConvexProvider` wraps app
 
-**Issue: Database connection errors**
-- Check connection pool size (max 20)
-- Verify PostgreSQL max_connections
-- Use connection pooling (PgBouncer) if needed
+**Issue: State not syncing**
+- Use `useQuery` for reactive data
+- Ensure mutations are awaited
+- Check Convex Dashboard for errors
 
-**Issue: Cache inconsistency**
-- Ensure using PostgreSQL cache, not in-memory
-- Check cache TTL settings
-- Implement cache invalidation
+**Issue: Files not persisting**
+- Use Convex File Storage, not local fs
+- Verify storage ID is saved correctly
+- Check file size limits
+
+---
+
+## Convex Scaling Benefits
+
+Convex simplifies scaling because:
+
+1. **No database infrastructure** - Convex is fully managed
+2. **No session infrastructure** - Convex Auth handles it
+3. **No cache infrastructure** - Use Convex tables
+4. **No file storage setup** - Built-in file storage
+5. **Real-time by default** - All queries are reactive
+
+This means your containers can be truly stateless, making horizontal scaling trivial.
 
 ---
 
 ## Related References
 
-- `database-strategy.md` - PostgreSQL-first strategy
+- `architecture.md` - Platform architecture
 - `deployment-best-practices.md` - Docker & Elestio
-- `auth-setup.md` - BetterAuth configuration
+- `convex/README.md` - Convex setup
 
 ---
 
-**Version:** 1.0
+**Version:** 2.0
 **Last Updated:** January 2026
-**Maintainer:** KI-Schmiede
+**Maintainer:** Lucid Labs GmbH

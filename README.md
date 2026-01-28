@@ -61,6 +61,7 @@ Agent Kit provides a complete foundation for building AI agent applications:
 | **Frontend** | Next.js 15 + shadcn/ui | Dashboard, UI, streaming |
 | **AI Agents** | Mastra | Agent definitions, tools, workflows |
 | **Database** | Convex | Realtime sync, vector search |
+| **File Storage** | MinIO | S3-compatible object storage |
 | **Workflows** | n8n | Automation, integrations |
 | **Deployment** | Docker + Caddy | Self-hosted, auto HTTPS |
 | **Infrastructure** | Terraform | Infrastructure as Code |
@@ -166,36 +167,132 @@ agent-kit/
 
 ## Development Workflow
 
-Agent Kit follows a **PRD-First** development approach:
+Agent Kit follows **Discovery-Driven Development (DDD)** with Linear integration.
+
+### Linear Integration
+
+All projects use [Linear](https://linear.app/lucid-labs-agents) for issue tracking.
+
+#### Einmalige Einrichtung (pro Maschine)
+
+```bash
+# 1. MCP Server hinzufügen
+claude mcp add --transport http linear-server https://mcp.linear.app/mcp
+
+# 2. In Claude Session authentifizieren
+/mcp
+# → Browser öffnet sich → Mit Lucid Labs Account einloggen → Fertig!
+```
+
+**Danach:** Token bleibt in `~/.mcp-auth/` gespeichert. Kein erneutes Login nötig.
+
+**Bei Problemen:** `rm -rf ~/.mcp-auth` und `/mcp` erneut ausführen.
+
+Siehe `.claude/reference/linear-setup.md` für Details.
+
+### Productive.io Integration
+
+Productive.io ist das **System of Record für Kundenwert** - alle Delivery Units, Budgets und Reporting.
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│  PRODUCTIVE.IO          PRODUCTIZER           LINEAR          │
+│  (Kundenwert)           (Bridge)              (Execution)     │
+│       │                     │                     │           │
+│  Companies ────────────►    │    ◄──────────── Projects       │
+│  Delivery Units ───────►    │    ◄──────────── Status         │
+│  Budgets ──────────────►    │                                 │
+│                             │                                 │
+│                             ▼                                 │
+│                    CUSTOMER PORTAL                            │
+│                    (Service Dashboard)                        │
+└───────────────────────────────────────────────────────────────┘
+```
+
+**Delivery Units** = Was wir liefern (Agent, Workflow, Workshop, Advisory, etc.)
+
+```bash
+# Productizer Skill
+/productizer setup [customer]   # Neuen Kunden einrichten
+/productizer sync               # Linear ↔ Productive.io sync
+/productizer report [customer]  # Kunden-Report generieren
+```
+
+Siehe `.claude/reference/productive-integration.md` für Details.
+
+### AIDD: Adaptive AI Discovery & Delivery
+
+Agent Kit follows the **AIDD methodology** - AI-driven, Decision-driven development that emphasizes explicit decision points between exploration and delivery.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         AIDD WORKFLOW                                │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   EXPLORATION          DECISION           DELIVERY                   │
+│   ───────────          ────────           ────────                   │
+│   • Research           /decision          • Implement                │
+│   • Prototype          • proceed          • Test                     │
+│   • Validate           • pivot            • Deploy                   │
+│   • Learn              • drop                                        │
+│                        • iterate                                     │
+│                                                                      │
+│   No deadline          Gate               Committed timeline         │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Principles:**
+- **Explicit Decisions:** No silent transitions from exploration to delivery
+- **Deadlines Only in Delivery:** Exploration has no deadline pressure
+- **Customer Transparency:** Decisions translated to customer language
+- **Focus on Value:** Service, Decisions, Value - not tasks or developers
+
+See `.claude/reference/aidd-methodology.md` for complete documentation.
+
+### Discovery-Driven Development Status Flow
+
+```
+Backlog → Exploration → Decision → Delivery → Review → Done
+                           ↓
+                        Dropped (valid end state)
+```
+
+| Status | Purpose | Deadline? |
+|--------|---------|-----------|
+| **Exploration** | Timeboxed research to reduce uncertainty | No |
+| **Decision** | Steering point: proceed, iterate, pivot, or drop | No |
+| **Delivery** | Implementation of validated solution | **YES** |
+| **Review** | QA and stakeholder validation | No |
+
+### Session-Based Workflow
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  1. Define Requirements                                         │
-│     Edit .claude/PRD.md with your product requirements          │
+│  SESSION START                                                   │
+│  /prime                                                          │
+│  → Check Linear for active issues                               │
+│  → Ask: "Woran möchtest du arbeiten?"                           │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  2. Plan Features                                               │
-│     /plan-feature [feature-name]                                │
+│  DEVELOPMENT                                                     │
+│  /linear create    - Create Linear issue                        │
+│  /plan-feature     - Plan implementation                        │
+│  /execute          - Implement the plan                         │
+│  /validate         - Verify compliance                          │
+│  /commit           - Commit changes                             │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  3. Implement                                                   │
-│     /execute [plan]                                             │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  4. Validate                                                    │
-│     /validate                                                   │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  5. Commit                                                      │
-│     /commit                                                     │
+│  SESSION END                                                     │
+│  /session-end                                                    │
+│  → Update Linear ticket status                                  │
+│  → Add work summary as comment                                  │
+│  → Verify Git compliance                                        │
+│  → Ensure clean state for next session                          │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -205,22 +302,69 @@ See [WORKFLOW.md](./WORKFLOW.md) for detailed instructions.
 
 Skills extend Claude's capabilities. Invoke with `/skill-name`.
 
-| Skill | Description | PIV Phase |
-|-------|-------------|-----------|
+| Skill | Description | Phase |
+|-------|-------------|-------|
 | `/start` | Entry point in template - create or open project | Any |
 | `/checkout-project` | Clone existing project from GitHub | Any |
+| `/prime` | Load project context + check Linear | Any |
+| `/linear` | Linear project management (create/update/sync) | Any |
+| `/meeting-decisions` | **Extract AIDD decisions from tldv.io transcripts** | Decision |
 | `/create-prd` | Create a new PRD interactively | Planning |
 | `/plan-feature` | Plan feature implementation | Planning |
+| `/init-project` | Initialize new downstream project | Planning |
 | `/execute` | Execute an implementation plan | Implementation |
 | `/commit` | Create formatted commit | Implementation |
-| `/prime` | Load project context | Any |
-| `/init-project` | Initialize new downstream project | Planning |
-| `/screenshot` | Visual verification with agent-browser | Validation |
 | `/update-readme` | Update README with current status | Implementation |
+| `/visual-verify` | UI verification via agent-browser (fast) | Validation |
+| `/pre-production` | Security & Quality Check before deploy | Validation |
+| `/screenshot` | Visual verification screenshots | Validation |
+| `/session-end` | End session, update Linear, clean state | Any |
+| `/productizer` | Bridge Linear ↔ Productive.io for reporting | Any |
+| `/budget` | **Track customer kontingent from Productive.io** | Any |
+| `/n8n-workflow` | **Generate n8n workflows for agents** | Implementation |
+| `/promptfoo` | **LLM evaluation & self-learning prompts** | Validation |
 | `/promote` | Promote patterns to upstream agent-kit | Any |
 | `/sync` | Sync updates from upstream agent-kit | Any |
 
 Skills are stored in `.claude/skills/` with `SKILL.md` files. See [Claude Code Skills Docs](https://code.claude.com/docs/en/skills).
+
+## Custom Subagents (Claude Code v2.1.16+)
+
+Agent Kit includes custom subagents for specialized tasks. Located in `.claude/agents/`.
+
+| Agent | Purpose | Model | When Used |
+|-------|---------|-------|-----------|
+| `code-reviewer` | Code quality & security review | Sonnet | After code changes |
+| `architecture-guard` | CLAUDE.md compliance check | Haiku | Before committing |
+| `test-runner` | Test execution & reporting | Haiku | After implementation |
+| `session-closer` | Session cleanup & Linear sync | Haiku | End of session |
+
+### Using Agents
+
+Agents are invoked automatically when appropriate, or explicitly:
+
+```
+Use the code-reviewer agent to review my recent changes
+Run architecture-guard on the components/ directory
+Have test-runner execute the authentication tests
+```
+
+### Creating Custom Agents
+
+Add a `.md` file to `.claude/agents/`:
+
+```yaml
+---
+name: my-agent
+description: When to use this agent
+tools: Read, Grep, Glob
+model: sonnet
+---
+
+Agent instructions here...
+```
+
+See [Claude Code Subagents Docs](https://code.claude.com/docs/en/sub-agents) and `.claude/reference/task-system.md` for details.
 
 ### Package Scripts
 
@@ -260,9 +404,19 @@ NEXT_PUBLIC_CONVEX_URL=https://your-project.convex.cloud
 # AI Models
 ANTHROPIC_API_KEY=sk-ant-...
 
+# Productive.io (für Customer Reporting)
+PRODUCTIVE_API_TOKEN=your-api-token
+PRODUCTIVE_ORG_ID=your-org-id
+
 # Optional
 OPENAI_API_KEY=sk-...
 ```
+
+### Productive.io Setup
+
+1. Productive.io → Settings → API integrations
+2. "Generate new token" → Token sicher speichern
+3. Organization ID aus URL: `app.productive.io/org-id/...`
 
 ## Deployment
 
@@ -309,10 +463,16 @@ vercel
 - **Convex** - Reactive database + vector search
 - **n8n** - Workflow automation
 
-### AI Models (via LiteLLM)
-- Claude Opus 4.5 - Complex reasoning
-- Claude Sonnet 4 - General purpose
-- Claude Haiku - Fast, high-volume
+### AI Models
+
+| Provider | Models | Use Case |
+|----------|--------|----------|
+| **Anthropic** (Primary) | Claude Opus 4.5, Sonnet 4, Haiku | General purpose, complex reasoning |
+| **Azure OpenAI** (Optional) | GPT-4o, GPT-4 Turbo | GDPR-konform, EU Data Residency |
+
+**AI Frameworks:**
+- **Mastra** - Complex agents, tools, workflows
+- **Vercel AI SDK** - Simple chat, streaming (optional)
 
 ### Deployment
 - **Docker** - Containerization
@@ -326,6 +486,14 @@ vercel
 |----------|---------|
 | [CLAUDE.md](./CLAUDE.md) | Development rules & conventions |
 | [WORKFLOW.md](./WORKFLOW.md) | Step-by-step workflow guide |
+| [.claude/reference/aidd-methodology.md](./.claude/reference/aidd-methodology.md) | **AIDD: Adaptive AI Discovery & Delivery** |
+| [.claude/reference/linear-setup.md](./.claude/reference/linear-setup.md) | **Linear MCP setup guide** |
+| [.claude/reference/productive-integration.md](./.claude/reference/productive-integration.md) | **Productive.io & Delivery Units** |
+| [.claude/reference/minio-integration.md](./.claude/reference/minio-integration.md) | **MinIO S3-compatible file storage** |
+| [.claude/reference/ai-framework-choice.md](./.claude/reference/ai-framework-choice.md) | **Mastra vs Vercel AI SDK decision guide** |
+| [.claude/reference/mcp-servers.md](./.claude/reference/mcp-servers.md) | **All MCP servers overview** |
+| [.claude/reference/azure-openai-integration.md](./.claude/reference/azure-openai-integration.md) | **Azure OpenAI (GDPR-konform)** |
+| [.claude/reference/service-dashboard-audit.md](./.claude/reference/service-dashboard-audit.md) | Service Dashboard gap analysis |
 | [.claude/PRD.md](./.claude/PRD.md) | Product requirements template |
 | [.claude/skills/README.md](./.claude/skills/README.md) | Skills documentation |
 | [scripts/promote.sh](./scripts/promote.sh) | Promote patterns to upstream |
@@ -524,6 +692,51 @@ git commit -m "chore: sync new-skill from upstream template"
 4. **Test in isolation** – Verify patterns work without project context
 5. **Document patterns** – Add comments explaining usage
 6. **Sync regularly** – Pull useful updates from upstream monthly
+
+---
+
+## Security Practices
+
+Agent Kit includes built-in security workflows for pre-production checks.
+
+### Pre-Production Checks
+
+Before deploying to production, run security and quality checks:
+
+```bash
+# MVP/Staging deployment (quick, ~5 min)
+/pre-production mvp
+
+# Production deployment (full audit, ~15-30 min)
+/pre-production production
+```
+
+### Security Check Levels
+
+| Level | Checks | When to Use |
+|-------|--------|-------------|
+| **MVP** | Build, TypeScript, ESLint, Quick security scan | Internal demos, staging |
+| **Production** | Full security audit, E2E tests, vulnerability scan | Customer-facing releases |
+
+### Security Tools
+
+| Tool | Purpose |
+|------|---------|
+| **Strix AI** | Automated security scanning |
+| **ESLint** | Code quality & security rules |
+| **TypeScript** | Type safety |
+| **Playwright** | E2E testing for critical flows |
+
+### Security Response Matrix
+
+| Severity | Action | Blocks Deploy? |
+|----------|--------|----------------|
+| **Critical** | Fix immediately | Yes |
+| **High** | Fix before release | Yes |
+| **Medium** | Document, fix within sprint | No |
+| **Low** | Add to backlog | No |
+
+See `.claude/skills/pre-production/SKILL.md` for detailed checklists.
 
 ---
 

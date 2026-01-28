@@ -27,6 +27,33 @@ If no argument provided, ask for:
 - Project name (kebab-case, e.g., `customer-portal`)
 - Project description (one sentence)
 
+## Step 0: Onboarding Questions
+
+Before creating the project, ask:
+
+1. **Project Name** (required)
+   - kebab-case, e.g., `customer-portal`
+   - Will be used for directory, package.json, Linear project
+
+2. **GitHub Repository?** (default: YES)
+   - Creates repo in `lucidlabs-hq` org
+   - Private by default
+
+3. **Linear Project?** (default: YES)
+   - Creates project in `lucid-labs-agents` workspace
+   - Format: `[Domain] Project Name`
+   - Ask for domain: Agents, AI, Platform, Integration, etc.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Project Onboarding                                              │
+├─────────────────────────────────────────────────────────────────┤
+│  Name:    [project-name]                                         │
+│  GitHub:  [YES] lucidlabs-hq/[project-name]                     │
+│  Linear:  [YES] [Domain] Project Name                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ## Step 1: Run the Scaffolding Script
 
 The script automatically creates the project in `../projects/`:
@@ -45,6 +72,32 @@ The script automatically creates the project in `../projects/`:
 3. Customizes package.json and README
 4. Creates template PRD
 5. Initializes git repository with initial commit
+6. Creates GitHub repository (if confirmed)
+7. Creates Linear project (if confirmed)
+
+## Step 1.5: Create Linear Project (if confirmed)
+
+If user confirmed Linear project creation:
+
+```bash
+# Use Linear MCP to create project
+# Team: lucid-labs-agents
+# Name: [Domain] Project Name
+```
+
+**Via MCP:**
+```
+Create Linear project:
+- Team: lucid-labs-agents
+- Name: "[Domain] [project-name]"
+- Description: "AI Agent project for [description]"
+```
+
+**Initial Issue:**
+Create a "Project Setup" issue in Exploration status:
+- Title: "Project Setup & Initial Configuration"
+- Work Type: Exploration
+- Status: Exploration
 
 ## Step 2: Provide Next Steps
 

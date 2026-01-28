@@ -40,6 +40,9 @@ NPM_SCOPE="@lucidlabs"
 AI_MODEL="anthropic"  # anthropic, openai, both
 INTERACTIVE=false
 GITHUB_REPO_URL=""
+CREATE_LINEAR_PROJECT=true
+LINEAR_DOMAIN=""
+LINEAR_PROJECT_NAME=""
 
 # Get the script's directory (agent-kit root)
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -204,6 +207,46 @@ run_interactive() {
         *) AI_MODEL="anthropic" ;;
     esac
 
+    # Linear Project
+    echo ""
+    echo -e "${CYAN}Project Management:${NC}"
+    echo ""
+    if confirm "Linear Projekt erstellen? (lucid-labs-agents workspace)"; then
+        CREATE_LINEAR_PROJECT=true
+        echo ""
+        echo "Project Domain (für Naming Convention):"
+        echo "  1) Agents    - AI Agent Projekte"
+        echo "  2) AI        - Allgemeine AI Features"
+        echo "  3) Platform  - Infrastructure & Ops"
+        echo "  4) Integration - Externe Integrationen"
+        echo "  5) Other     - Eigene Domain"
+        read -p "Select (1-5): " domain_choice
+        case $domain_choice in
+            1) LINEAR_DOMAIN="Agents" ;;
+            2) LINEAR_DOMAIN="AI" ;;
+            3) LINEAR_DOMAIN="Platform" ;;
+            4) LINEAR_DOMAIN="Integration" ;;
+            5)
+                read -p "Domain Name: " LINEAR_DOMAIN
+                ;;
+            *) LINEAR_DOMAIN="Agents" ;;
+        esac
+
+        # Generate Linear project name
+        # Convert kebab-case to Title Case
+        TITLE_CASE_NAME=$(echo "$PROJECT_NAME" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2))}1')
+        LINEAR_PROJECT_NAME="[$LINEAR_DOMAIN] $TITLE_CASE_NAME"
+
+        echo ""
+        echo -e "Linear Project Name: ${YELLOW}$LINEAR_PROJECT_NAME${NC}"
+        read -p "Anpassen? (Enter für Standard): " custom_name
+        if [[ -n "$custom_name" ]]; then
+            LINEAR_PROJECT_NAME="[$LINEAR_DOMAIN] $custom_name"
+        fi
+    else
+        CREATE_LINEAR_PROJECT=false
+    fi
+
     echo ""
     echo -e "${CYAN}Configuration Summary:${NC}"
     echo "──────────────────────────────────────"
@@ -215,6 +258,7 @@ run_interactive() {
     echo "  n8n:        $([ "$INCLUDE_N8N" = true ] && echo "Yes" || echo "No")"
     echo "  Terraform:  $([ "$INCLUDE_TERRAFORM" = true ] && echo "Yes" || echo "No")"
     echo "  AI Model:   $AI_MODEL"
+    echo "  Linear:     $([ "$CREATE_LINEAR_PROJECT" = true ] && echo "$LINEAR_PROJECT_NAME" || echo "No")"
     echo "──────────────────────────────────────"
     echo ""
 
@@ -525,6 +569,33 @@ EOF
         print_info "Install with: brew install gh"
     fi
 
+    # Linear Project Creation Instructions
+    if [[ "$CREATE_LINEAR_PROJECT" = true ]]; then
+        echo ""
+        print_step "Linear Project Setup"
+        echo ""
+        echo -e "  ${YELLOW}Linear Projekt muss über MCP erstellt werden:${NC}"
+        echo ""
+        echo "  1. Starte Claude in deinem neuen Projekt:"
+        echo -e "     ${CYAN}cd $project_dir && claude${NC}"
+        echo ""
+        echo "  2. Erstelle das Linear Projekt:"
+        echo -e "     ${CYAN}/linear create-project${NC}"
+        echo ""
+        echo "  Projekt Details:"
+        echo "    - Workspace: lucid-labs-agents"
+        echo "    - Name: $LINEAR_PROJECT_NAME"
+        echo ""
+
+        # Save Linear config for later
+        cat > "$project_dir/.linear-config" << EOF
+LINEAR_PROJECT_NAME="$LINEAR_PROJECT_NAME"
+LINEAR_DOMAIN="$LINEAR_DOMAIN"
+LINEAR_WORKSPACE="lucid-labs-agents"
+EOF
+        print_info "Linear config saved to .linear-config"
+    fi
+
     print_success "Project created successfully!"
 }
 
@@ -585,16 +656,19 @@ print_next_steps() {
     echo "  6. Start developing:"
     echo -e "     ${YELLOW}pnpm run dev${NC}"
     echo ""
-    echo -e "${CYAN}📖 Workflow:${NC}"
+    echo -e "${CYAN}📖 Workflow (Discovery-Driven Development):${NC}"
     echo ""
-    echo "  PRD-First Development:"
+    echo "  Linear-First Development:"
     echo "  ┌─────────────────────────────────────────────────────────┐"
-    echo "  │  1. Edit .claude/PRD.md with your requirements         │"
-    echo "  │  2. Run /plan-feature to create implementation plan    │"
-    echo "  │  3. Run /execute to implement the plan                 │"
-    echo "  │  4. Run /validate to verify compliance                 │"
-    echo "  │  5. Run /commit to commit changes                      │"
+    echo "  │  1. /linear create - Create Linear issue               │"
+    echo "  │  2. /plan-feature  - Plan implementation               │"
+    echo "  │  3. /execute       - Implement the plan                │"
+    echo "  │  4. /validate      - Verify compliance                 │"
+    echo "  │  5. /commit        - Commit changes                    │"
+    echo "  │  6. /session-end   - Update Linear, clean state        │"
     echo "  └─────────────────────────────────────────────────────────┘"
+    echo ""
+    echo "  Status Flow: Backlog → Exploration → Decision → Delivery → Review → Done"
     echo ""
     echo -e "${CYAN}📚 Documentation:${NC}"
     echo "  - CLAUDE.md      - Project conventions and rules"

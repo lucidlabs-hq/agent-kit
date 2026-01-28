@@ -54,6 +54,10 @@ test-results/
 # Future Plans (local only, not tracked)
 /future-plans/
 
+# Local-only documentation (architecture decisions, etc.)
+**/LOCAL-*.md
+**/*-LOCAL.md
+
 # Cursor Rules (IDE-specific)
 /.cursorrules
 

@@ -61,6 +61,56 @@ For EACH task in "Step by Step Tasks":
 - Ensure TypeScript has no errors
 - Ensure imports are correct
 
+### 3.5 Progress Tracking (Optional - Claude Code v2.1.16+)
+
+Use Claude Code's Task system for visual progress tracking in the terminal.
+
+#### When to Use Task Tracking
+
+| Scenario | Use Tasks? |
+|----------|------------|
+| 3+ tasks in plan | Yes |
+| Complex multi-file changes | Yes |
+| Quick single-file fix | No |
+| User requests tracking | Yes |
+
+#### How to Track Progress
+
+**Before starting implementation:**
+```
+TaskCreate({
+  subject: "Task 1: Create types",
+  description: "Create TypeScript interfaces for the feature",
+  activeForm: "Creating types"
+})
+```
+
+**When starting a task:**
+```
+TaskUpdate({ taskId: "1", status: "in_progress" })
+```
+
+**When completing a task:**
+```
+TaskUpdate({ taskId: "1", status: "completed" })
+```
+
+#### Benefits
+
+- Visual progress bar in terminal
+- Clear status of each task
+- Can be resumed if session interrupted
+- Provides structured progress report
+
+#### Task Dependencies (Advanced)
+
+For sequential tasks where one must complete before another:
+```
+TaskUpdate({ taskId: "2", addBlockedBy: ["1"] })
+```
+
+Task 2 will automatically unblock when Task 1 completes.
+
 ### 4. Implement Testing Strategy
 
 After completing implementation tasks:

@@ -13,7 +13,36 @@ Build comprehensive understanding of the codebase AND show current project statu
 
 ## Process
 
-### 1. Read Project Status (FIRST!)
+### 1. Check Linear for Active Work (FIRST!)
+
+Query Linear for issues assigned to you or recently updated:
+
+```
+Use Linear MCP to search:
+- Team: lucid-labs-agents
+- Assignee: me
+- Status: Exploration, Decision, Delivery, Review
+- Sort: Updated (descending)
+```
+
+**Show:**
+```
+## Linear Status
+
+| ID | Title | Status | Project |
+|----|-------|--------|---------|
+| ABC-123 | Feature X | Exploration | [Agents] Project |
+
+**New since last session:**
+- [list any new issues or comments]
+
+Woran möchtest du arbeiten?
+1. [ABC-123] Continue Feature X
+2. [New] Start something new
+3. [Skip] Just explore codebase
+```
+
+### 2. Read Project Status
 
 Read `PROJECT-STATUS.md` to understand:
 - Current project name and phase
@@ -130,21 +159,27 @@ ls frontend/node_modules 2>/dev/null && echo "Dependencies installed" || echo "R
 ```markdown
 ## Ready to Work
 
-### If Continuing Active Plan:
-Next: Execute task [X] from `.agents/plans/[plan].md`
-Command: Continue with implementation
+### Linear Issues (Active)
+[Show issues from Linear in Exploration/Delivery status]
+
+### If Continuing Active Issue:
+Issue: [ABC-123] Feature X
+Status: [Exploration/Delivery]
+Next: [What to do next based on status]
 
 ### If Starting New Feature:
-Command: `/plan-feature [feature-name]`
+1. Create Linear issue first: `/linear create`
+2. Then plan: `/plan-feature [feature-name]`
 
 ### Available Skills
 | Skill | Description |
 |-------|-------------|
+| `/linear` | Manage Linear issues |
 | `/plan-feature` | Create new implementation plan |
 | `/execute [plan]` | Execute a plan |
 | `/validate` | Run all validation checks |
 | `/commit` | Create formatted commit |
-| `/create-prd` | Create/update PRD |
+| `/session-end` | End session, update Linear |
 ```
 
 ---
@@ -179,6 +214,18 @@ Quick Resume: [One sentence summary of what to do next]
 ```
 
 Examples:
-- "Quick Resume: Continue Task 3 in dashboard-feature.md - implement TicketCard component"
-- "Quick Resume: No active plan. Start with /plan-feature [feature] or /create-prd"
-- "Quick Resume: Plan complete! Run /validate then /commit"
+- "Quick Resume: [ABC-123] Continue Exploration - research authentication options"
+- "Quick Resume: [ABC-123] Ready for Decision - present findings"
+- "Quick Resume: [ABC-123] In Delivery - implement Task 3 from plan"
+- "Quick Resume: No active issues. Create one with /linear create"
+
+## Session End Reminder
+
+At appropriate stopping points, remind:
+
+```
+Bevor du gehst: /session-end
+→ Updates Linear ticket status
+→ Adds work summary
+→ Ensures clean state for next session
+```

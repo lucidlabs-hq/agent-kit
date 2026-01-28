@@ -68,9 +68,12 @@ pnpm run build                   # Production Build (Node.js)
 
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
-| **Framework** | Convex Auth | Built-in authentication |
+| **Framework** | Better Auth | Modern TypeScript auth |
+| **Database** | Convex Adapter | Session/user storage |
 | **Features** | OAuth, Magic Link, Password | Standard auth flows |
 | **Sessions** | Convex tables | Reactive, automatic sync |
+
+**Integration:** [Better Auth + Convex](https://www.better-auth.com/docs/integrations/convex)
 
 ### Runtime & Package Manager
 
@@ -404,7 +407,7 @@ Siehe: `.claude/reference/ssr-hydration.md`
 |-----------|------------|
 | **Application data** | Convex tables |
 | **Vector search (RAG)** | Convex vector indexes |
-| **Sessions** | Convex Auth |
+| **Sessions** | Better Auth + Convex |
 | **File storage** | Convex file storage |
 
 **Benefits:**
@@ -412,6 +415,54 @@ Siehe: `.claude/reference/ssr-hydration.md`
 - Type-safe queries and mutations
 - Built-in vector search for RAG
 - Self-hosted or cloud deployment
+
+---
+
+## AI-Coding Principles
+
+**Siehe:** `.claude/reference/ai-coding-principles.md` für vollständige Dokumentation.
+
+### Zod-First Development
+
+```typescript
+// 1. Schema definieren (Single Source of Truth)
+const UserSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(2),
+  role: z.enum(['admin', 'user']),
+});
+
+// 2. Type ableiten (nie manuell!)
+type User = z.infer<typeof UserSchema>;
+
+// 3. Validation bei Boundaries
+const user = UserSchema.parse(input);
+```
+
+### Sorting für Konsistenz
+
+| Was | Sortierung |
+|-----|------------|
+| **Imports** | Gruppiert + alphabetisch |
+| **Object Keys** | Alphabetisch |
+| **Interface Props** | Alphabetisch |
+| **Tailwind Classes** | Logische Gruppen (via Plugin) |
+
+### Code für AI optimieren
+
+| Prinzip | Warum |
+|---------|-------|
+| **Explizit > Implizit** | AI versteht benannte Konstanten besser |
+| **Flache Strukturen** | Weniger Nesting = einfacher für AI |
+| **Konsistente Namen** | AI erkennt Patterns schneller |
+| **Max 300 Zeilen** | Kleinere Dateien = besserer Kontext |
+
+### Spec-First Workflow
+
+1. **Spec schreiben** - Requirements, Schemas, Edge Cases
+2. **Tests definieren** - Was muss funktionieren?
+3. **AI implementieren lassen** - Mit klarem Kontext
+4. **Review + Validate** - Subagents + manuelle Prüfung
 
 ---
 
@@ -440,19 +491,25 @@ Status display → Badge (with border)
 | Document | When to Read |
 |----------|--------------|
 | `.claude/PRD.md` | Product requirements, features, domain knowledge |
-| `.claude/reference/architecture.md` | System overview, tech stack, project structure |
-| `.claude/reference/design-system.md` | UI/UX, Tailwind v4 @theme inline, shadcn/ui |
+| `.claude/reference/aidd-methodology.md` | **AIDD: Adaptive AI Discovery & Delivery workflow** |
+| `.claude/reference/linear-setup.md` | **Linear MCP setup, OAuth, troubleshooting** |
+| `.claude/reference/productive-integration.md` | **Productive.io API, Delivery Units, Reporting** |
+| `.claude/reference/service-dashboard-audit.md` | Service Dashboard implementation status |
+| `.claude/reference/minio-integration.md` | **MinIO S3-compatible file storage** |
+| `.claude/reference/ai-framework-choice.md` | **Mastra vs Vercel AI SDK decision guide** |
+| `.claude/reference/mcp-servers.md` | **All MCP servers (Linear, MinIO, n8n, PromptFoo)** |
+| `.claude/reference/azure-openai-integration.md` | **Azure OpenAI (GDPR-konform, optional)** |
+| `.claude/reference/ai-coding-principles.md` | Zod-first, sorting, AI-optimized patterns |
+| `.claude/reference/architecture.md` | Platform architecture, tech stack |
+| `.claude/reference/design-system.md` | UI/UX, Tailwind v4, shadcn/ui |
 | `.claude/reference/error-handling.md` | Error handling patterns |
 | `.claude/reference/ssr-hydration.md` | SSR, hydration, Date.now() pitfalls |
-| `.claude/reference/testing-and-logging.md` | Tests, logging, monitoring |
+| `.claude/reference/mastra-best-practices.md` | AI agents, tools, workflows |
 | `.claude/reference/deployment-best-practices.md` | Docker, Caddy, Elestio, CI/CD |
-| `.claude/reference/scaling.md` | Stateless patterns, session storage |
-| `.claude/reference/cursor-patterns.md` | AI-assisted development guidelines |
-| `.claude/reference/document-maintenance.md` | Doc updates, versioning |
+| `.claude/reference/scaling.md` | Stateless patterns, Convex scaling |
+| `.claude/reference/task-system.md` | Task tracking, custom subagents, Swarm |
 | `convex/README.md` | Convex database setup, queries, mutations |
-| `mastra/README.md` | AI agents, tools, workflows |
-| `n8n/README.md` | Workflow automation templates |
-| `terraform/README.md` | Infrastructure as Code deployment |
+| `mastra/README.md` | Mastra setup guide |
 | `WORKFLOW.md` | Complete development workflow guide |
 
 ---
@@ -670,9 +727,19 @@ export class ExamplePage {
 
 1. Write unit tests for business logic (60%)
 2. Write integration tests for API/DB (30%)
-3. Write E2E tests only for critical flows (10%)
+3. **UI Changes:** Use `/visual-verify` for quick verification
+4. Write E2E tests only for critical production flows (10%)
 
-**Reference:** `.claude/reference/testing-and-logging.md`
+### Visual Verification vs E2E
+
+| Development (90%) | Production (10%) |
+|-------------------|------------------|
+| `/visual-verify` | E2E Tests |
+| agent-browser | Playwright |
+| Sekunden | Minuten |
+| Jede UI-Änderung | Login, Checkout, Payment |
+
+**Regel:** `/visual-verify` für Development, E2E nur für kritische Flows.
 
 ---
 
@@ -729,24 +796,34 @@ This project uses Claude Code Skills instead of legacy commands. Skills follow t
 ├── commit/SKILL.md
 ├── prime/SKILL.md
 ├── init-project/SKILL.md
+├── linear/SKILL.md
+├── session-end/SKILL.md
+├── productizer/SKILL.md
+├── visual-verify/SKILL.md
+├── pre-production/SKILL.md
 ├── screenshot/SKILL.md
 └── update-readme/SKILL.md
 ```
 
 ### Available Skills
 
-| Skill | Purpose | PIV Phase |
-|-------|---------|-----------|
+| Skill | Purpose | Phase |
+|-------|---------|-------|
 | `/start` | Entry point - create or open project | Any |
 | `/checkout-project` | Clone existing project from GitHub | Any |
+| `/prime` | Load project context + check Linear | Any |
+| `/linear` | Linear project management (create/update/sync) | Any |
 | `/create-prd` | Create Product Requirements | Planning |
 | `/plan-feature` | Plan feature implementation | Planning |
+| `/init-project` | Initialize new project | Planning |
 | `/execute` | Execute implementation plan | Implementation |
 | `/commit` | Create formatted commit | Implementation |
-| `/prime` | Load project context | Any |
-| `/init-project` | Initialize new project | Planning |
-| `/screenshot` | Visual verification | Validation |
 | `/update-readme` | Update documentation | Implementation |
+| `/visual-verify` | UI verification via agent-browser (fast) | Validation |
+| `/pre-production` | Security & Quality Check before deploy | Validation |
+| `/screenshot` | Visual verification screenshots | Validation |
+| `/session-end` | End session, update Linear, clean state | Any |
+| `/productizer` | Bridge Linear ↔ Productive.io for customer reporting | Any |
 | `/promote` | Promote patterns to upstream | Any |
 | `/sync` | Sync updates from upstream | Any |
 

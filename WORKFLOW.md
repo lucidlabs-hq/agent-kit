@@ -4,13 +4,240 @@ This guide explains the complete development workflow for Agent Kit projects.
 
 ## Table of Contents
 
-1. [Upstream/Downstream Model](#upstreamdownstream-model)
-2. [Quick Reference](#quick-reference)
-3. [PRD-First Development](#prd-first-development)
-4. [The PIV Loop](#the-piv-loop)
-5. [Skills](#skills)
-6. [Step-by-Step Workflow](#step-by-step-workflow)
-7. [Best Practices](#best-practices)
+1. [Linear Integration](#linear-integration)
+2. [Discovery-Driven Development](#discovery-driven-development)
+3. [Upstream/Downstream Model](#upstreamdownstream-model)
+4. [Quick Reference](#quick-reference)
+5. [PRD-First Development](#prd-first-development)
+6. [The PIV Loop](#the-piv-loop)
+7. [Skills](#skills)
+8. [Step-by-Step Workflow](#step-by-step-workflow)
+9. [Best Practices](#best-practices)
+
+---
+
+## Linear Integration
+
+All projects use Linear for issue tracking and project management.
+
+### Workspace
+
+- **URL:** https://linear.app/lucid-labs-agents
+- **Team:** Lucid Labs Agents
+
+### Einmalige Einrichtung (pro Maschine)
+
+```bash
+# 1. Linear MCP Server hinzufügen (einmalig)
+claude mcp add --transport http linear-server https://mcp.linear.app/mcp
+
+# 2. In einer Claude Session authentifizieren (einmalig)
+/mcp
+# → Browser öffnet sich
+# → Mit Lucid Labs Account einloggen
+# → Berechtigung erteilen
+# → Token wird in ~/.mcp-auth/ gespeichert
+```
+
+**Das war's!** Nach der einmaligen Einrichtung funktioniert Linear automatisch in allen Projekten.
+
+### Was ist einmalig, was wiederholt sich?
+
+| Aktion | Wann | Häufigkeit |
+|--------|------|------------|
+| `claude mcp add ...` | Setup | Einmalig pro Maschine |
+| `/mcp` (OAuth Login) | Setup | Einmalig pro Maschine |
+| `/prime` | Session Start | Jede Session |
+| `/linear create/update` | Während Arbeit | Bei Bedarf |
+| `/session-end` | Session Ende | Jede Session |
+
+### Bei Problemen
+
+```bash
+# Token-Cache löschen und neu authentifizieren
+rm -rf ~/.mcp-auth
+
+# Dann in Claude Session:
+/mcp
+```
+
+Siehe `.claude/reference/linear-setup.md` für vollständige Dokumentation.
+
+---
+
+## Productive.io Integration
+
+Productive.io ist das **System of Record für Kundenwert** - alle Delivery Units, Budgets und Reporting.
+
+### Zwei-System-Architektur
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                  │
+│   PRODUCTIVE.IO                    LINEAR                        │
+│   ──────────────                   ──────                        │
+│   System of Record                 Execution System              │
+│   für Kundenwert                   für technische Arbeit         │
+│                                                                  │
+│   • Kunden (Companies)             • Technische Umsetzung        │
+│   • Delivery Units (Projects)      • Exploration → Delivery      │
+│   • Budget & Abrechnung            • Maintenance                 │
+│   • Kunden-Reporting                                             │
+│                                                                  │
+│                    ┌──────────────┐                              │
+│                    │ PRODUCTIZER  │                              │
+│                    │   (Bridge)   │                              │
+│                    └──────────────┘                              │
+│                           │                                      │
+│                           ▼                                      │
+│               ┌────────────────────┐                             │
+│               │  CUSTOMER PORTAL   │                             │
+│               └────────────────────┘                             │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Delivery Units
+
+| Typ | Beschreibung | Linear nötig? |
+|-----|--------------|---------------|
+| Agent | Produktiver KI-Agent | Ja |
+| GPT / Prompt | Prompt oder Prompt-Set | Nein (meist) |
+| Workflow | Automatisierte Abläufe | Ja |
+| Integration | Externe Anbindungen | Ja |
+| Workshop | Einzelner Workshop | Nein |
+| Advisory | Analyse, Beratung | Nein |
+
+### Regel
+
+```
+Productive.io Project = Delivery Unit (IMMER)
+Linear Project        = Nur wenn technische Execution
+```
+
+### Productizer Skill
+
+```bash
+/productizer setup [customer]   # Neuen Kunden einrichten
+/productizer sync               # Daten synchronisieren
+/productizer report [customer]  # Kunden-Report generieren
+```
+
+Siehe `.claude/reference/productive-integration.md` für vollständige Dokumentation.
+
+### Session Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     LINEAR-INTEGRATED SESSION                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   SESSION START                SESSION END                       │
+│   ─────────────                ───────────                       │
+│   /prime                       /session-end                      │
+│   ↓                            ↓                                 │
+│   Check Linear issues          Update ticket status              │
+│   Show active work             Add work summary                  │
+│   Ask what to work on          Verify Git compliance             │
+│                                                                  │
+│                    DURING SESSION                                │
+│                    ──────────────                                │
+│                    /linear create  - New issue                   │
+│                    /linear update  - Change status               │
+│                    /linear sync    - Sync state                  │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Key Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/linear create` | Create new Linear issue |
+| `/linear update` | Update issue status |
+| `/linear sync` | Sync local work with Linear |
+| `/linear status` | Show current Linear state |
+| `/session-end` | End session, update Linear |
+
+---
+
+## Discovery-Driven Development
+
+We use **Discovery-Driven Development (DDD)** - a status flow designed for evidence-based decisions.
+
+### Status Flow
+
+```
+[ Backlog ]
+     |
+     v
+[ Exploration ]    ← Timeboxed research/spike
+     |
+     v
+[ Decision ]       ← Steering point
+   /   |     \
+  v    v      v
+[Delivery] [Exploration] [Dropped]
+    |           ^
+    v           |
+[ Review ] -----+
+    |
+    v
+[ Done ]
+```
+
+### Status Definitions
+
+| Status | Purpose | What Happens |
+|--------|---------|--------------|
+| **Backlog** | Idea capture | No commitment, no prioritization |
+| **Exploration** | Reduce uncertainty | Timeboxed spike, learning focus |
+| **Decision** | Steering point | Proceed / Iterate / Pivot / Drop |
+| **Delivery** | Implementation | Validated solution, measurable progress |
+| **Review** | Validation | QA, stakeholder review |
+| **Done** | Shipped | Ready for production |
+| **Dropped** | Valid end | Insight gained, not pursuing |
+
+### Work Types
+
+| Type | Description | Skips Exploration? |
+|------|-------------|-------------------|
+| **Exploration** | Research, spike | No |
+| **Delivery** | Implementation | After exploration |
+| **Maintenance** | Bug fix, ops | Yes |
+
+### Maintenance Flow
+
+For known problems with known solutions:
+
+```
+Backlog → Decision → Delivery → Review → Done
+```
+
+Or for small tasks:
+```
+Backlog → Delivery → Done
+```
+
+### Project Naming
+
+**Format:** `[Domain] Capability / Area`
+
+**Examples:**
+- `[Agents] Ticket Classification`
+- `[AI] Meeting Summarization`
+- `[Platform] Infrastructure & Ops`
+- `[Integration] External API Access`
+
+### Labels
+
+**Mandatory:**
+- Work Type: `Exploration` | `Delivery` | `Maintenance`
+
+**Optional:**
+- `Bug`, `Security`, `Tech Debt`, `Performance`, `Ops`
+
+---
 
 ---
 
@@ -91,8 +318,14 @@ Is this code domain-specific?
 # 1. Navigate to the template
 cd ~/coding/repos/lucidlabs/lucidlabs-agent-kit
 
-# 2. Run the scaffolding script
-./scripts/create-agent-project.sh ../projects/my-project
+# 2. Run the scaffolding script (interactive)
+./scripts/create-agent-project.sh --interactive
+
+# Script will ask:
+# - Project name
+# - Components (Frontend, Mastra, Convex, etc.)
+# - GitHub repo creation (default: yes)
+# - Linear project creation (default: yes)
 
 # 3. Move to the new project
 cd ../projects/my-project
@@ -100,14 +333,14 @@ cd ../projects/my-project
 # 4. Install dependencies
 cd frontend && pnpm install && cd ..
 
-# 5. Initialize git repo and push
-git init
-gh repo create lucidlabs-hq/my-project --private --source=. --push
+# 5. Start Claude session
+claude
 
-# 6. Start developing
-/create-prd              # Create project requirements
-/prime                   # Load context
+# 6. Start developing (Linear-first)
+/linear create           # Create first Linear issue
 /plan-feature login      # Plan first feature
+/execute                 # Implement
+/session-end             # Update Linear when done
 ```
 
 ---
@@ -343,6 +576,84 @@ Agent Kit uses the **PIV (Plan-Implement-Validate)** workflow:
 
 ---
 
+## Task System & Custom Agents (v2.1.16+)
+
+Claude Code v2.1.16+ introduces native Task tracking and custom Subagents that integrate with the PIV workflow.
+
+### Task-Enhanced PIV Loop
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         PIV + TASKS                              │
+│                                                                  │
+│   ┌─────────────┐     ┌─────────────┐     ┌─────────────┐      │
+│   │    PLAN     │────▶│  IMPLEMENT  │────▶│  VALIDATE   │      │
+│   │             │     │  + Tasks    │     │  + Agents   │      │
+│   └─────────────┘     └─────────────┘     └─────────────┘      │
+│                              │                    │             │
+│                              ▼                    ▼             │
+│                       TaskCreate/Update    code-reviewer       │
+│                       Progress Tracking    architecture-guard  │
+│                                            test-runner         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Using Tasks in `/execute`
+
+When running `/execute`, Claude can optionally track progress:
+
+```
+/execute my-feature.md
+
+> Creating tasks for plan...
+> [████████░░░░░░░░] 2/5 tasks complete
+> Currently: Implementing API endpoint...
+```
+
+### Custom Subagents
+
+Agent Kit includes specialized agents in `.claude/agents/`:
+
+| Agent | Purpose | Model | When Used |
+|-------|---------|-------|-----------|
+| `code-reviewer` | Code quality & security | Sonnet | After code changes |
+| `architecture-guard` | CLAUDE.md compliance | Haiku | Before committing |
+| `test-runner` | Test execution | Haiku | After implementation |
+
+### Example: Full PIV with Tasks and Agents
+
+```bash
+# 1. Plan (no tasks needed)
+/plan-feature user-auth
+
+# 2. Execute with task tracking
+/execute user-auth
+# → Creates tasks from plan
+# → Shows progress as each completes
+
+# 3. Validate with agents
+/validate
+# → code-reviewer checks quality
+# → architecture-guard checks compliance
+# → test-runner executes tests
+
+# 4. Commit
+/commit
+```
+
+### When to Use Tasks
+
+| Scenario | Use Tasks? |
+|----------|------------|
+| 3+ implementation steps | Yes |
+| Complex refactoring | Yes |
+| Bug fix (1-2 files) | No |
+| Documentation update | No |
+
+See `.claude/reference/task-system.md` for complete documentation.
+
+---
+
 ## Skills
 
 > **Note:** As of Claude Code v2.1.3 (January 2026), slash commands have been merged into skills.
@@ -521,8 +832,14 @@ cd frontend && pnpm install
 ### Daily Development Flow
 
 ```bash
-# Morning: Prime Claude and check status
+# Morning: Prime Claude and check Linear
 /prime
+# → Shows your Linear issues
+# → Asks what to work on
+
+# Start work on issue
+/linear update ABC-123 exploration  # If starting research
+/linear update ABC-123 delivery     # If implementing
 
 # During day: Implement features
 /plan-feature X
@@ -531,9 +848,21 @@ cd frontend && pnpm install
 /commit
 
 # Before lunch/end of day
-pnpm run validate  # Quick sanity check
-/commit            # Commit work in progress
+/session-end
+# → Updates Linear ticket
+# → Checks Git compliance
+# → Saves progress state
 ```
+
+### End of Session Checklist
+
+The `/session-end` command ensures:
+
+- [ ] Git working tree is clean
+- [ ] Last commit follows conventions
+- [ ] Linear ticket status is current
+- [ ] Work summary added as comment
+- [ ] PROJECT-STATUS.md updated
 
 ---
 

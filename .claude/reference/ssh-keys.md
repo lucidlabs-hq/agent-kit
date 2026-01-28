@@ -105,6 +105,9 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... dein.name@lucidlabs.de
 
 ## Schritt 4: Public Key zu Elestio hinzufügen
 
+**Offizielle Anleitung:** https://docs.elest.io/books/security/page/how-to-connect-to-an-elestio-service-with-ssh-keys
+
+**Kurzfassung:**
 1. Elestio Dashboard öffnen
 2. Service → **lucidlabs-hq** → Settings
 3. **Manage SSH Keys** → **Add Key**

@@ -17,6 +17,8 @@
   - Überwacht alle LUCIDLABS-HQ Projekte
   - Status Page für Kunden
   - Alerting via Slack/Email
+  - **Security Update Monitoring:** Check ob Updates ausstehen (via SSH/Agent)
+  - **SSL Expiry Monitoring:** Zertifikate vor Ablauf warnen
 
 ### Centralized Logging
 - **Was:** Log-Aggregation für alle Projekte

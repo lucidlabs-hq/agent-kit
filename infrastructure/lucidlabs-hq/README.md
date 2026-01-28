@@ -63,22 +63,98 @@
 └── registry.json             # Project registry
 ```
 
-## Quick Start
+## Elestio Setup (Step-by-Step)
 
-### 1. Initial Server Setup
+### Phase 1: Provision Server in Elestio
+
+1. **Elestio Dashboard** → Deploy New Service → Docker Compose
+2. **Select Provider:** Hetzner Cloud
+3. **Select Region:** Europe, Germany (Falkenstein)
+4. **Select Server:** MEDIUM-2C-4G-CAX (Ampere ARM64, ~€29/mo)
+5. **Pipeline Name:** `lucidlabs-hq` (cannot be changed!)
+6. **Docker Compose:** Paste content from `docker-compose.bootstrap.yml`:
+
+```yaml
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: lucidlabs-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    command: caddy respond --listen :80 "LUCIDLABS-HQ OK - Run setup.sh"
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: lucidlabs-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=Europe/Berlin
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_LABEL_ENABLE=true
+
+networks:
+  lucidlabs-network:
+    name: lucidlabs-network
+
+volumes:
+  caddy_data:
+  caddy_config:
+```
+
+7. **Create Service** → Wait for provisioning (~5 min)
+
+### Phase 2: Configure Server
+
+After Elestio shows "Running":
 
 ```bash
-# SSH into server
-ssh root@projects.lucidlabs.de
+# 1. Get SSH credentials from Elestio dashboard
+# 2. SSH into server
+ssh root@<server-ip>
 
-# Clone this repo or copy files
-git clone git@github.com:lucidlabs-hq/agent-kit.git /tmp/agent-kit
+# 3. Clone agent-kit
+git clone https://github.com/lucidlabs-hq/agent-kit.git /tmp/agent-kit
 
-# Run setup
+# 4. Run setup script
 cd /tmp/agent-kit/infrastructure/lucidlabs-hq
-chmod +x setup.sh
+chmod +x setup.sh scripts/*.sh
 ./setup.sh
+
+# 5. Verify
+curl http://localhost:80  # Should show health response
+docker ps                 # Should show caddy + watchtower
 ```
+
+### Phase 3: Configure DNS
+
+At your DNS provider, add:
+
+```
+*.lucidlabs.app.  A  <server-ip>
+```
+
+Or individual subdomains as needed.
+
+### Phase 4: Deploy First Project
+
+```bash
+# On the server
+cd /opt/lucidlabs
+./scripts/add-project.sh invoice-accounting-assistant invoice
+# Follow the output instructions
+```
+
+---
+
+## Quick Reference
 
 ### 2. Add New Project
 
@@ -110,7 +186,8 @@ docker compose -p my-project up -d --build
 
 | File | Purpose |
 |------|---------|
-| `docker-compose.yml` | Base Caddy setup |
+| `docker-compose.bootstrap.yml` | **Elestio initial setup** (use this first!) |
+| `docker-compose.yml` | Full Caddy setup (after setup.sh) |
 | `Caddyfile` | Reverse proxy routing |
 | `registry.json` | Project tracking |
 | `setup.sh` | Initial server setup |

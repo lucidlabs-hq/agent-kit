@@ -261,6 +261,157 @@ Create a "Project Setup" issue in Exploration status:
 
 ---
 
+## Step 3b: n8n Workflow generieren (nur wenn n8n gewählt)
+
+**OPTIONAL:** Dieser Schritt wird nur ausgeführt, wenn n8n im Stack gewählt wurde.
+
+### Wann n8n?
+
+n8n wird typischerweise gewählt wenn:
+- Kunde explizit n8n-Lösung erwartet ("Wir wollen das in n8n haben")
+- Wir n8n-Expertise demonstrieren wollen
+- Externe Integrationen (CRM, ERP, Email) zentral sind
+- Kunde selbst n8n-Workflows anpassen können soll
+
+### n8n Workflow Template generieren
+
+Erstelle `n8n/workflows/agent-workflow.json` im neuen Projekt:
+
+```json
+{
+  "name": "[project-name] Agent Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "trigger",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "{{$randomUUID}}"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.MASTRA_API_URL}}/api/agents/[agent-name]/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messages: [{ role: 'user', content: $json.body.message }] }) }}",
+        "options": {}
+      },
+      "id": "call-mastra-agent",
+      "name": "Call Mastra Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [500, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "mastra-api-key",
+          "name": "Mastra API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, response: $json.text } }}"
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [750, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [{ "node": "Call Mastra Agent", "type": "main", "index": 0 }]
+      ]
+    },
+    "Call Mastra Agent": {
+      "main": [
+        [{ "node": "Respond to Webhook", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "notes": [
+      {
+        "id": "note-setup",
+        "type": "sticky",
+        "content": "## Setup\n\n1. Setze Environment Variable `MASTRA_API_URL`\n2. Erstelle HTTP Header Auth Credential mit API Key\n3. Passe [agent-name] an deinen Mastra Agent an",
+        "position": [250, 100],
+        "width": 300,
+        "height": 150
+      },
+      {
+        "id": "note-endpoints",
+        "type": "sticky",
+        "content": "## Mastra Endpoints\n\n- `/api/agents/{name}/generate` - Agent ausführen\n- `/api/agents/{name}/stream` - Streaming Response\n- `/api/tools/{name}/execute` - Tool direkt ausführen",
+        "position": [550, 100],
+        "width": 300,
+        "height": 150
+      }
+    ]
+  }
+}
+```
+
+### Workflow-Varianten
+
+Je nach Projekt-Typ können weitere Workflows generiert werden:
+
+| Projekt-Typ | Zusätzliche Workflows |
+|-------------|----------------------|
+| **Ticket-Klassifikation** | `ticket-classifier.json` mit Email-Trigger |
+| **Document Processing** | `document-pipeline.json` mit File-Trigger |
+| **CRM Integration** | `crm-sync.json` mit HubSpot/Salesforce Nodes |
+| **Scheduled Tasks** | `scheduled-agent.json` mit Cron-Trigger |
+
+### Frage den User
+
+```
+n8n wurde als Stack-Komponente gewählt.
+
+Soll ich einen vorkonfigurierten n8n Workflow generieren?
+
+[1] Ja, Basis-Workflow (Webhook → Agent → Response)
+[2] Ja, mit Email-Trigger (für Ticket-Systeme)
+[3] Ja, mit Cron-Trigger (für scheduled Tasks)
+[4] Nein, ich erstelle Workflows später manuell
+
+Wähle [1-4]:
+```
+
+### Nach Generierung
+
+Informiere den User:
+
+```
+n8n Workflow erstellt: n8n/workflows/agent-workflow.json
+
+Import in n8n:
+1. n8n öffnen → Workflows → Import from File
+2. n8n/workflows/agent-workflow.json auswählen
+3. Environment Variables setzen (MASTRA_API_URL)
+4. Credentials erstellen (Mastra API Key)
+
+Dokumentation: .claude/reference/n8n-workflows.md
+```
+
+---
+
 ## Step 4: Provide Next Steps
 
 After the script completes, tell the user:

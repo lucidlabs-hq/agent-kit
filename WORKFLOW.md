@@ -207,6 +207,40 @@ Linear Project        = Nur wenn technische Execution
 
 Siehe `.claude/reference/productive-integration.md` für vollständige Dokumentation.
 
+### n8n Workflow Generation (Optional)
+
+Wenn n8n im Stack gewählt wird, kann automatisch ein vorkonfigurierter Workflow generiert werden:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  n8n WORKFLOW GENERATION                                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Wann n8n wählen?                                                │
+│  • Kunde erwartet n8n-Lösung                                     │
+│  • Externe Integrationen (CRM, Email, ERP)                       │
+│  • Kunde soll Workflows selbst anpassen können                   │
+│  • Wir demonstrieren n8n-Expertise                               │
+│                                                                  │
+│  Generierte Workflows:                                           │
+│  • agent-workflow.json    - Webhook → Mastra Agent → Response    │
+│  • Vorkonfigurierte Endpoints für Mastra API                     │
+│  • Dokumentierte Notes im Workflow                               │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Workflow-Varianten:**
+
+| Variante | Trigger | Use Case |
+|----------|---------|----------|
+| Basis | Webhook | API-Aufrufe |
+| Email | IMAP/Email | Ticket-Systeme |
+| Scheduled | Cron | Automatisierte Tasks |
+| CRM | HubSpot/Salesforce | CRM-Integration |
+
+Wird automatisch bei `/init-project` angeboten, wenn n8n gewählt wurde.
+
 ### Session Workflow
 
 ```
@@ -409,6 +443,7 @@ cd ~/coding/repos/lucidlabs/lucidlabs-agent-kit
 # - Components (Frontend, Mastra, Convex, etc.)
 # - GitHub repo creation (default: yes)
 # - Linear project creation (default: yes)
+# - n8n Workflow generation (if n8n selected)
 
 # 3. Move to the new project
 cd ../projects/my-project

@@ -1088,7 +1088,10 @@ Import in n8n → Credentials setzen → Fertig!
 
 ## SLIDE 19b: Self-Learning Loop mit PromptFoo
 
-**Agenten, die sich selbst verbessern:**
+**Kundenagenten, die sich kontinuierlich verbessern:**
+
+> Jeder Agent, den wir für Kunden entwickeln, wird mit PromptFoo ausgestattet.
+> Das bedeutet: Der Agent wird nach Go-Live nicht schlechter, sondern **besser**.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -1139,7 +1142,9 @@ Import in n8n → Credentials setzen → Fertig!
 
 ## SLIDE 19c: PromptFoo - Wie wir es einsetzen
 
-**Drei Einsatzbereiche:**
+**Drei Einsatzbereiche in Kundenprojekten:**
+
+> Wenn wir einen Agent für einen Kunden entwickeln, setzen wir PromptFoo in allen drei Bereichen ein:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -1202,7 +1207,9 @@ Import in n8n → Credentials setzen → Fertig!
 
 ## SLIDE 19d: PromptFoo - Der Workflow
 
-**Integration in den Entwicklungsprozess:**
+**So verbessern sich Kundenagenten kontinuierlich:**
+
+> Dieser Workflow läuft für jeden Agenten, den wir ausliefern - automatisch, messbar, nachhaltig.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐

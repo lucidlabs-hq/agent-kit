@@ -432,6 +432,134 @@ Patterns fließen zwischen Projekten!
 
 ---
 
+## SLIDE 17b: Wie funktioniert der Workflow?
+
+**Der Entwicklungs-Kreislauf:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        AGENT KIT ENTWICKLUNGSKREISLAUF                           │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│   1. PROJEKT ERSTELLEN                                                          │
+│   ════════════════════                                                          │
+│                                                                                  │
+│   /init-project customer-portal                                                 │
+│        │                                                                         │
+│        ▼                                                                         │
+│   ┌─────────────────┐                ┌─────────────────────────────────┐        │
+│   │   Agent Kit     │ ──────────────▶│  projects/customer-portal/      │        │
+│   │   (Template)    │   Kopiert      │  (Neues Projekt)                │        │
+│   └─────────────────┘   Boilerplate  └─────────────────────────────────┘        │
+│                                                                                  │
+│                                                                                  │
+│   2. IM PROJEKT ENTWICKELN                                                      │
+│   ════════════════════════                                                      │
+│                                                                                  │
+│   cd projects/customer-portal                                                   │
+│   claude                                                                        │
+│   /plan-feature → /execute → /validate → /commit                               │
+│                                                                                  │
+│   → Neue Skills entstehen                                                       │
+│   → Neue Patterns werden entdeckt                                               │
+│   → Best Practices etabliert                                                    │
+│                                                                                  │
+│                                                                                  │
+│   3. BEST PRACTICES ZURÜCKFÜHREN (PROMOTE)                                      │
+│   ════════════════════════════════════════                                      │
+│                                                                                  │
+│   /promote                                                                       │
+│        │                                                                         │
+│        ▼                                                                         │
+│   ┌─────────────────────────────────┐                                           │
+│   │  "Welche Patterns sind generisch │                                           │
+│   │   und sollten ins Template?"     │                                           │
+│   │                                  │                                           │
+│   │  [x] .claude/skills/new-skill/   │                                           │
+│   │  [x] lib/utils/helper.ts         │                                           │
+│   │  [ ] Domain-spezifischer Code    │ ← Bleibt im Projekt                      │
+│   └─────────────────────────────────┘                                           │
+│        │                                                                         │
+│        ▼                                                                         │
+│   ┌─────────────────────────────────┐                                           │
+│   │  GitHub Pull Request erstellt   │                                           │
+│   │  → Review durch Team            │                                           │
+│   │  → Merge ins Template           │                                           │
+│   └─────────────────────────────────┘                                           │
+│                                                                                  │
+│                                                                                  │
+│   4. UPDATES HOLEN (SYNC)                                                       │
+│   ═══════════════════════                                                       │
+│                                                                                  │
+│   /sync                                                                          │
+│        │                                                                         │
+│        ▼                                                                         │
+│   ┌─────────────────┐                ┌─────────────────────────────────┐        │
+│   │   Agent Kit     │ ──────────────▶│  projects/customer-portal/      │        │
+│   │ (neue Version)  │   Sync neue    │  (bestehendes Projekt)          │        │
+│   └─────────────────┘   Skills       └─────────────────────────────────┘        │
+│                                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## SLIDE 17c: Warum dieser Workflow?
+
+**Kontinuierliche Verbesserung:**
+
+| Problem | Lösung |
+|---------|--------|
+| "Jedes Projekt erfindet das Rad neu" | Template mit Best Practices |
+| "Wissen geht verloren" | Promote zurück ins Template |
+| "Alte Projekte haben keine neuen Features" | Sync holt Updates |
+| "Keine Qualitätskontrolle" | PR-Review vor Merge |
+
+**Der Effekt:**
+
+```
+Projekt 1 → Entdeckt Pattern A → Promote → PR → Review → Merge
+                                                    ↓
+Projekt 2 ←──────────────────────────────── Sync ──┘
+Projekt 3 ←──────────────────────────────── Sync ──┘
+Projekt 4 ←──────────────────────────────── Sync ──┘
+
+→ Alle Projekte profitieren von den Learnings!
+```
+
+**Qualitätssicherung:**
+- Jedes Promote geht durch einen Pull Request
+- Team reviewed ob das Pattern generisch genug ist
+- Nur getestete, dokumentierte Patterns kommen rein
+
+---
+
+## SLIDE 17d: Was wird promotet, was nicht?
+
+**Klare Trennung:**
+
+| ✅ PROMOTABLE (generisch) | ❌ NICHT PROMOTABLE (projekt-spezifisch) |
+|---------------------------|------------------------------------------|
+| Skills (`.claude/skills/`) | PRD (`.claude/PRD.md`) |
+| Reference Docs | App Pages (`app/`) |
+| UI Components (`components/ui/`) | Domain Agents |
+| Utility Functions (`lib/utils/`) | Database Schema |
+| Scripts | Projekt-Konfiguration |
+
+**Beispiele:**
+
+```
+✅ Ein neuer /pdf-analyze Skill         → Ins Template
+✅ Ein verbesserter Error Handler       → Ins Template
+✅ Eine generische DataTable Component  → Ins Template
+
+❌ Kunden-spezifische API Integration   → Bleibt im Projekt
+❌ Domain-spezifisches Datenmodell      → Bleibt im Projekt
+❌ Projekt-PRD                          → Bleibt im Projekt
+```
+
+---
+
 ## SLIDE 18: Projekt-Setup
 
 **In unter 10 Minuten:**

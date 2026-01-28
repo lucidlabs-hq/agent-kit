@@ -161,6 +161,15 @@ Falls User "Anpassen" wählt, zeige die manuelle Konfiguration:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
+│  LLM PROVIDER (zusätzlich zu Claude)                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  [y/N] Mistral      - EU-basiert, schnell, günstig, PDF-Analyse  │
+│  [y/N] Azure OpenAI - GDPR-konform, EU Data Residency            │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
 │  OPTIONAL COMPONENTS                                             │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
@@ -169,7 +178,6 @@ Falls User "Anpassen" wählt, zeige die manuelle Konfiguration:
 │  [y/N] Python       - PDF Parsing, OCR, Statistics, ML           │
 │  [y/N] LangChain    - Complex Chains, LangGraph                  │
 │  [y/N] Terraform    - Infrastructure as Code                     │
-│  [y/N] Azure OpenAI - GDPR-konform, EU Data Residency            │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -190,15 +198,17 @@ Falls User "Anpassen" wählt, zeige die manuelle Konfiguration:
 
 ### Entscheidungshilfe (Quick Reference)
 
-| Was brauchst du? | AI Layer | Database | Optional |
-|------------------|----------|----------|----------|
-| Chat Prototype | Vercel AI SDK | Convex | - |
-| Production Agent | Mastra | Convex | - |
-| Agent + CRM | Mastra | Convex | n8n |
-| SQL + Pinecone | Mastra | Postgres | Pinecone |
-| Enterprise Multi-Tenant | Mastra | Either | Portkey, n8n |
-| Complex Analysis | Mastra | Either | Python Workers |
-| GDPR/Compliance | Mastra | Postgres | Azure OpenAI |
+| Was brauchst du? | AI Layer | Database | LLM | Optional |
+|------------------|----------|----------|-----|----------|
+| Chat Prototype | Vercel AI SDK | Convex | Claude | - |
+| Production Agent | Mastra | Convex | Claude | - |
+| **PDF/Dokument-Analyse** | Mastra | Convex | **Mistral** | - |
+| Agent + CRM | Mastra | Convex | Claude | n8n |
+| SQL + Pinecone | Mastra | Postgres | Claude | Pinecone |
+| Enterprise Multi-Tenant | Mastra | Either | Claude | Portkey, n8n |
+| Complex Analysis | Mastra | Either | Claude | Python Workers |
+| GDPR/Compliance | Mastra | Postgres | **Azure OpenAI** | - |
+| EU-Hosting + Speed | Mastra | Convex | **Mistral** | - |
 
 ---
 

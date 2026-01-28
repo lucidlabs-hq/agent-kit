@@ -1,0 +1,37 @@
+{
+  "server": {
+    "name": "lucidlabs-hq",
+    "host": "projects.lucidlabs.de",
+    "provider": "elestio",
+    "datacenter": "hetzner-fsn1",
+    "architecture": "arm64",
+    "size": "MEDIUM-2C-4G-CAX",
+    "created": "2026-01-28",
+    "network": "lucidlabs-network"
+  },
+  "domains": {
+    "primary": "lucidlabs.app",
+    "wildcard": "*.lucidlabs.app"
+  },
+  "projects": [
+    {
+      "name": "invoice-accounting-assistant",
+      "subdomain": "invoice",
+      "url": "https://invoice.lucidlabs.app",
+      "repo": "lucidlabs-hq/invoice-accounting-assistant",
+      "status": "pending",
+      "services": {
+        "frontend": {
+          "container": "invoice-frontend",
+          "port": 3000
+        },
+        "mastra": {
+          "container": "invoice-mastra",
+          "port": 4000
+        }
+      },
+      "deployed": null,
+      "lastUpdate": null
+    }
+  ]
+}

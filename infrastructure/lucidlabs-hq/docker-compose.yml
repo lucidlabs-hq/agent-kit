@@ -1,0 +1,83 @@
+# =============================================================================
+# LUCIDLABS-HQ - Shared Multi-Project Server
+#
+# Base infrastructure for hosting multiple Lucid Labs projects on one server.
+# Each project runs in its own compose stack but shares the Caddy network.
+#
+# Location on server: /opt/lucidlabs/
+#
+# Usage:
+#   docker compose up -d                    # Start Caddy + shared services
+#   docker compose logs -f caddy            # View Caddy logs
+#   docker compose restart caddy            # Reload after Caddyfile changes
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # REVERSE PROXY (Caddy - Auto HTTPS)
+  # ===========================================================================
+  caddy:
+    image: caddy:2-alpine
+    container_name: lucidlabs-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - lucidlabs-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===========================================================================
+  # UPTIME KUMA (Monitoring) - Optional
+  # ===========================================================================
+  # Uncomment to enable monitoring dashboard
+  # uptime-kuma:
+  #   image: louislam/uptime-kuma:latest
+  #   container_name: lucidlabs-uptime-kuma
+  #   restart: unless-stopped
+  #   volumes:
+  #     - uptime_kuma_data:/app/data
+  #   networks:
+  #     - lucidlabs-network
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:3001"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+  # ===========================================================================
+  # WATCHTOWER (Auto-Update) - Optional
+  # ===========================================================================
+  # Uncomment to enable automatic container updates
+  # watchtower:
+  #   image: containrrr/watchtower
+  #   container_name: lucidlabs-watchtower
+  #   restart: unless-stopped
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   environment:
+  #     - WATCHTOWER_CLEANUP=true
+  #     - WATCHTOWER_POLL_INTERVAL=300
+  #     - WATCHTOWER_LABEL_ENABLE=true
+  #   command: --label-enable
+
+networks:
+  lucidlabs-network:
+    name: lucidlabs-network
+    driver: bridge
+
+volumes:
+  caddy_data:
+    name: lucidlabs-caddy-data
+  caddy_config:
+    name: lucidlabs-caddy-config
+  uptime_kuma_data:
+    name: lucidlabs-uptime-kuma-data

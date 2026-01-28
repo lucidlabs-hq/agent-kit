@@ -1,0 +1,91 @@
+# =============================================================================
+# PROJECT TEMPLATE - Docker Compose for LUCIDLABS-HQ Deployment
+#
+# Copy this file to your project and customize.
+# Replace PROJECT_NAME with your actual project name (kebab-case).
+#
+# Location on server: /opt/lucidlabs/projects/PROJECT_NAME/docker-compose.yml
+#
+# Usage:
+#   docker compose -p PROJECT_NAME up -d --build
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # FRONTEND (Next.js)
+  # ===========================================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: PROJECT_NAME-frontend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_CONVEX_URL=${CONVEX_URL}
+      - NEXT_PUBLIC_MASTRA_URL=http://PROJECT_NAME-mastra:4000
+    networks:
+      - lucidlabs-network
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================================================
+  # MASTRA (AI Agents)
+  # ===========================================================================
+  mastra:
+    build:
+      context: .
+      dockerfile: mastra/Dockerfile
+    container_name: PROJECT_NAME-mastra
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - CONVEX_URL=${CONVEX_URL}
+    networks:
+      - lucidlabs-network
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ===========================================================================
+  # N8N (Workflow Automation) - Optional, per-project
+  # ===========================================================================
+  # Uncomment if this project needs its own n8n instance
+  # n8n:
+  #   image: n8nio/n8n:latest
+  #   container_name: PROJECT_NAME-n8n
+  #   restart: unless-stopped
+  #   environment:
+  #     - N8N_BASIC_AUTH_ACTIVE=true
+  #     - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+  #     - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
+  #     - N8N_HOST=PROJECT_NAME-n8n.lucidlabs.app
+  #     - N8N_PORT=5678
+  #     - N8N_PROTOCOL=https
+  #     - GENERIC_TIMEZONE=Europe/Berlin
+  #   volumes:
+  #     - n8n_data:/home/node/.n8n
+  #   networks:
+  #     - lucidlabs-network
+  #   labels:
+  #     - "com.centurylinklabs.watchtower.enable=true"
+
+networks:
+  lucidlabs-network:
+    external: true
+
+# volumes:
+#   n8n_data:

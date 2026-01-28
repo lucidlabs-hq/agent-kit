@@ -1,0 +1,79 @@
+# =============================================================================
+# LUCIDLABS-HQ - Caddy Reverse Proxy Configuration
+#
+# Central routing for all projects on *.lucidlabs.app
+# Add new project blocks when deploying new projects.
+#
+# After changes: docker compose restart caddy
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Global Options
+# -----------------------------------------------------------------------------
+{
+	# Email for Let's Encrypt certificates
+	email admin@lucidlabs.de
+
+	# Staging for testing (uncomment to avoid rate limits during setup)
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+# -----------------------------------------------------------------------------
+# Health Check Endpoint (for monitoring)
+# -----------------------------------------------------------------------------
+:80 {
+	respond /health "OK" 200
+}
+
+# -----------------------------------------------------------------------------
+# PROJECTS - Add new projects below
+# -----------------------------------------------------------------------------
+
+# === Invoice Accounting Assistant ===
+invoice.lucidlabs.app {
+	# Frontend (Next.js)
+	reverse_proxy invoice-frontend:3000
+
+	# Mastra API (if exposed)
+	handle /api/agent/* {
+		reverse_proxy invoice-mastra:4000
+	}
+
+	# Logging
+	log {
+		output file /data/logs/invoice.log {
+			roll_size 10mb
+			roll_keep 5
+		}
+	}
+}
+
+# === Template for new projects ===
+# project-name.lucidlabs.app {
+#     reverse_proxy project-name-frontend:3000
+#
+#     handle /api/agent/* {
+#         reverse_proxy project-name-mastra:4000
+#     }
+#
+#     log {
+#         output file /data/logs/project-name.log {
+#             roll_size 10mb
+#             roll_keep 5
+#         }
+#     }
+# }
+
+# -----------------------------------------------------------------------------
+# MONITORING (uncomment when Uptime Kuma is enabled)
+# -----------------------------------------------------------------------------
+# monitoring.lucidlabs.app {
+#     reverse_proxy lucidlabs-uptime-kuma:3001
+# }
+
+# -----------------------------------------------------------------------------
+# SHARED N8N (uncomment if needed)
+# -----------------------------------------------------------------------------
+# n8n.lucidlabs.app {
+#     reverse_proxy lucidlabs-n8n:5678
+# }

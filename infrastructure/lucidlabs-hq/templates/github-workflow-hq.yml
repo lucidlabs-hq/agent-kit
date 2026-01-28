@@ -1,0 +1,83 @@
+# =============================================================================
+# GitHub Actions - Deploy to LUCIDLABS-HQ
+#
+# Copy this workflow to your project's .github/workflows/deploy-hq.yml
+# and customize PROJECT_NAME.
+#
+# Required secrets (set at org level or per-repo):
+#   - LUCIDLABS_HQ_HOST: Server IP/hostname
+#   - LUCIDLABS_HQ_SSH_KEY: SSH private key
+#   - CONVEX_DEPLOY_KEY: Convex deployment key
+#   - ANTHROPIC_API_KEY: Anthropic API key
+# =============================================================================
+
+name: Deploy to LUCIDLABS-HQ
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PROJECT_NAME: invoice-accounting-assistant  # <- Change this
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.LUCIDLABS_HQ_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.LUCIDLABS_HQ_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Sync code to server
+        run: |
+          rsync -avz --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            --exclude='.env.local' \
+            ./ root@${{ secrets.LUCIDLABS_HQ_HOST }}:/opt/lucidlabs/projects/${{ env.PROJECT_NAME }}/
+
+      - name: Deploy Convex
+        run: |
+          cd convex
+          npx convex deploy --prod
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
+      - name: Build and restart containers
+        run: |
+          ssh root@${{ secrets.LUCIDLABS_HQ_HOST }} << 'EOF'
+            cd /opt/lucidlabs/projects/${{ env.PROJECT_NAME }}
+
+            # Build and start
+            docker compose -p ${{ env.PROJECT_NAME }} up -d --build
+
+            # Wait for health checks
+            sleep 15
+
+            # Show status
+            docker compose -p ${{ env.PROJECT_NAME }} ps
+
+            # Cleanup old images
+            docker image prune -f
+          EOF
+
+      - name: Health check
+        run: |
+          # Wait for services to be ready
+          sleep 10
+
+          # Check frontend
+          curl -f https://${{ env.PROJECT_NAME }}.lucidlabs.app/api/health || exit 1
+
+          echo "✓ Deployment successful"

@@ -62,7 +62,15 @@ pnpm run build                   # Production Build (Node.js)
 | **Fast** | Gemini 3 Flash / Claude Haiku | High-volume, speed |
 | **Coding** | Claude Sonnet 4.5 | Code generation |
 
-**LLM Access:** Via LiteLLM Proxy (centralized key management, cost tracking, fallbacks)
+**LLM Access:** Via Portkey AI Gateway (centralized key management, cost tracking, fallbacks)
+
+### AI Gateway
+
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| **Gateway** | Portkey | LLM Proxy, cost tracking, fallbacks |
+| **Endpoint** | `http://lucidlabs-portkey:8787` | Internal HQ access |
+| **Dashboard** | portkey.lucidlabs.de (optional) | Cost monitoring |
 
 ### Authentication
 
@@ -515,6 +523,19 @@ Status display → Badge (with border)
 | `convex/README.md` | Convex database setup, queries, mutations |
 | `mastra/README.md` | Mastra setup guide |
 | `WORKFLOW.md` | Complete development workflow guide |
+
+---
+
+## Tech Stack Documentation Rule
+
+**MANDATORY:** When adding new technology to the stack (downstream or upstream):
+
+1. **Update CLAUDE.md** - Add to Tech Stack table
+2. **Create reference doc** - `.claude/reference/<technology>.md`
+3. **Update AGENTS.md** - Keep in sync with CLAUDE.md
+4. **Update infrastructure docs** - If deployment-related
+
+This ensures all AI agents and developers have current knowledge.
 
 ---
 

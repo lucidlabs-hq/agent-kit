@@ -1,0 +1,26 @@
+{
+  "name": "@lucidlabs/invoice-accounting-assistant-mastra",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "type-check": "tsc --noEmit",
+    "health": "curl -s http://localhost:4000/health",
+    "demo:workflow": "curl -s -X POST http://localhost:4000/api/workflow/invoiceProcessing -H 'Content-Type: application/json' -d '{\"invoiceId\": \"INV-001\", \"rawContent\": \"Demo invoice\"}'",
+    "demo:chat": "curl -s -X POST http://localhost:4000/api/chat -H 'Content-Type: application/json' -d '{\"message\": \"Hello, what can you help me with?\"}'"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^0.0.1",
+    "@mastra/core": "1.0.0-beta.27",
+    "ai": "^4.0.0",
+    "hono": "^4.11.7",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
+}

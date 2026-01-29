@@ -63,17 +63,29 @@ services:
   # PORTKEY AI GATEWAY (LLM Proxy)
   # ===========================================================================
   # Central AI Gateway for all projects - cost tracking, fallbacks, caching
-  # Dashboard: https://portkey.lucidlabs.de (add to Caddyfile)
-  # API: http://portkey:8787 (internal)
+  # Dashboard: https://app.portkey.ai (external) or https://portkey.lucidlabs.de
+  # API: http://lucidlabs-portkey:8787 (internal)
   portkey:
     image: portkeyai/gateway:latest
     container_name: lucidlabs-portkey
     restart: unless-stopped
     environment:
       - PORTKEY_LOG_LEVEL=info
-      # API Keys loaded from .env
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # Portkey Dashboard Key (for cost tracking)
+      - PORTKEY_API_KEY=${PORTKEY_API_KEY:-}
+      # Primary Providers
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      # Fallback Providers
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - XAI_API_KEY=${XAI_API_KEY:-}
+      # EU/GDPR Providers
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY:-}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+      # Budget Providers (GDPR caution - China-based)
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - ZHIPU_API_KEY=${ZHIPU_API_KEY:-}
     networks:
       - lucidlabs-network
     labels:

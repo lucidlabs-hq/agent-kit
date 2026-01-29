@@ -1,0 +1,31 @@
+{
+  "name": "{{PROJECT_SLUG}}",
+  "version": "0.1.0",
+  "private": true,
+  "description": "{{PROJECT_NAME}} - AI-powered application",
+  "scripts": {
+    "dev": "concurrently -n convex,frontend,studio -c blue,green,magenta \"pnpm run dev:convex\" \"pnpm run dev:frontend\" \"pnpm run dev:studio\"",
+    "dev:frontend": "cd frontend && pnpm run dev",
+    "dev:mastra": "cd mastra && pnpm run dev",
+    "dev:studio": "cd mastra && npx mastra dev",
+    "dev:convex": "docker compose -f docker-compose.dev.yml up",
+    "dev:convex:bg": "docker compose -f docker-compose.dev.yml up -d",
+    "stop": "docker compose -f docker-compose.dev.yml down",
+    "stop:all": "docker compose -f docker-compose.dev.yml down; lsof -ti :3000 | xargs kill -9 2>/dev/null; lsof -ti :4000 | xargs kill -9 2>/dev/null; lsof -ti :4111 | xargs kill -9 2>/dev/null; echo 'All stopped'",
+    "build": "cd frontend && pnpm run build",
+    "build:mastra": "cd mastra && pnpm run build",
+    "lint": "cd frontend && pnpm run lint",
+    "type-check": "concurrently \"cd frontend && pnpm run type-check\" \"cd mastra && pnpm run type-check\"",
+    "validate": "pnpm run type-check && pnpm run lint",
+    "test": "cd frontend && pnpm run test",
+    "test:e2e": "cd frontend && pnpm run test:e2e",
+    "install:all": "pnpm install && cd frontend && pnpm install && cd ../mastra && pnpm install",
+    "status": "echo '=== Services ===' && docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E 'convex|NAME' && echo '' && echo '=== Node Processes ===' && lsof -i :3000 -i :4000 -i :4111 2>/dev/null | grep LISTEN || echo 'No Node processes found'",
+    "health": "curl -s http://localhost:4000/health | jq",
+    "health:convex": "curl -s http://localhost:3210/version | jq",
+    "clean": "rm -rf frontend/.next frontend/node_modules mastra/dist mastra/node_modules node_modules"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

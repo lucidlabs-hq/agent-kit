@@ -20,8 +20,10 @@ interface ServiceStatus {
 
 const services: Omit<ServiceStatus, "status" | "latency" | "details">[] = [
   { name: "Frontend", url: "/" },
-  { name: "Convex", url: "http://localhost:3210" },
-  { name: "Mastra", url: "http://localhost:4000/health" },
+  { name: "Convex Backend", url: "http://localhost:3210" },
+  { name: "Convex Dashboard", url: "http://localhost:6791" },
+  { name: "Mastra API", url: "http://localhost:4000/health" },
+  { name: "Mastra Studio", url: "http://localhost:4111" },
 ];
 
 export function ServiceHealth() {
@@ -84,7 +86,7 @@ export function ServiceHealth() {
         </button>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {statuses.map((service) => (
           <div
             key={service.name}

@@ -15,21 +15,35 @@ interface Action {
   description: string;
   command?: string;
   href?: string;
-  category: "dev" | "test" | "docs";
+  category: "dashboards" | "dev" | "test" | "docs";
 }
 
 const actions: Action[] = [
+  // Dashboards
+  {
+    name: "Convex Dashboard",
+    description: "Database explorer & admin UI",
+    href: "http://localhost:6791",
+    category: "dashboards",
+  },
+  {
+    name: "Mastra Studio",
+    description: "Test agents, workflows & traces",
+    href: "http://localhost:4111",
+    category: "dashboards",
+  },
+
   // Development
   {
     name: "Start All Services",
-    description: "Docker + Frontend + Mastra",
-    command: "# Terminal 1: docker run -d --name convex-local -p 3210:3210 ghcr.io/get-convex/convex-backend:latest\n# Terminal 2: cd frontend && pnpm run dev\n# Terminal 3: cd mastra && pnpm run dev",
+    description: "Docker Compose + Frontend + Mastra",
+    command: "# Terminal 1: docker compose -f docker-compose.dev.yml up -d\n# Terminal 2: cd frontend && pnpm run dev\n# Terminal 3: cd mastra && npx mastra dev",
     category: "dev",
   },
   {
-    name: "Stop Convex",
-    description: "Stop and remove Convex container",
-    command: "docker stop convex-local && docker rm convex-local",
+    name: "Stop Services",
+    description: "Stop Docker containers",
+    command: "docker compose -f docker-compose.dev.yml down",
     category: "dev",
   },
   {
@@ -90,6 +104,7 @@ export function QuickActions() {
   };
 
   const categories = {
+    dashboards: { label: "Dashboards", icon: "🖥️" },
     dev: { label: "Development", icon: "⚙️" },
     test: { label: "Testing", icon: "🧪" },
     docs: { label: "Documentation", icon: "📚" },
@@ -102,7 +117,7 @@ export function QuickActions() {
         Common commands and links
       </p>
 
-      <div className="mt-6 grid gap-6 md:grid-cols-3">
+      <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {Object.entries(categories).map(([key, category]) => (
           <div key={key} className="space-y-3">
             <h3 className="text-sm font-medium text-zinc-400">

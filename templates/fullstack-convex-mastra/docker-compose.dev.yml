@@ -1,0 +1,44 @@
+# =============================================================================
+# {{PROJECT_NAME}} - Local Development
+#
+# Starts Convex with Dashboard for local development.
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up -d
+#   docker compose -f docker-compose.dev.yml exec backend ./generate_admin_key.sh
+#
+# Services:
+#   - Convex Backend:   http://localhost:3210
+#   - Convex Dashboard: http://localhost:6791
+#
+# =============================================================================
+
+services:
+  backend:
+    image: ghcr.io/get-convex/convex-backend:latest
+    container_name: convex-backend
+    ports:
+      - "3210:3210"   # Backend API
+      - "3211:3211"   # HTTP Actions
+    volumes:
+      - convex-data:/convex/data
+    environment:
+      - CONVEX_SITE_URL=http://localhost:3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3210/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  dashboard:
+    image: ghcr.io/get-convex/convex-dashboard:latest
+    container_name: convex-dashboard
+    ports:
+      - "6791:6791"
+    environment:
+      - CONVEX_BACKEND_URL=http://backend:3210
+    depends_on:
+      - backend
+
+volumes:
+  convex-data:

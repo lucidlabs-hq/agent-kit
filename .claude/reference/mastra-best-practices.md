@@ -2,6 +2,8 @@
 
 Best practices for building AI agents, tools, and workflows with Mastra.
 
+**Updated:** January 2026 (Mastra v1.0)
+
 ---
 
 ## Table of Contents
@@ -22,6 +24,17 @@ Best practices for building AI agents, tools, and workflows with Mastra.
 ## 1. Overview
 
 Mastra is a TypeScript-first AI framework for building agents, tools, and workflows.
+
+### v1.0 Changes (January 2026)
+
+| Aspect | Old (0.x) | New (v1) |
+|--------|-----------|----------|
+| **Agent** | `new Agent({ name })` | `new Agent({ id, name })` |
+| **Model** | `{ provider: 'ANTHROPIC', name: '...' }` | `"anthropic/claude-sonnet-4"` |
+| **Steps** | `new Step({ id, execute })` | `createStep({ id, inputSchema, outputSchema, execute })` |
+| **Workflow** | `new Workflow().step().then()` | `createWorkflow().then().commit()` |
+| **Execute** | `workflow.execute()` | `workflow.createRun().start()` |
+| **Imports** | `@mastra/core` | `@mastra/core/agent`, `@mastra/core/workflows` |
 
 ### Key Concepts
 
@@ -59,14 +72,15 @@ mastra/
 
 ## 3. Agent Definition
 
-### Basic Agent
+### Basic Agent (v1 Syntax)
 
 ```typescript
 // agents/assistant.ts
-import { Agent } from '@mastra/core';
+import { Agent } from '@mastra/core/agent';
 
 export const assistant = new Agent({
-  name: 'assistant',
+  id: 'assistant',
+  name: 'Assistant',
   instructions: `You are a helpful AI assistant.
 
 Your capabilities:
@@ -75,13 +89,54 @@ Your capabilities:
 - Provide explanations and guidance
 
 Always be helpful, accurate, and concise.`,
-  model: {
-    provider: 'ANTHROPIC',
-    name: 'claude-sonnet-4-20250514',
-    toolChoice: 'auto',
-  },
+  // v1: String format "provider/model"
+  model: 'anthropic/claude-sonnet-4',
   tools: {
     // Add tools here
+  },
+});
+```
+
+### Dynamic Model Selection
+
+```typescript
+import { Agent } from '@mastra/core/agent';
+
+export const dynamicAgent = new Agent({
+  id: 'dynamic-agent',
+  name: 'Dynamic Agent',
+  instructions: 'You adapt to user tier.',
+  // v1: Function for runtime model selection
+  model: ({ requestContext }) => {
+    const userTier = requestContext.get('user-tier');
+    return userTier === 'enterprise'
+      ? 'anthropic/claude-sonnet-4'
+      : 'anthropic/claude-haiku-3';
+  },
+});
+```
+
+### Response Generation (v1)
+
+```typescript
+// Generate (complete response)
+const response = await agent.generate('Your prompt');
+console.log(response.text);
+
+// Stream (real-time tokens)
+const stream = await agent.stream('Your prompt');
+for await (const chunk of stream.textStream) {
+  process.stdout.write(chunk);
+}
+
+// With callbacks
+const response = await agent.generate('Your prompt', {
+  maxSteps: 10,
+  onFinish: ({ steps, text, finishReason, usage }) => {
+    console.log({ steps, text, finishReason, usage });
+  },
+  onStepFinish: ({ text, toolCalls, toolResults }) => {
+    console.log({ text, toolCalls, toolResults });
   },
 });
 ```
@@ -199,31 +254,27 @@ export const fetchDataTool = createTool({
 
 ## 5. Workflows
 
-### Basic Workflow
+### Basic Workflow (v1 Syntax)
 
 ```typescript
 // workflows/taskProcessing.ts
-import { Workflow, Step } from '@mastra/core';
+import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
 
-export const taskProcessingWorkflow = new Workflow({
-  name: 'task-processing',
-  triggerSchema: z.object({
-    taskId: z.string(),
-    taskData: z.object({
-      title: z.string(),
-      description: z.string(),
-    }),
-  }),
-});
-
-// Step 1: Analyze
-const analyzeStep = new Step({
+// Step 1: Analyze (v1: use createStep)
+const analyzeStep = createStep({
   id: 'analyze',
-  execute: async ({ context, mastra }) => {
+  inputSchema: z.object({
+    taskId: z.string(),
+    title: z.string(),
+  }),
+  outputSchema: z.object({
+    analysis: z.string(),
+  }),
+  execute: async ({ inputData, mastra }) => {
     const agent = mastra.getAgent('assistant');
     const result = await agent.generate(
-      `Analyze this task: ${context.triggerData.taskData.title}`
+      `Analyze this task: ${inputData.title}`
     );
 
     return {
@@ -233,39 +284,109 @@ const analyzeStep = new Step({
 });
 
 // Step 2: Process
-const processStep = new Step({
+const processStep = createStep({
   id: 'process',
-  execute: async ({ context }) => {
-    const { analysis } = context.getStepResult('analyze');
-
-    // Process based on analysis
+  inputSchema: z.object({
+    analysis: z.string(),
+  }),
+  outputSchema: z.object({
+    processed: z.boolean(),
+    details: z.string(),
+  }),
+  execute: async ({ inputData }) => {
     return {
       processed: true,
-      details: analysis,
+      details: inputData.analysis,
     };
   },
 });
 
-// Wire up the workflow
-taskProcessingWorkflow
-  .step(analyzeStep)
+// v1: use createWorkflow and chain with .then().commit()
+export const taskProcessingWorkflow = createWorkflow({
+  id: 'task-processing',
+  inputSchema: z.object({
+    taskId: z.string(),
+    title: z.string(),
+  }),
+  outputSchema: z.object({
+    processed: z.boolean(),
+    details: z.string(),
+  }),
+})
+  .then(analyzeStep)
   .then(processStep)
   .commit();
 ```
 
-### Conditional Branching
+### Workflow Execution (v1)
 
 ```typescript
-// Workflow with conditions
-workflow
-  .step(classifyStep)
-  .then(checkConditionStep)
-  .then(pathAStep, {
-    when: { 'check-condition.result': 'A' },
-  })
-  .then(pathBStep, {
-    when: { 'check-condition.result': 'B' },
-  })
+// v1: Use createRun().start() pattern
+const run = await taskProcessingWorkflow.createRun();
+const result = await run.start({
+  inputData: { taskId: 'task-1', title: 'Build feature' },
+});
+
+// Check result status
+if (result.status === 'success') {
+  console.log(result.result);
+} else if (result.status === 'failed') {
+  console.error(result.error.message);
+}
+
+// Stream mode for progress monitoring
+const run = await taskProcessingWorkflow.createRun();
+const stream = run.stream({
+  inputData: { taskId: 'task-1', title: 'Build feature' },
+});
+
+for await (const chunk of stream.fullStream) {
+  console.log(chunk);
+}
+
+const result = await stream.result;
+```
+
+### State Management (v1)
+
+```typescript
+const stepWithState = createStep({
+  id: 'stateful-step',
+  inputSchema: z.object({ message: z.string() }),
+  outputSchema: z.object({ formatted: z.string() }),
+  stateSchema: z.object({ counter: z.number() }),
+  execute: async ({ inputData, state, setState, requestContext }) => {
+    // Read and update state
+    console.log(state.counter);
+    setState({ ...state, counter: state.counter + 1 });
+
+    // Access request context
+    const userTier = requestContext.get('user-tier');
+
+    return { formatted: inputData.message.toUpperCase() };
+  },
+});
+```
+
+### Nested Workflows (v1)
+
+```typescript
+const childWorkflow = createWorkflow({
+  id: 'child-workflow',
+  inputSchema: z.object({ message: z.string() }),
+  outputSchema: z.object({ emphasized: z.string() }),
+})
+  .then(step1)
+  .then(step2)
+  .commit();
+
+// Compose workflows
+export const parentWorkflow = createWorkflow({
+  id: 'parent-workflow',
+  inputSchema: z.object({ message: z.string() }),
+  outputSchema: z.object({ emphasized: z.string() }),
+})
+  .then(childWorkflow)  // Use child as a step
   .commit();
 ```
 
@@ -563,6 +684,12 @@ mastra.on('tool:execute:end', ({ tool, duration, success }) => {
 
 ## Resources
 
-- [Mastra Documentation](https://mastra.dev/docs)
+- [Mastra Documentation](https://mastra.ai/docs)
 - [Mastra GitHub](https://github.com/mastra-ai/mastra)
-- [AI Agent Patterns](https://mastra.dev/docs/patterns)
+- [Mastra v1 Announcement](https://mastra.ai/blog/mastrav1)
+- [Migration Guide](https://mastra.ai/docs/migration)
+
+---
+
+**Last Updated:** January 2026
+**Mastra Version:** 1.0.0

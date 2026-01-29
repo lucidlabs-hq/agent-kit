@@ -1,0 +1,61 @@
+{
+  "name": "fullstack-convex-mastra",
+  "displayName": "Full-Stack (Convex + Mastra)",
+  "description": "AI-powered full-stack app with Convex database, Mastra AI agents, and Better Auth",
+  "version": "1.0.0",
+  "author": "Lucid Labs GmbH",
+  "created": "2026-01-29",
+
+  "stack": {
+    "frontend": {
+      "framework": "Next.js 16",
+      "ui": "shadcn/ui + Tailwind CSS 4",
+      "language": "TypeScript 5"
+    },
+    "backend": {
+      "database": "Convex (self-hosted)",
+      "ai": "Mastra v1",
+      "auth": "Better Auth"
+    },
+    "llm": {
+      "development": "Ollama (phi3:mini)",
+      "production": "Portkey → Claude Sonnet 4.5"
+    }
+  },
+
+  "directories": [
+    "frontend",
+    "mastra",
+    ".claude/skills"
+  ],
+
+  "postInstall": [
+    "cd frontend && pnpm install",
+    "cd mastra && pnpm install",
+    "cp frontend/.env.example frontend/.env.local"
+  ],
+
+  "services": {
+    "convex": {
+      "docker": "ghcr.io/get-convex/convex-backend:latest",
+      "port": 3210
+    },
+    "frontend": {
+      "command": "pnpm run dev",
+      "port": 3000
+    },
+    "mastra": {
+      "command": "pnpm run dev",
+      "port": 4000
+    }
+  },
+
+  "features": [
+    "Realtime database with Convex",
+    "AI agents with Mastra v1",
+    "Better Auth with offline mode",
+    "Demo invoice workflow",
+    "Admin dashboard",
+    "TDD deployment skill"
+  ]
+}

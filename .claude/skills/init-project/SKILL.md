@@ -29,7 +29,62 @@ If no argument provided, ask for:
 
 ---
 
-## Step 0: Intelligente Stack-Empfehlung
+## Step 0: Template oder Custom?
+
+**ZUERST:** Frage ob der User ein Template nutzen möchte:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  PROJEKT SETUP                                                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Wie möchtest du starten?                                                │
+│                                                                          │
+│  [1] TEMPLATE (Recommended)                                              │
+│      → Fertiges Setup mit Demo-Projekt                                   │
+│      → Dokumentation + Admin Dashboard                                   │
+│      → Sofort lauffähig                                                  │
+│                                                                          │
+│  [2] CUSTOM                                                              │
+│      → Stack individuell zusammenstellen                                 │
+│      → Für spezielle Anforderungen                                       │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Bei [1] TEMPLATE:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  VERFÜGBARE TEMPLATES                                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  [1] fullstack-convex-mastra (Recommended)                               │
+│      • Next.js 16 + React 19                                             │
+│      • Convex (self-hosted) + Better Auth                                │
+│      • Mastra v1 AI Agents                                               │
+│      • Demo Invoice Workflow                                             │
+│      • Admin Dashboard                                                   │
+│      • Offline dev mode (Ollama)                                         │
+│                                                                          │
+│  [2] Mehr Templates coming soon...                                       │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+Bei Template-Auswahl:
+1. Kopiere Template nach `../projects/[project-name]/`
+2. Ersetze Platzhalter mit Projektnamen
+3. Erstelle PROJECT-CONTEXT.md und PRD.md
+4. Springe zu Step 4 (Handoff)
+
+### Bei [2] CUSTOM:
+
+Weiter mit der manuellen Stack-Konfiguration unten.
+
+---
+
+## Step 0b: Intelligente Stack-Empfehlung (nur bei CUSTOM)
 
 **WICHTIG:** Bevor du die Stack-Konfiguration zeigst, frage nach dem Projekt:
 

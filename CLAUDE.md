@@ -505,6 +505,7 @@ Status display → Badge (with border)
 | `.claude/reference/service-dashboard-audit.md` | Service Dashboard implementation status |
 | `.claude/reference/minio-integration.md` | **MinIO S3-compatible file storage** |
 | `.claude/reference/ai-framework-choice.md` | **Mastra vs Vercel AI SDK decision guide** |
+| `.claude/reference/llm-configuration.md` | **LLM model selection, pricing, Portkey config** |
 | `.claude/reference/mcp-servers.md` | **All MCP servers (Linear, MinIO, n8n, PromptFoo)** |
 | `.claude/reference/azure-openai-integration.md` | **Azure OpenAI (GDPR-konform, optional)** |
 | `.claude/reference/ai-coding-principles.md` | Zod-first, sorting, AI-optimized patterns |
@@ -847,6 +848,7 @@ This project uses Claude Code Skills instead of legacy commands. Skills follow t
 | `/visual-verify` | UI verification via agent-browser (fast) | Validation |
 | `/pre-production` | Security & Quality Check before deploy | Validation |
 | `/promptfoo` | LLM evaluation & prompt testing | Validation |
+| `/llm-evaluate` | LLM cost/performance evaluation, model selection | Planning |
 | `/screenshot` | Visual verification screenshots | Validation |
 | `/session-end` | End session, update Linear, clean state | Any |
 | `/productizer` | Bridge Linear ↔ Productive.io for customer reporting | Any |

@@ -157,23 +157,66 @@ Falls User "Anpassen" wählt, zeige die manuelle Konfiguration:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Optional Components
+### LLM Configuration
+
+**WICHTIG:** Führe `/llm-evaluate [projekt-beschreibung]` aus um aktuelle Preise zu holen und das optimale Modell zu empfehlen.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  LLM PROVIDER (zusätzlich zu Claude)                             │
+│  LLM KONFIGURATION                                               │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  [y/N] Mistral      - EU-basiert, schnell, günstig, PDF-Analyse  │
-│  [y/N] Azure OpenAI - GDPR-konform, EU Data Residency            │
+│  PRIMARY MODEL (Hauptmodell):                                    │
+│  ├─ [1] Claude Sonnet 4    - Best coding, balanced ($3/$15)      │
+│  ├─ [2] Claude Haiku 3.5   - Fast, cheap ($0.25/$1.25)           │
+│  ├─ [3] Claude Opus 4.5    - Best reasoning ($15/$75)            │
+│  ├─ [4] GPT-4o             - Multimodal ($5/$15)                 │
+│  ├─ [5] Gemini 2.0 Flash   - Ultra cheap ($0.10/$0.40)           │
+│  ├─ [6] DeepSeek V3        - Budget ($0.27/$1.10)                │
+│  └─ [7] Custom             - Manuell konfigurieren               │
+│                                                                  │
+│  FALLBACK MODEL (wenn Primary down):                             │
+│  ├─ [1] GPT-4o-mini        - Budget fallback                     │
+│  ├─ [2] Gemini Flash       - Google fallback                     │
+│  ├─ [3] Kein Fallback      - Nur Primary                         │
+│  └─ [4] Custom                                                   │
+│                                                                  │
+│  FAST MODEL (für einfache Tasks):                                │
+│  ├─ [1] Claude Haiku 3.5   - Schnell, Anthropic                  │
+│  ├─ [2] Gemini Flash 8B    - Ultra cheap                         │
+│  ├─ [3] Same as Primary    - Kein separates Fast-Model           │
+│  └─ [4] Custom                                                   │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
+│  COMPLIANCE & REGION                                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  [y/N] GDPR-Modus    - Nur EU-Provider (Azure, Mistral)          │
+│  [y/N] Portkey       - Cost Tracking, Fallbacks, Caching         │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**LLM Empfehlung nach Stufe:**
+
+| Stufe | Primary | Fallback | Fast |
+|-------|---------|----------|------|
+| 1: MVP | Haiku 3.5 | Gemini Flash | - |
+| 2: Standard | Sonnet 4 | GPT-4o-mini | Haiku 3.5 |
+| 3: Enterprise | Sonnet 4 | GPT-4o | Haiku 3.5 |
+| 4: GDPR | Azure GPT-4o | Mistral Large | - |
+
+**Siehe:** `.claude/reference/llm-configuration.md` für Details.
+
+### Optional Components
+
+```
+┌─────────────────────────────────────────────────────────────────┐
 │  OPTIONAL COMPONENTS                                             │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  [y/N] Portkey      - LLM Gateway, Cost Tracking, Guardrails     │
 │  [y/N] n8n          - Workflow Automation, Integrations          │
 │  [y/N] Python       - PDF Parsing, OCR, Statistics, ML           │
 │  [y/N] LangChain    - Complex Chains, LangGraph                  │
@@ -352,6 +395,17 @@ Erstelle `.claude/PRD.md` im neuen Projekt:
 | Database | [Convex/Postgres] | [Warum gewählt] |
 | Frontend | Next.js 15 + shadcn/ui | Standard |
 | Optional | [n8n, Portkey, etc.] | [Warum gewählt] |
+
+## LLM Konfiguration (gewählt in Init)
+
+| Role | Model | Provider | Cost (Input/Output) |
+|------|-------|----------|---------------------|
+| Primary | [Model] | [Provider] | $X/$X per 1M tokens |
+| Fallback | [Model] | [Provider] | $X/$X per 1M tokens |
+| Fast | [Model] | [Provider] | $X/$X per 1M tokens |
+
+**Portkey:** [Ja/Nein] - [Begründung]
+**GDPR-Modus:** [Ja/Nein]
 
 ---
 

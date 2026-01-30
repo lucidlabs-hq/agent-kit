@@ -665,6 +665,33 @@ Co-Authored-By: AI Tool <noreply@example.com>
 
 **Alle Befehle über `pnpm run` - einheitliches Interface.**
 
+### Dev Server Start Rule (MANDATORY)
+
+**ALWAYS** before starting a dev server:
+
+1. **Check what's running** on the target port:
+   ```bash
+   lsof -i:3000  # or :4000 for backend
+   ```
+
+2. **Show the user** what's currently running (if anything)
+
+3. **Kill existing process** if needed:
+   ```bash
+   lsof -ti:3000 | xargs kill -9
+   ```
+
+4. **Start server and show port**:
+   ```bash
+   pnpm run dev
+   # Output must show: "Local: http://localhost:PORT"
+   ```
+
+This ensures the user always knows:
+- What was running before
+- Which port the new server is on
+- No silent conflicts or port switches
+
 ### Frontend
 
 ```bash

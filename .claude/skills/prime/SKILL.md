@@ -76,7 +76,7 @@ Existiert .claude/PROJECT-CONTEXT.md?
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Oder für Upstream:**
+**Oder für Upstream (Agent Kit Template):**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -86,11 +86,10 @@ Existiert .claude/PROJECT-CONTEXT.md?
 │  Working Directory: /Users/.../lucidlabs-agent-kit                          │
 │  Repository Type:   UPSTREAM (Agent Kit Template)                           │
 │                                                                             │
-│  ⚠️  Du bist im Agent Kit Template, nicht in einem Projekt.                 │
-│      Um an einem Projekt zu arbeiten, starte Claude im Projekt-Verzeichnis. │
-│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+**WICHTIG: Im Upstream-Modus → Projekt-Auswahl anbieten (siehe Abschnitt 0.0)**
 
 **Falls Downstream aber kein PROJECT-CONTEXT.md:**
 
@@ -109,7 +108,109 @@ Existiert .claude/PROJECT-CONTEXT.md?
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Nach Context-Erkennung:** Weiter mit Boot Sequence (0.1)
+**Nach Context-Erkennung:**
+- Falls UPSTREAM → Weiter mit Projekt-Auswahl (0.0)
+- Falls DOWNSTREAM → Weiter mit Boot Sequence (0.1)
+
+---
+
+### 0.0 Projekt-Auswahl (NUR im UPSTREAM-Modus)
+
+**Wann:** Wenn Claude im `lucidlabs-agent-kit` Verzeichnis gestartet wird (Upstream).
+
+**Workflow:**
+
+1. **Projekte auflisten:**
+
+```bash
+# Projekte-Ordner ist auf gleicher Ebene wie agent-kit
+PROJECTS_DIR="$(dirname "$(pwd)")/projects"
+ls -1 "$PROJECTS_DIR" 2>/dev/null | grep -v "^\."
+```
+
+2. **Projekt-Liste anzeigen:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  VERFÜGBARE PROJEKTE                                                        │
+│  ───────────────────                                                        │
+│                                                                             │
+│  [1] casavi-sandbox-seeder         Zuletzt: 28.01.2026                      │
+│  [2] client-service-reporting      Zuletzt: 29.01.2026                      │
+│  [3] invoice-accounting-assistant  Zuletzt: 29.01.2026                      │
+│  [4] neola                         Zuletzt: 23.01.2026                      │
+│  [5] satellite                     Zuletzt: 29.01.2026                      │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  [N] Neues Projekt erstellen                                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+An welchem Projekt möchtest du heute arbeiten?
+```
+
+3. **Nach Auswahl → Handoff-Bestätigung:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  PROJEKT AUSGEWÄHLT: invoice-accounting-assistant                           │
+│                                                                             │
+│  Pfad: /Users/.../projects/invoice-accounting-assistant                     │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  Okay, wollen wir loslegen?                                                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+4. **Bei Bestätigung → Automatischer Session-Handoff (KEIN /clear nötig!):**
+
+**KRITISCH:** Nach Bestätigung durch den User erfolgt der Handoff automatisch:
+
+a) **Working Directory wechseln:**
+   ```bash
+   cd /Users/.../projects/[gewähltes-projekt]
+   ```
+
+b) **Handoff-Bestätigung anzeigen:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  ✓ SESSION HANDOFF COMPLETE                                                 │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  Neues Working Directory:                                                   │
+│  /Users/.../projects/invoice-accounting-assistant                           │
+│                                                                             │
+│  ⚠️  WICHTIG: Ich arbeite ab jetzt NUR in diesem Projekt.                   │
+│      Das Upstream Repository (lucidlabs-agent-kit) wird NICHT verändert.    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+c) **Context Header für neues Projekt anzeigen**
+
+d) **Boot Screen mit verfügbaren Skills**
+
+e) **Dann:** Normaler /prime Flow für Downstream (ab 0.1)
+
+---
+
+**Handoff-Regeln:**
+
+| Regel | Beschreibung |
+|-------|--------------|
+| **Kein Session-Neustart** | Alles passiert in der gleichen Claude-Session |
+| **Kein /clear nötig** | Working Directory wird gewechselt, Kontext bleibt erhalten |
+| **Explizite Bestätigung** | Handoff wird visuell bestätigt |
+| **Upstream-Schutz** | Nach Handoff: KEINE Änderungen am Agent Kit mehr |
+| **Projekt-Fokus** | Alle weiteren Aktionen betreffen nur das gewählte Projekt |
 
 ---
 

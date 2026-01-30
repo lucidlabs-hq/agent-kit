@@ -879,56 +879,129 @@ Alles Konkrete passiert NACH dem Handoff, beginnend mit `/create-prd`.
 
 ---
 
-## Step 5: Session beenden und Handoff
+## Step 5: In-Session Handoff (OHNE Exit!)
 
-**WICHTIG:** Nach erfolgreicher Projekt-Erstellung MUSS die Claude Session beendet werden.
+**WICHTIG:** Nach erfolgreicher Projekt-Erstellung wird ein **In-Session Handoff** durchgeführt.
+Der User muss NICHT die Session beenden und eine neue starten!
 
-### 5.1 Handoff-Nachricht ausgeben
+### 5.1 Working Directory wechseln
 
-Führe den echo-Befehl aus Step 4.2 aus. Die Nachricht MUSS enthalten:
+```bash
+cd ../projects/[project-name]
+```
 
-1. **Projekt-Name und Stack** - Was erstellt wurde
-2. **cd-Befehl** - Wie man ins neue Projekt wechselt
-3. **Erste Schritte** - `/prime` dann `/create-prd`
-4. **Kontext-Zusammenfassung** - Alles Wichtige aus dem Init-Gespräch
+### 5.2 Handoff-Bestätigung anzeigen
 
-### 5.2 Kernprinzip: PRD zuerst, gemeinsam
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  ✓ SESSION HANDOFF COMPLETE                                                 │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  Neues Working Directory:                                                   │
+│  /Users/.../projects/[project-name]                                         │
+│                                                                             │
+│  ⚠️  WICHTIG: Ich arbeite ab jetzt NUR in diesem Projekt.                   │
+│      Das Upstream Repository (lucidlabs-agent-kit) wird NICHT verändert.    │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  GitHub: https://github.com/lucidlabs-hq/[project-name]                     │
+│  Deployment: https://[project-name].lucidlabs.app (nach Setup)              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 5.3 Context Header für neues Projekt anzeigen
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  CONTEXT                                                                    │
+│  ───────                                                                    │
+│                                                                             │
+│  Working Directory: .../projects/[project-name]                             │
+│  Repository Type:   DOWNSTREAM                                              │
+│  Active Project:    [project-name]                                          │
+│  PRD:               .claude/PRD.md                                          │
+│  Upstream:          ../../lucidlabs-agent-kit                               │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 5.4 Boot Screen für neues Projekt anzeigen
+
+Zeige den vollständigen Agent Kit Boot Screen (wie in `/prime`):
+- ASCII Logo
+- Welcome Message mit Developer-Name
+- Agent Log
+- Verfügbare Skills für das Projekt
+
+### 5.5 Projekt-Status und nächste Schritte
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  PROJECT: [project-name]                                                    │
+│  ─────────────────────────────                                              │
+│                                                                             │
+│  Status:    Initial (frisch erstellt)                                       │
+│  Template:  [template-name]                                                 │
+│  Stack:     [stack-komponenten]                                             │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  NÄCHSTE SCHRITTE                                                           │
+│  ────────────────                                                           │
+│                                                                             │
+│  [1] /create-prd         PRD detaillieren (Problem, Users, MVP Scope)       │
+│  [2] Dependencies        cd frontend && pnpm install                        │
+│  [3] Services starten    docker compose -f docker-compose.dev.yml up        │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  Womit möchtest du anfangen?                                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Handoff-Regeln
+
+| Regel | Beschreibung |
+|-------|--------------|
+| **Kein Session-Neustart** | Alles passiert in der gleichen Claude-Session |
+| **Working Directory wechseln** | `cd` ins neue Projekt-Verzeichnis |
+| **Explizite Bestätigung** | Handoff wird visuell bestätigt |
+| **Upstream-Schutz** | Nach Handoff: KEINE Änderungen am Agent Kit mehr |
+| **Projekt-Fokus** | Alle weiteren Aktionen betreffen nur das neue Projekt |
+
+### Kernprinzip: PRD zuerst, gemeinsam
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                                                                                  │
 │  WORKFLOW NACH HANDOFF                                                           │
 │                                                                                  │
-│  1. /prime              ← Projekt-Kontext laden                                 │
-│                                                                                  │
-│  2. /create-prd         ← PRD GEMEINSAM ausspezifizieren                        │
+│  1. /create-prd         ← PRD GEMEINSAM ausspezifizieren                        │
 │        │                                                                         │
 │        ├─► Kontext aus Init-Gespräch einarbeiten                                │
 │        ├─► Offene Fragen klären                                                 │
 │        ├─► Scope definieren                                                     │
 │        └─► Erst wenn PRD fertig: Implementierung                                │
 │                                                                                  │
-│  3. /plan-feature       ← Erst NACH PRD-Approval                                │
+│  2. /plan-feature       ← Erst NACH PRD-Approval                                │
 │                                                                                  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 5.3 Session beenden
+### Warum In-Session Handoff?
 
-Nach der Ausgabe der Handoff-Nachricht:
-
-1. Sage dem User: "Projekt erstellt. Wechsle jetzt ins neue Verzeichnis."
-2. Der User führt `cd ../projects/[project-name] && claude` aus
-3. In der neuen Session: `/prime` → `/create-prd`
-
-### Warum dieser Workflow?
-
-| Ohne PRD zuerst | Mit PRD zuerst |
-|-----------------|----------------|
-| Sofort Code schreiben | Anforderungen klar |
-| Scope-Creep | Scope definiert |
-| Rework wahrscheinlich | Alignment von Anfang an |
-| "Das meinte ich nicht" | "Genau das wollte ich" |
+| Alter Workflow (Exit) | Neuer Workflow (In-Session) |
+|-----------------------|----------------------------|
+| Session beenden | Nahtloser Übergang |
+| Neues Terminal öffnen | Gleiche Session |
+| Kontext geht verloren | Kontext bleibt erhalten |
+| User muss Befehle tippen | Automatischer Wechsel |
 
 **Der PRD ist das Agreement zwischen Developer und Stakeholder.**
 
@@ -936,7 +1009,12 @@ Nach der Ausgabe der Handoff-Nachricht:
 
 ## Key Principle
 
-**Claude arbeitet immer im aktuellen Verzeichnis.** Eine Session die in `lucidlabs-agent-kit/` gestartet wurde, arbeitet am Template. Für Projekt-Arbeit muss eine neue Session im Projekt-Verzeichnis gestartet werden.
+**In-Session Handoff:** Nach Projekt-Erstellung wechselt Claude automatisch ins neue Projekt-Verzeichnis und arbeitet dort weiter. Kein Session-Neustart nötig!
+
+Nach dem Handoff:
+- Alle Dateizugriffe beziehen sich auf das neue Projekt
+- Das Upstream Repository (lucidlabs-agent-kit) wird NICHT mehr verändert
+- `/prime` ist nicht nötig - der Kontext wurde bereits geladen
 
 ---
 

@@ -692,6 +692,14 @@ This ensures the user always knows:
 - Which port the new server is on
 - No silent conflicts or port switches
 
+**ALWAYS show clickable links** in output:
+```
+| Port | Prozess | Link |
+|------|---------|------|
+| 3000 | Frontend | http://localhost:3000 |
+| 4000 | Backend  | http://localhost:4000 |
+```
+
 ### Frontend
 
 ```bash

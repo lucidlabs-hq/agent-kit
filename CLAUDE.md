@@ -424,6 +424,28 @@ Siehe: `.claude/reference/ssr-hydration.md`
 - Built-in vector search for RAG
 - Self-hosted or cloud deployment
 
+### Convex Project Isolation (MANDATORY)
+
+**ALWAYS run Convex from the PROJECT directory, NEVER from a shared/global location.**
+
+| Rule | Details |
+|------|---------|
+| **Project-specific setup** | Each project has its own `convex/` folder and `docker-compose.dev.yml` |
+| **Unique container names** | Use project-prefixed names (e.g., `cotinga-convex-backend`, not `convex-backend`) |
+| **Unique ports** | Avoid port conflicts with other projects (e.g., 9990 instead of 3210) |
+| **Working directory** | ALWAYS `cd` to the project root before running `npx convex` commands |
+| **No shared backends** | NEVER connect a project to another project's Convex backend |
+
+```bash
+# CORRECT: Run from project directory
+cd /path/to/my-project
+npx convex dev --once
+
+# WRONG: Running convex from wrong directory
+cd /some/other/path
+npx convex dev  # May connect to wrong backend!
+```
+
 ---
 
 ## AI-Coding Principles
@@ -692,12 +714,22 @@ This ensures the user always knows:
 - Which port the new server is on
 - No silent conflicts or port switches
 
-**ALWAYS show clickable links** in output:
+**ALWAYS show clickable links AND Convex credentials** in output:
 ```
-| Port | Prozess | Link |
-|------|---------|------|
-| 3000 | Frontend | http://localhost:3000 |
-| 4000 | Backend  | http://localhost:4000 |
+┌──────────────────┬──────┬───────────────────────┐
+│     Service      │ Port │         Link          │
+├──────────────────┼──────┼───────────────────────┤
+│ Frontend         │ 8080 │ http://localhost:8080 │
+│ Mastra API       │ 8081 │ http://localhost:8081 │
+│ Convex Backend   │ 8082 │ http://localhost:8082 │
+│ Convex Dashboard │ 8083 │ http://localhost:8083 │
+│ Mastra Studio    │ 8085 │ http://localhost:8085 │
+└──────────────────┴──────┴───────────────────────┘
+
+Convex Login:
+  Dashboard:      http://localhost:8083
+  Deployment URL: http://localhost:8082
+  Admin Key:      [run: docker exec <container> ./generate_admin_key.sh]
 ```
 
 ### Frontend
@@ -862,6 +894,60 @@ After implementing any feature, verify:
 - [ ] `PRD.md` - Feature matches specification
 - [ ] Test in browser - Responsive, interactions
 - [ ] Visual verification via agent-browser (for UI features)
+
+---
+
+## Task Management (MANDATORY)
+
+**REGEL:** Bei jeder nicht-trivialen Aufgabe MUSS die Task-Funktion verwendet werden.
+
+### Wann Tasks erstellen
+
+| Situation | Task erstellen? |
+|-----------|-----------------|
+| Multi-Step Implementierung | ✓ JA |
+| Setup/Konfiguration | ✓ JA |
+| Bug mit mehreren Dateien | ✓ JA |
+| Einfache Textänderung | ✗ NEIN |
+| Einzelne Funktion hinzufügen | ✗ NEIN |
+
+### Task Workflow
+
+```
+1. TaskCreate     → Aufgabe anlegen (subject, description, activeForm)
+2. TaskUpdate     → Dependencies setzen (addBlockedBy)
+3. TaskUpdate     → Status: in_progress (vor Beginn)
+4. [Arbeit]       → Implementierung
+5. TaskUpdate     → Status: completed (nach Abschluss)
+6. TaskList       → Nächste Aufgabe finden
+```
+
+### Beispiel
+
+```
+# Tasks erstellen
+TaskCreate: "Setup Convex Docker"
+TaskCreate: "Create Schema"
+TaskCreate: "Install Dependencies"
+
+# Dependencies
+TaskUpdate #2: addBlockedBy [#1]
+TaskUpdate #3: addBlockedBy [#1]
+
+# Arbeiten
+TaskUpdate #1: status=in_progress
+[docker compose up]
+TaskUpdate #1: status=completed
+
+TaskList → zeigt #2 und #3 als verfügbar
+```
+
+### Vorteile
+
+- **Tracking:** Fortschritt ist sichtbar
+- **Kontext:** Bei Unterbrechung weiß man wo man war
+- **Dependencies:** Reihenfolge ist klar
+- **Kommunikation:** User sieht was passiert
 
 ---
 

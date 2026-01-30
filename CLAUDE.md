@@ -520,6 +520,7 @@ Status display → Badge (with border)
 | `.claude/reference/ssh-keys.md` | **SSH Key Anleitung für Entwickler** |
 | `.claude/reference/watchtower.md` | **Automatic Docker container updates** |
 | `.claude/reference/scaling.md` | Stateless patterns, Convex scaling |
+| `.claude/reference/session-handoff.md` | **Projekt-Wechsel ohne Session-Neustart** |
 | `.claude/reference/task-system.md` | Task tracking, custom subagents, Swarm |
 | `convex/README.md` | Convex database setup, queries, mutations |
 | `mastra/README.md` | Mastra setup guide |
@@ -537,6 +538,28 @@ Status display → Badge (with border)
 4. **Update infrastructure docs** - If deployment-related
 
 This ensures all AI agents and developers have current knowledge.
+
+---
+
+## New Project Initialization Rule
+
+**MANDATORY:** When creating a new project from this template:
+
+1. **Update SEO Metadata** - Change `frontend/app/layout.tsx`:
+   ```typescript
+   export const metadata: Metadata = {
+     title: "Project Name | Description",
+     description: "Project description for search engines",
+   };
+   ```
+   - **NEVER** leave "Agent Kit | AI Agent Starter" in production projects
+   - Use the actual project name and customer-relevant description
+
+2. **Update Package Names** - Change `package.json` in frontend/mastra/backend
+3. **Create PRD** - `.claude/PRD.md` with project requirements
+4. **Update README.md** - Project-specific documentation
+
+This ensures branding and SEO are correct from the start.
 
 ---
 

@@ -434,7 +434,7 @@ Siehe: `.claude/reference/ssr-hydration.md`
 
 ### Convex Project Isolation (MANDATORY)
 
-**ALWAYS run Convex from the PROJECT directory, NEVER from a shared/global location.**
+**JEDES Projekt MUSS seine eigene Convex-Instanz haben - lokal UND in Production!**
 
 | Rule | Details |
 |------|---------|
@@ -443,12 +443,19 @@ Siehe: `.claude/reference/ssr-hydration.md`
 | **Unique ports** | Check `.claude/reference/port-registry.md` before choosing ports |
 | **Working directory** | ALWAYS `cd` to the project root before running `npx convex` commands |
 | **No shared backends** | NEVER connect a project to another project's Convex backend |
+| **Production isolation** | Each project gets own Convex container on LUCIDLABS-HQ |
+
+**Warum?** Shared Convex-Instanzen führen zu Schema-Konflikten, Daten-Kollisionen und Debugging-Chaos.
+
+Siehe: `.claude/reference/convex-self-hosted.md` → "Project Isolation"
 
 ### Port Registry Rule (MANDATORY)
 
 **Before starting any dev server, ALWAYS check the port registry to avoid conflicts.**
 
 See: `.claude/reference/port-registry.md`
+
+#### Local Development Ports
 
 ```bash
 # Before choosing ports, scan all projects:
@@ -458,10 +465,23 @@ for proj in ../projects/*; do
 done
 ```
 
-**NEVER use:**
+**NEVER use locally:**
 - Port 3000 (standard Next.js - conflicts with everything)
 - Port 3210 (standard Convex - use mapped ports)
 - Any port already registered by another project
+
+#### Production Ports (LUCIDLABS-HQ)
+
+Production ports müssen AUCH registriert werden, um Caddy-Konflikte zu vermeiden:
+
+| Service Type | Port Range | Example |
+|--------------|------------|---------|
+| **Frontend** | 3050-3099 | cotinga: 3050, invoice: 3060 |
+| **Mastra API** | 4050-4099 | cotinga: 4050, invoice: 4060 |
+| **Convex Backend** | 3210-3299 | cotinga: 3214, invoice: 3216 |
+| **Convex Dashboard** | 6790-6799 | cotinga: 6794, invoice: 6796 |
+
+**Registrierung:** Update `/opt/lucidlabs/registry.json` auf dem Server nach Deployment.
 
 ```bash
 # CORRECT: Run from project directory

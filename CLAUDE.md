@@ -16,6 +16,14 @@ pnpm run dev                     # Dev Server (Bun Runtime)
 pnpm run build                   # Production Build (Node.js)
 ```
 
+## Session Rules
+
+| Rule | Action |
+|------|--------|
+| **Auto-start Frontend** | ALWAYS start `pnpm run dev` in background at session start |
+| **Keep Server Running** | Dev server should run throughout the session |
+| **Report URL** | Tell user the localhost URL after server starts |
+
 ## Project Overview
 
 **Project-specific details belong in:**
@@ -432,9 +440,28 @@ Siehe: `.claude/reference/ssr-hydration.md`
 |------|---------|
 | **Project-specific setup** | Each project has its own `convex/` folder and `docker-compose.dev.yml` |
 | **Unique container names** | Use project-prefixed names (e.g., `cotinga-convex-backend`, not `convex-backend`) |
-| **Unique ports** | Avoid port conflicts with other projects (e.g., 9990 instead of 3210) |
+| **Unique ports** | Check `.claude/reference/port-registry.md` before choosing ports |
 | **Working directory** | ALWAYS `cd` to the project root before running `npx convex` commands |
 | **No shared backends** | NEVER connect a project to another project's Convex backend |
+
+### Port Registry Rule (MANDATORY)
+
+**Before starting any dev server, ALWAYS check the port registry to avoid conflicts.**
+
+See: `.claude/reference/port-registry.md`
+
+```bash
+# Before choosing ports, scan all projects:
+for proj in ../projects/*; do
+  [ -f "$proj/docker-compose.dev.yml" ] && echo "=== $(basename $proj) ===" && \
+  grep -oE '"[0-9]+:' "$proj/docker-compose.dev.yml" | tr -d '":'
+done
+```
+
+**NEVER use:**
+- Port 3000 (standard Next.js - conflicts with everything)
+- Port 3210 (standard Convex - use mapped ports)
+- Any port already registered by another project
 
 ```bash
 # CORRECT: Run from project directory
@@ -644,6 +671,31 @@ When implementing features that require UI components:
 - Need a tab navigation? → Check `components/ui/` for existing tabs/pills
 - Need a dropdown? → Use existing ClassificationPill or dropdown patterns
 - Need a new pattern entirely? → Ask: "I need a [X] element that doesn't exist yet. May I create one?"
+
+---
+
+## Downstream Project Rule (MANDATORY)
+
+**When working in a downstream project (identified by `.claude/PROJECT-CONTEXT.md` with `type: downstream`):**
+
+**ALL new files MUST be created in the CURRENT project, NEVER in the upstream repository.**
+
+| Action | Create In |
+|--------|-----------|
+| New workflows | `./n8n/workflows/` (current project) |
+| New skills | `./.claude/skills/` (current project) |
+| New components | `./frontend/components/` (current project) |
+| New tools | `./mastra/src/tools/` (current project) |
+| New reference docs | `./.claude/reference/` (current project) |
+
+**Check before creating:**
+1. Read `.claude/PROJECT-CONTEXT.md` to identify project type
+2. If `type: downstream` → create files HERE
+3. If `type: upstream` or file doesn't exist → you're in the template
+
+**Exception:** Use `/promote` skill to intentionally copy proven patterns TO upstream.
+
+**Rationale:** Downstream projects are customer-specific. Creating files in upstream pollutes the shared template and causes sync conflicts.
 
 ---
 
@@ -971,6 +1023,7 @@ This project uses Claude Code Skills instead of legacy commands. Skills follow t
 ├── productizer/SKILL.md
 ├── visual-verify/SKILL.md
 ├── pre-production/SKILL.md
+├── deploy/SKILL.md
 ├── screenshot/SKILL.md
 └── update-readme/SKILL.md
 ```
@@ -990,7 +1043,10 @@ This project uses Claude Code Skills instead of legacy commands. Skills follow t
 | `/commit` | Create formatted commit | Implementation |
 | `/update-readme` | Update documentation | Implementation |
 | `/visual-verify` | UI verification via agent-browser (fast) | Validation |
+| `/browser` | Interactive browser automation (open, click, fill, screenshot) | Any |
 | `/pre-production` | Security & Quality Check before deploy | Validation |
+| `/deploy` | Deploy to LUCIDLABS-HQ (SSH, Caddyfile, n8n MCP) | Deployment |
+| `/mistral` | Setup Mistral AI for EU-friendly LLM + PDF analysis | Setup |
 | `/promptfoo` | LLM evaluation & prompt testing | Validation |
 | `/llm-evaluate` | LLM cost/performance evaluation, model selection | Planning |
 | `/screenshot` | Visual verification screenshots | Validation |

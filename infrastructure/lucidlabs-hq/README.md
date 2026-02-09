@@ -2,7 +2,22 @@
 
 > Shared multi-project server infrastructure for Lucid Labs projects.
 
-## Overview
+## Quick Start: Deploy a New Project
+
+```bash
+# One command from your local machine:
+./scripts/deploy-project.sh \
+  --name "my-project" \
+  --abbreviation "mp" \
+  --subdomain "myproject" \
+  --has-convex
+```
+
+This single command handles: GitHub repo creation, server provisioning, port allocation, Caddyfile update, code sync, Convex startup, frontend build, and health check.
+
+---
+
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -12,19 +27,21 @@
 │                                                                             │
 │  ┌───────────────────────────────────────────────────────────────────────┐ │
 │  │                         Caddy (Reverse Proxy)                         │ │
+│  │                         Auto-SSL via Let's Encrypt                    │ │
 │  │                                                                       │ │
-│  │  invoice.lucidlabs.de  →  invoice-frontend:3000                     │ │
-│  │  project2.lucidlabs.de →  project2-frontend:3000                    │ │
-│  │  ...                                                                  │ │
+│  │  cotinga.lucidlabs.de    →  cts-frontend:3000                        │ │
+│  │  reporting.lucidlabs.de  →  csr-frontend:3000                        │ │
+│  │  invoice.lucidlabs.de    →  iaa-frontend:3000                        │ │
+│  │  *-convex.lucidlabs.de   →  *-convex-backend:3210                    │ │
 │  │                                                                       │ │
 │  └───────────────────────────────────────────────────────────────────────┘ │
 │                                                                             │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐            │
-│  │  invoice-stack  │  │  project2-stack │  │    ...          │            │
+│  │  cotinga-stack  │  │   csr-stack     │  │   iaa-stack     │            │
 │  │                 │  │                 │  │                 │            │
-│  │  - frontend     │  │  - frontend     │  │                 │            │
-│  │  - mastra       │  │  - mastra       │  │                 │            │
-│  │                 │  │                 │  │                 │            │
+│  │  - frontend     │  │  - frontend     │  │  - frontend     │            │
+│  │  - convex       │  │  - convex       │  │  - convex       │            │
+│  │                 │  │                 │  │  - mastra       │            │
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘            │
 │                                                                             │
 │                          lucidlabs-network                                  │
@@ -39,7 +56,97 @@
 | **Size** | MEDIUM-2C-4G-CAX |
 | **Architecture** | ARM64 (Ampere Altra) |
 | **OS** | Ubuntu 22.04 |
-| **Cost** | ~€29/month |
+| **SSH Port** | 2222 |
+| **Cost** | ~EUR29/month |
+
+---
+
+## Port Allocation
+
+Ports are auto-allocated by `add-project.sh`. Each project gets a block:
+
+| Service | Range | Step | Description |
+|---------|-------|------|-------------|
+| Frontend | 3050-3099 | +10 | Next.js app, maps to internal :3000 |
+| Convex Backend | 3210-3299 | +2 | Convex API, maps to internal :3210 |
+| Convex Dashboard | 6790-6899 | +2 | Convex UI, maps to internal :6791 |
+| Mastra | 4050-4099 | +10 | AI agent API, maps to internal :4000 |
+
+### Current Allocations
+
+| Project | Abbr | Frontend | Convex BE | Convex Dash | Mastra | Status |
+|---------|------|----------|-----------|-------------|--------|--------|
+| cotinga-test-suite | cts | 3050 | 3214 | 6794 | - | deployed |
+| invoice-accounting | iaa | 3060 | 3216 | 6796 | 4050 | pending |
+| client-service-reporting | csr | 3070 | 3212 | 6793 | - | deployed |
+
+---
+
+## Deployment Scripts
+
+### `add-project.sh` (Server-Side)
+
+Runs on LUCIDLABS-HQ with sudo. Automates server provisioning:
+
+```bash
+sudo /opt/lucidlabs/scripts/add-project.sh \
+  --name "my-project" \
+  --abbreviation "mp" \
+  --subdomain "myproject" \
+  --has-convex \
+  --has-mastra
+```
+
+**What it does:**
+1. Creates project folder at `/opt/lucidlabs/projects/<name>/`
+2. Auto-allocates ports from registry.json
+3. Generates `.env` with Convex URL
+4. Backups Caddyfile, appends routing entries
+5. Validates Caddyfile with `caddy validate`, rollback on failure
+6. Reloads Caddy (SSL auto-provisioned)
+7. Generates `docker-compose.convex.yml`
+8. Updates registry.json
+
+**Flags:**
+- `--dry-run` - Preview changes without applying
+- `--has-convex` - Include Convex database instance
+- `--has-mastra` - Include Mastra AI agent routing
+
+**Idempotent:** Safe to re-run. Skips existing entries.
+
+### `deploy-project.sh` (Local)
+
+Runs from developer machine. End-to-end orchestration:
+
+```bash
+./scripts/deploy-project.sh \
+  --name "my-project" \
+  --abbreviation "mp" \
+  --subdomain "myproject" \
+  --has-convex
+```
+
+**10-step flow:**
+
+| Step | Action |
+|------|--------|
+| 1 | Verify SSH to server |
+| 2 | Verify `gh` CLI authenticated |
+| 3 | Create GitHub repo (if not exists) |
+| 4 | Set GitHub secrets |
+| 5 | Push code to GitHub |
+| 6 | Sync `add-project.sh` to server |
+| 7 | Run `add-project.sh` remotely |
+| 8 | Rsync project code to server |
+| 9 | Start Convex + build frontend |
+| 10 | Health check on HTTPS URL |
+
+**Flags:**
+- `--skip-github` - Skip GitHub steps (repo already exists)
+- `--skip-provision` - Skip server provisioning (already provisioned)
+- `--dry-run` - Preview without changes
+
+---
 
 ## Directory Structure (on server)
 
@@ -51,309 +158,202 @@
 │   └── .env                  # Caddy environment
 │
 ├── projects/
-│   ├── invoice-accounting-assistant/
+│   ├── cotinga-test-suite/
 │   │   ├── docker-compose.yml
+│   │   ├── docker-compose.convex.yml
 │   │   ├── .env
-│   │   ├── frontend/
-│   │   └── mastra/
+│   │   └── frontend/
+│   ├── client-service-reporting/
+│   │   ├── docker-compose.yml
+│   │   ├── docker-compose.convex.yml
+│   │   ├── .env
+│   │   └── frontend/
 │   └── [other-projects]/
+│
+├── scripts/
+│   └── add-project.sh        # Server provisioning
 │
 ├── logs/                     # Centralized logs
 ├── backups/                  # Backup storage
-└── registry.json             # Project registry
+└── registry.json             # Project registry (source of truth)
 ```
 
-## Elestio Setup (Step-by-Step)
+---
 
-### Phase 1: Provision Server in Elestio
+## SSH Configuration
 
-1. **Elestio Dashboard** → Deploy New Service → Docker Compose
-2. **Select Provider:** Hetzner Cloud
-3. **Select Region:** Europe, Germany (Falkenstein)
-4. **Select Server:** MEDIUM-2C-4G-CAX (Ampere ARM64, ~€29/mo)
-5. **Pipeline Name:** `lucidlabs-hq` (cannot be changed!)
-6. **Docker Compose:** Paste content from `docker-compose.bootstrap.yml`:
+### Developer Machine (`~/.ssh/config`)
 
-```yaml
-services:
-  caddy:
-    image: caddy:2-alpine
-    container_name: lucidlabs-caddy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - caddy_data:/data
-      - caddy_config:/config
-    command: caddy respond --listen :80 "LUCIDLABS-HQ OK - Run setup.sh"
+```
+Host lucidlabs-hq
+  HostName <server-ip>
+  User nightwing
+  Port 2222
+  IdentityFile ~/.ssh/lucidlabs-hq
 
-  watchtower:
-    image: containrrr/watchtower
-    container_name: lucidlabs-watchtower
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - TZ=Europe/Berlin
-      - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_POLL_INTERVAL=300
-      - WATCHTOWER_LABEL_ENABLE=true
-
-networks:
-  lucidlabs-network:
-    name: lucidlabs-network
-
-volumes:
-  caddy_data:
-  caddy_config:
+Host lucidlabs-hq-root
+  HostName <server-ip>
+  User root
+  Port 2222
+  IdentityFile ~/.ssh/lucidlabs-hq
 ```
 
-7. **Create Service** → Wait for provisioning (~5 min)
+### Sudoers (One-Time Setup)
+
+For non-interactive deployment via SSH:
+
+```bash
+ssh lucidlabs-hq
+echo 'nightwing ALL=(ALL) NOPASSWD: /opt/lucidlabs/scripts/*.sh, /usr/bin/docker, /usr/bin/docker compose' | sudo tee /etc/sudoers.d/lucidlabs-deploy
+sudo chmod 440 /etc/sudoers.d/lucidlabs-deploy
+sudo visudo -c  # validate syntax
+```
+
+---
+
+## Elestio Setup (First-Time Only)
+
+### Phase 1: Provision Server
+
+1. Elestio Dashboard -> Deploy New Service -> Docker Compose
+2. Provider: Hetzner Cloud, Region: Falkenstein
+3. Server: MEDIUM-2C-4G-CAX (Ampere ARM64)
+4. Pipeline Name: `lucidlabs-hq`
+5. Paste `docker-compose.bootstrap.yml`
+6. Create Service (~5 min)
 
 ### Phase 2: Configure Server
 
-After Elestio shows "Running":
-
 ```bash
-# 1. Via Elestio Web-Terminal (erstmal, bis SSH Key eingerichtet)
-
-# 2. Clone agent-kit
+# Via Elestio Web-Terminal
 git clone https://github.com/lucidlabs-hq/agent-kit.git /tmp/agent-kit
-
-# 3. Run setup script
 cd /tmp/agent-kit/infrastructure/lucidlabs-hq
 chmod +x setup.sh scripts/*.sh
 ./setup.sh
 
-# 4. Elestio nginx entfernen (belegt Port 80)
-docker stop elestio-nginx
-docker rm elestio-nginx
+# Remove Elestio nginx (occupies port 80)
+docker stop elestio-nginx && docker rm elestio-nginx
 
-# 5. Caddy starten
-cd /opt/lucidlabs/caddy
-docker compose up -d
-
-# 6. Verify
+# Start Caddy
+cd /opt/lucidlabs/caddy && docker compose up -d
 curl http://localhost/health  # Should show "OK"
-docker ps                     # Should show caddy + watchtower
 ```
 
-### Phase 2b: SSH absichern (Optional aber empfohlen)
-
-```bash
-# SSH Port auf 2222 ändern
-sed -i 's/#Port 22/Port 2222/' /etc/ssh/sshd_config
-
-# Systemd Socket Override (WICHTIG!)
-mkdir -p /etc/systemd/system/ssh.socket.d/
-cat > /etc/systemd/system/ssh.socket.d/port.conf << 'EOF'
-[Socket]
-ListenStream=
-ListenStream=0.0.0.0:2222
-ListenStream=[::]:2222
-EOF
-
-systemctl daemon-reload
-systemctl restart ssh.socket ssh.service
-
-# In Elestio Firewall: Port 2222 TCP hinzufügen!
-```
-
-### Phase 3: Configure DNS
-
-At your DNS provider, add:
+### Phase 3: DNS
 
 ```
 *.lucidlabs.de.  A  <server-ip>
 ```
 
-Or individual subdomains as needed.
-
 ### Phase 4: Deploy First Project
 
 ```bash
-# On the server
-cd /opt/lucidlabs
-./scripts/add-project.sh invoice-accounting-assistant invoice
-# Follow the output instructions
+./scripts/deploy-project.sh --name my-first-project --abbreviation mfp --subdomain myproject --has-convex
 ```
 
 ---
-
-## Quick Reference
-
-### 2. Add New Project
-
-```bash
-# On the server
-cd /opt/lucidlabs
-./scripts/add-project.sh my-project myproject
-
-# Follow the output instructions:
-# 1. Fill in .env
-# 2. Add Caddy entry
-# 3. Deploy code
-```
-
-### 3. Deploy Project
-
-```bash
-# Via GitHub Actions (recommended)
-# - Push to main branch
-# - Actions workflow deploys automatically
-
-# Or manually
-ssh root@projects.lucidlabs.de
-cd /opt/lucidlabs/projects/my-project
-docker compose -p my-project up -d --build
-```
 
 ## Files in This Directory
 
 | File | Purpose |
 |------|---------|
-| `docker-compose.bootstrap.yml` | **Elestio initial setup** (use this first!) |
+| `docker-compose.bootstrap.yml` | Elestio initial setup |
 | `docker-compose.yml` | Full Caddy setup (after setup.sh) |
-| `Caddyfile` | Reverse proxy routing |
-| `registry.json` | Project tracking |
+| `Caddyfile` | Reverse proxy routing (template) |
+| `registry.json` | Project registry (ports, URLs, status) |
 | `setup.sh` | Initial server setup |
-| `scripts/add-project.sh` | Add new project |
-| `scripts/deploy-project.sh` | Deploy/update project |
+| `scripts/add-project.sh` | Automated server provisioning |
 | `templates/project-docker-compose.yml` | Project template |
 | `templates/github-workflow-hq.yml` | CI/CD template |
 
-## GitHub Secrets (Organization Level)
+## GitHub Secrets
 
-Set these secrets at `github.com/lucidlabs-hq` → Settings → Secrets:
+Organization-level (`github.com/lucidlabs-hq`):
 
 | Secret | Description |
 |--------|-------------|
 | `LUCIDLABS_HQ_HOST` | Server IP or hostname |
-| `LUCIDLABS_HQ_SSH_KEY` | SSH private key (deploy key) |
+| `LUCIDLABS_HQ_SSH_KEY` | SSH private key |
 
-Per-project secrets:
+Per-project:
 
 | Secret | Description |
 |--------|-------------|
-| `CONVEX_DEPLOY_KEY` | Convex deployment key |
-| `ANTHROPIC_API_KEY` | Anthropic API key |
-| `OPENAI_API_KEY` | OpenAI API key (optional) |
+| `NEXT_PUBLIC_CONVEX_URL` | Convex URL for this project |
+| `LINEAR_API_KEY` | Linear API key (if needed) |
+| `ANTHROPIC_API_KEY` | Anthropic API key (if needed) |
 
-## DNS Configuration
-
-Configure at your DNS provider:
-
-```
-*.lucidlabs.de.  A  <server-ip>
-```
-
-Or individual records:
-
-```
-invoice.lucidlabs.de.  A  <server-ip>
-project2.lucidlabs.de. A  <server-ip>
-```
+---
 
 ## Monitoring
 
-Monitoring (Uptime Kuma) runs on a **separate server** to ensure alerts work even if HQ goes down.
+Monitoring (Uptime Kuma) runs on a **separate server** for independence.
 
-See: `infrastructure/monitoring-satellite/` (separate setup)
+See: `infrastructure/monitoring-satellite/`
 
-The monitoring server checks:
-- `https://invoice.lucidlabs.de/api/health`
-- `https://<project>.lucidlabs.de/api/health`
-- Server SSH connectivity
-
-## Backup Strategy
-
-```bash
-# Daily backup script (add to cron)
-#!/bin/bash
-DATE=$(date +%Y%m%d)
-tar -czf /opt/lucidlabs/backups/registry-$DATE.tar.gz /opt/lucidlabs/registry.json
-docker exec lucidlabs-caddy tar -czf - /data > /opt/lucidlabs/backups/caddy-$DATE.tar.gz
-
-# Keep last 7 days
-find /opt/lucidlabs/backups -mtime +7 -delete
-```
-
-## Scaling
-
-When the server needs more resources:
-
-1. **Vertical scaling**: Upgrade to LARGE-4C-8G or XLARGE-8C-16G in Elestio
-2. **Horizontal scaling**: Move high-traffic projects to dedicated servers
-
-## Elestio Kompatibilität
-
-Wir haben Elestio's Standard-nginx durch unser Caddy ersetzt. **Elestio funktioniert weiterhin:**
-
-| Feature | Status |
-|---------|--------|
-| Dashboard | ✅ Funktioniert |
-| Web-Terminal | ✅ Funktioniert |
-| SSH Key Management | ✅ Funktioniert |
-| Firewall | ✅ Funktioniert |
-| Backups | ✅ Funktioniert |
-| Logs | ✅ Funktioniert |
-| Auto-SSL (Elestio) | ❌ Ersetzt durch Caddy |
-| nginx (Elestio) | ❌ Ersetzt durch Caddy |
-
-**Was wir geändert haben:**
-
-```bash
-# Elestio nginx entfernt (belegt Port 80/443)
-docker stop elestio-nginx
-docker rm elestio-nginx
-
-# Unser Caddy übernimmt Reverse Proxy + Auto-SSL
-```
-
-**SSH Port geändert:**
-- Standard: 22
-- Neu: **2222** (Sicherheit)
-- Systemd Socket Override in `/etc/systemd/system/ssh.socket.d/port.conf`
+Monitored endpoints per project:
+- `https://<subdomain>.lucidlabs.de`
+- `https://<abbr>-convex.lucidlabs.de/version`
 
 ---
 
 ## Troubleshooting
 
-### View logs
+### SSH connection refused
 
 ```bash
-# Caddy logs
-docker compose -f /opt/lucidlabs/caddy/docker-compose.yml logs -f caddy
-
-# Project logs
-docker compose -p invoice-accounting-assistant logs -f
-
-# All containers
-docker ps
-docker logs <container-id>
+# HQ uses port 2222, not 22
+ssh -p 2222 nightwing@<server-ip>
 ```
 
-### Restart services
+### Container not starting
 
 ```bash
-# Restart Caddy (after Caddyfile changes)
-cd /opt/lucidlabs/caddy
-docker compose restart caddy
+ssh lucidlabs-hq "docker logs <container-name> --tail 50"
+ssh lucidlabs-hq "docker compose -p <project-name> ps"
+```
 
-# Restart project
-cd /opt/lucidlabs/projects/invoice-accounting-assistant
-docker compose -p invoice-accounting-assistant restart
+### Caddyfile syntax error
+
+```bash
+# add-project.sh creates backups automatically
+ssh lucidlabs-hq "ls /opt/lucidlabs/caddy/Caddyfile.bak.*"
+# Restore: sudo cp Caddyfile.bak.<timestamp> Caddyfile
 ```
 
 ### SSL certificate issues
 
 ```bash
-# Force certificate renewal
-docker exec lucidlabs-caddy caddy reload --config /etc/caddy/Caddyfile
+ssh lucidlabs-hq "docker exec lucidlabs-caddy caddy reload --config /etc/caddy/Caddyfile"
+# Check: dig <subdomain>.lucidlabs.de (must point to server IP)
+```
+
+### Port conflict
+
+```bash
+ssh lucidlabs-hq "ss -tlnp | grep <port>"
+# Check registry.json for allocated ports
+ssh lucidlabs-hq "cat /opt/lucidlabs/registry.json | jq '.projects[].ports'"
 ```
 
 ---
 
-**Last Updated:** January 2026
+## Backup Strategy
+
+```bash
+# Daily backup (add to cron)
+DATE=$(date +%Y%m%d)
+tar -czf /opt/lucidlabs/backups/registry-$DATE.tar.gz /opt/lucidlabs/registry.json
+docker exec lucidlabs-caddy tar -czf - /data > /opt/lucidlabs/backups/caddy-$DATE.tar.gz
+find /opt/lucidlabs/backups -mtime +7 -delete
+```
+
+## Scaling
+
+- **Vertical:** Upgrade to LARGE-4C-8G (~EUR59/mo) in Elestio
+- **Horizontal:** Move high-traffic projects to dedicated servers
+
+---
+
+**Last Updated:** February 2026
 **Maintainer:** Lucid Labs GmbH

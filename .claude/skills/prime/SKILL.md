@@ -265,7 +265,113 @@ LUCID LABS
 Tip: Type a command or select an option number below.
 ```
 
-**Danach folgt der Tickets/Options-Block (siehe 0.3).**
+**Danach folgt: Deployed Projects (0.1.0), dann Security Reminders (0.1.0b), dann Tickets/Options-Block (0.3).**
+
+---
+
+#### 0.1.0 Deployed Projects Overview (NACH Boot Screen)
+
+**IMMER anzeigen** nach dem Boot Screen. Lese `infrastructure/lucidlabs-hq/registry.json` (lokal oder aus upstream) und zeige alle deployed Projekte.
+
+```bash
+# Registry finden (downstream oder upstream)
+REGISTRY=""
+if [ -f "infrastructure/lucidlabs-hq/registry.json" ]; then
+  REGISTRY="infrastructure/lucidlabs-hq/registry.json"
+elif [ -f "$(dirname "$(pwd)")/../lucidlabs-agent-kit/infrastructure/lucidlabs-hq/registry.json" ]; then
+  REGISTRY="$(dirname "$(pwd)")/../lucidlabs-agent-kit/infrastructure/lucidlabs-hq/registry.json"
+fi
+```
+
+**Deployed Projects anzeigen:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  DEPLOYED PROJECTS (LUCIDLABS-HQ)                                          │
+│  ────────────────────────────────                                          │
+│                                                                             │
+│  cotinga-test-suite                                                        │
+│    URL:    https://cotinga.lucidlabs.de                                    │
+│    Convex: https://cts-convex.lucidlabs.de                                │
+│    Repo:   https://github.com/lucidlabs-hq/cotinga-test-suite             │
+│                                                                             │
+│  client-service-reporting                                                   │
+│    URL:    https://reporting.lucidlabs.de                                  │
+│    Convex: https://csr-convex.lucidlabs.de                                │
+│    Repo:   https://github.com/lucidlabs-hq/client-service-reporting       │
+│                                                                             │
+│  invoice-accounting-assistant                        Status: pending       │
+│    URL:    https://invoice.lucidlabs.de              (not yet deployed)    │
+│    Repo:   https://github.com/lucidlabs-hq/invoice-accounting-assistant   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Rendering-Regeln:**
+- Nur Projekte mit `status: "deployed"` oder `status: "provisioned"` als aktiv anzeigen
+- Projekte mit `status: "pending"` mit Hinweis `(not yet deployed)` markieren
+- URL immer als klickbarer Link
+- Repo immer als `https://github.com/<repo>` Link
+- Convex URL nur anzeigen wenn vorhanden (nicht null)
+- Sortierung: deployed first, dann pending
+
+**Daten aus registry.json:**
+```json
+{
+  "projects": [
+    {
+      "name": "...",
+      "url": "https://...",
+      "convexUrl": "https://...",
+      "repo": "lucidlabs-hq/...",
+      "status": "deployed|pending|provisioned"
+    }
+  ]
+}
+```
+
+---
+
+#### 0.1.0b Security Reminders Check (NACH Deployed Projects)
+
+**Prüfe Security-Reminders bei Session-Start.**
+
+```bash
+# Security Reminders laden
+REMINDERS_FILE=".claude/reference/security-reminders.json"
+if [ ! -f "$REMINDERS_FILE" ]; then
+  # Versuche upstream
+  REMINDERS_FILE="$(dirname "$(pwd)")/../lucidlabs-agent-kit/.claude/reference/security-reminders.json"
+fi
+```
+
+**Logik:**
+1. Lese alle Reminders mit `status: "pending"`
+2. Vergleiche `due` Datum mit heutigem Datum
+3. Falls `due` <= heute: Reminder ist **OVERDUE** (rot/warn)
+4. Falls `due` <= heute + 14 Tage: Reminder ist **DUE SOON** (gelb/info)
+5. Sonst: nicht anzeigen
+
+**Anzeige (nur wenn fällige Reminders existieren):**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  SECURITY REMINDERS                                                        │
+│  ──────────────────                                                        │
+│                                                                             │
+│  [OVERDUE] SSH Key Rotation                                 Due: 2026-05-09│
+│            Rotate SSH keys for LUCIDLABS-HQ                                │
+│            Ref: .claude/reference/ssh-keys.md                              │
+│                                                                             │
+│  [DUE SOON] Create dedicated deploy user                    Due: 2026-08-09│
+│             If team has grown: Create 'deploy' user                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Falls keine Reminders fällig:** Block nicht anzeigen (stille Prüfung).
 
 ---
 

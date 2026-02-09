@@ -1,0 +1,36 @@
+{
+  "created": "2026-02-09",
+  "description": "Time-based security reminders checked by /prime at session start",
+  "reminders": [
+    {
+      "id": "ssh-key-rotation",
+      "due": "2026-05-09",
+      "interval": "3 months",
+      "severity": "medium",
+      "title": "SSH Key Rotation",
+      "description": "Rotate SSH keys for LUCIDLABS-HQ (nightwing + GitHub Actions). Generate new keys, update GitHub Secrets, revoke old keys.",
+      "reference": ".claude/reference/ssh-keys.md",
+      "status": "pending"
+    },
+    {
+      "id": "deploy-user",
+      "due": "2026-08-09",
+      "interval": "6 months",
+      "severity": "low",
+      "title": "Create dedicated deploy user",
+      "description": "If team has grown: Create a dedicated 'deploy' user with minimal rights instead of using nightwing for everything.",
+      "reference": ".claude/reference/deployment-targets.md",
+      "status": "pending"
+    },
+    {
+      "id": "ci-only-deploy",
+      "due": "2027-02-09",
+      "interval": "12 months",
+      "severity": "low",
+      "title": "CI/CD-only deployments",
+      "description": "If >3 developers: Disable manual SSH deploys, enforce CI/CD-only deployments. Remove direct SSH deploy capability.",
+      "reference": ".claude/reference/deployment-best-practices.md",
+      "status": "pending"
+    }
+  ]
+}

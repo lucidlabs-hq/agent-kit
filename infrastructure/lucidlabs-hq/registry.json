@@ -6,6 +6,7 @@
     "datacenter": "hetzner-fsn1",
     "architecture": "arm64",
     "size": "MEDIUM-2C-4G-CAX",
+    "sshPort": 2222,
     "created": "2026-01-28",
     "network": "lucidlabs-network"
   },
@@ -13,25 +14,78 @@
     "primary": "lucidlabs.de",
     "wildcard": "*.lucidlabs.de"
   },
+  "portRanges": {
+    "frontend": { "min": 3050, "max": 3099, "step": 10 },
+    "convexBackend": { "min": 3210, "max": 3299, "step": 2 },
+    "convexDashboard": { "min": 6790, "max": 6899, "step": 2 },
+    "mastra": { "min": 4050, "max": 4099, "step": 10 }
+  },
   "projects": [
     {
+      "name": "cotinga-test-suite",
+      "abbreviation": "cts",
+      "subdomain": "cotinga",
+      "url": "https://cotinga.lucidlabs.de",
+      "convexUrl": "https://cts-convex.lucidlabs.de",
+      "ports": {
+        "frontend": 3050,
+        "convexBackend": 3214,
+        "convexDashboard": 6794,
+        "mastra": 0
+      },
+      "repo": "lucidlabs-hq/cotinga-test-suite",
+      "status": "deployed",
+      "services": {
+        "frontend": true,
+        "convex": true,
+        "mastra": false
+      },
+      "deployed": "2026-01-28",
+      "lastUpdate": "2026-01-28T00:00:00+01:00"
+    },
+    {
       "name": "invoice-accounting-assistant",
+      "abbreviation": "iaa",
       "subdomain": "invoice",
       "url": "https://invoice.lucidlabs.de",
+      "convexUrl": "https://iaa-convex.lucidlabs.de",
+      "ports": {
+        "frontend": 3060,
+        "convexBackend": 3216,
+        "convexDashboard": 6796,
+        "mastra": 4050
+      },
       "repo": "lucidlabs-hq/invoice-accounting-assistant",
       "status": "pending",
       "services": {
-        "frontend": {
-          "container": "invoice-frontend",
-          "port": 3000
-        },
-        "mastra": {
-          "container": "invoice-mastra",
-          "port": 4000
-        }
+        "frontend": true,
+        "convex": true,
+        "mastra": true
       },
       "deployed": null,
       "lastUpdate": null
+    },
+    {
+      "name": "client-service-reporting",
+      "abbreviation": "csr",
+      "subdomain": "reporting",
+      "url": "https://reporting.lucidlabs.de",
+      "convexUrl": "https://csr-convex.lucidlabs.de",
+      "ports": {
+        "frontend": 3070,
+        "convexBackend": 3212,
+        "convexDashboard": 6793,
+        "mastra": 0
+      },
+      "repo": "lucidlabs-hq/client-service-reporting",
+      "status": "deployed",
+      "services": {
+        "frontend": true,
+        "convex": true,
+        "mastra": false
+      },
+      "deployed": "2026-02-09",
+      "lastUpdate": "2026-02-09T00:00:00+01:00"
     }
   ]
 }

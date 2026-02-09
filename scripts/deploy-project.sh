@@ -513,31 +513,14 @@ if [ "$HAS_CONVEX" = true ]; then
     elif [ "$DRY_RUN" = true ]; then
         log_dry "Would check if production needs initial data seed"
     else
-        # Check if production database already has data
-        PROD_HAS_DATA=false
-        if [ -n "${ADMIN_KEY:-}" ]; then
-            DOC_CHECK=$(curl -s "${CONVEX_PROD_URL}/api/list_snapshot" \
-                -H "Authorization: Convex ${ADMIN_KEY}" 2>/dev/null || echo "")
-            if echo "$DOC_CHECK" | grep -q '"tables"' 2>/dev/null; then
-                HAS_TABLES=$(echo "$DOC_CHECK" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    tables = data.get('tables', [])
-    has_data = any(t.get('numDocuments', 0) > 0 for t in tables if not t['name'].startswith('_'))
-    print('true' if has_data else 'false')
-except:
-    print('false')
-" 2>/dev/null || echo "false")
-                if [ "$HAS_TABLES" = "true" ]; then
-                    PROD_HAS_DATA=true
-                fi
-            fi
-        fi
+        # Check if this project was already seeded (marker file on server)
+        SEED_MARKER="$REMOTE_PROJECT/.convex-seeded"
+        ALREADY_SEEDED=$(ssh -p "$SSH_PORT" "$SSH_HOST" "test -f $SEED_MARKER && echo true || echo false" 2>/dev/null || echo "false")
 
-        if [ "$PROD_HAS_DATA" = true ]; then
-            log_skip "Production database already has data"
+        if [ "$ALREADY_SEEDED" = "true" ]; then
+            log_skip "Production database already seeded (marker: .convex-seeded)"
             log_detail "Functions updated, but data stays independent (Production != Development)"
+            log_detail "To re-seed: ssh lucidlabs-hq 'rm $SEED_MARKER' then redeploy"
         else
             EXPORT_DIR="/tmp/convex-export-${PROJECT_NAME}"
             EXPORT_PATH="${EXPORT_DIR}/snapshot.zip"
@@ -554,6 +537,9 @@ except:
                 log_info "Importing data to production..."
                 if npx convex import "$EXPORT_PATH" --url "$CONVEX_PROD_URL" --admin-key "$ADMIN_KEY" --replace-all --yes 2>&1; then
                     log_ok "Production database seeded from local data"
+                    # Write marker so subsequent deploys skip seed
+                    ssh -p "$SSH_PORT" "$SSH_HOST" "touch $SEED_MARKER" 2>/dev/null
+                    log_detail "Marker written: $SEED_MARKER"
                 else
                     log_err "Data import failed"
                     log_detail "npx convex import $EXPORT_PATH --url $CONVEX_PROD_URL --admin-key <key> --replace-all --yes"

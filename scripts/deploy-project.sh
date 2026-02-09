@@ -3,7 +3,8 @@
 # LUCIDLABS-HQ - Deploy Project (Local Orchestration)
 #
 # Full end-to-end deployment from developer machine to LUCIDLABS-HQ.
-# Handles GitHub repo, server provisioning, code sync, and health checks.
+# Handles GitHub repo, server provisioning, code sync, Convex functions,
+# initial data seed, and health checks.
 #
 # Usage:
 #   ./scripts/deploy-project.sh \
@@ -14,6 +15,7 @@
 #     [--has-mastra] \
 #     [--skip-github] \
 #     [--skip-provision] \
+#     [--skip-data] \
 #     [--dry-run]
 #
 # Prerequisites:
@@ -36,6 +38,17 @@ LOCAL_INFRA_SCRIPTS="$(dirname "$0")/../infrastructure/lucidlabs-hq/scripts"
 
 # Resolve to absolute path
 LOCAL_INFRA_SCRIPTS=$(cd "$LOCAL_INFRA_SCRIPTS" 2>/dev/null && pwd || echo "$LOCAL_INFRA_SCRIPTS")
+
+# Track timing
+DEPLOY_START=$(date +%s)
+
+# Store admin key for summary
+ADMIN_KEY=""
+
+# Track step results for final report
+STEPS_PASSED=0
+STEPS_SKIPPED=0
+STEPS_FAILED=0
 
 # -----------------------------------------------------------------------------
 # Parse arguments
@@ -112,46 +125,85 @@ if [ -z "$PROJECT_NAME" ] || [ -z "$ABBREVIATION" ] || [ -z "$SUBDOMAIN" ]; then
 fi
 
 # -----------------------------------------------------------------------------
-# Helpers
+# Logging & Progress
 # -----------------------------------------------------------------------------
+TOTAL_STEPS=12
 STEP=0
+
+# Colors (if terminal supports it)
+if [ -t 1 ]; then
+    C_RESET="\033[0m"
+    C_BOLD="\033[1m"
+    C_DIM="\033[2m"
+    C_GREEN="\033[32m"
+    C_YELLOW="\033[33m"
+    C_RED="\033[31m"
+    C_CYAN="\033[36m"
+    C_BLUE="\033[34m"
+    C_MAGENTA="\033[35m"
+else
+    C_RESET="" C_BOLD="" C_DIM="" C_GREEN="" C_YELLOW="" C_RED="" C_CYAN="" C_BLUE="" C_MAGENTA=""
+fi
+
 step() {
     STEP=$((STEP + 1))
     echo ""
-    echo "=== Step $STEP: $1 ==="
-    echo ""
+    echo -e "${C_CYAN}${C_BOLD}[$STEP/$TOTAL_STEPS]${C_RESET} ${C_BOLD}$1${C_RESET}"
+    echo -e "${C_DIM}$(printf '%.0s-' {1..60})${C_RESET}"
 }
 
-log_ok()   { echo "  [OK]   $1"; }
-log_skip() { echo "  [SKIP] $1"; }
-log_err()  { echo "  [ERR]  $1"; }
-log_info() { echo "  [INFO] $1"; }
-log_dry()  { echo "  [DRY]  $1"; }
+log_ok() {
+    STEPS_PASSED=$((STEPS_PASSED + 1))
+    echo -e "  ${C_GREEN}[OK]${C_RESET}    $1"
+}
 
-run_or_dry() {
-    if [ "$DRY_RUN" = true ]; then
-        log_dry "Would run: $*"
-    else
-        "$@"
-    fi
+log_skip() {
+    STEPS_SKIPPED=$((STEPS_SKIPPED + 1))
+    echo -e "  ${C_YELLOW}[SKIP]${C_RESET}  $1"
+}
+
+log_err() {
+    STEPS_FAILED=$((STEPS_FAILED + 1))
+    echo -e "  ${C_RED}[ERR]${C_RESET}   $1"
+}
+
+log_info() {
+    echo -e "  ${C_BLUE}[....]${C_RESET}  $1"
+}
+
+log_dry() {
+    echo -e "  ${C_MAGENTA}[DRY]${C_RESET}   $1"
+}
+
+log_detail() {
+    echo -e "  ${C_DIM}        $1${C_RESET}"
 }
 
 # -----------------------------------------------------------------------------
 # Header
 # -----------------------------------------------------------------------------
 echo ""
-echo "============================================================================="
-echo "  LUCIDLABS-HQ: DEPLOY PROJECT"
-echo "============================================================================="
+echo -e "${C_BOLD}=============================================================================${C_RESET}"
+echo -e "${C_BOLD}  LUCIDLABS-HQ  |  Project Deployment${C_RESET}"
+echo -e "${C_BOLD}=============================================================================${C_RESET}"
 echo ""
-echo "  Project:      $PROJECT_NAME"
-echo "  Abbreviation: $ABBREVIATION"
-echo "  Subdomain:    $SUBDOMAIN.lucidlabs.de"
-echo "  Convex:       $HAS_CONVEX"
-echo "  Mastra:       $HAS_MASTRA"
-echo "  Dry Run:      $DRY_RUN"
+echo -e "  Project:      ${C_BOLD}$PROJECT_NAME${C_RESET}"
+echo -e "  Abbreviation: ${C_BOLD}$ABBREVIATION${C_RESET}"
+echo -e "  Domain:       ${C_CYAN}https://$SUBDOMAIN.lucidlabs.de${C_RESET}"
+[ "$HAS_CONVEX" = true ] && echo -e "  Convex:       ${C_GREEN}Enabled${C_RESET}  (https://${ABBREVIATION}-convex.lucidlabs.de)"
+[ "$HAS_CONVEX" = false ] && echo -e "  Convex:       ${C_DIM}No${C_RESET}"
+[ "$HAS_MASTRA" = true ] && echo -e "  Mastra:       ${C_GREEN}Enabled${C_RESET}"
+[ "$HAS_MASTRA" = false ] && echo -e "  Mastra:       ${C_DIM}No${C_RESET}"
+[ "$DRY_RUN" = true ] && echo -e "  Mode:         ${C_MAGENTA}DRY RUN (no changes)${C_RESET}"
 echo ""
-echo "============================================================================="
+echo -e "${C_DIM}  Started at $(date '+%H:%M:%S on %Y-%m-%d')${C_RESET}"
+echo -e "${C_BOLD}=============================================================================${C_RESET}"
+
+# =============================================================================
+# PHASE 1: PREFLIGHT
+# =============================================================================
+echo ""
+echo -e "${C_BOLD}${C_BLUE}--- Phase 1: Preflight Checks ---${C_RESET}"
 
 # -----------------------------------------------------------------------------
 # Step 1: Verify SSH access
@@ -161,6 +213,7 @@ step "Verify SSH Access"
 if [ "$DRY_RUN" = true ]; then
     log_dry "Would verify SSH to $SSH_HOST"
 else
+    log_info "Connecting to $SSH_HOST (port $SSH_PORT)..."
     if ssh -p "$SSH_PORT" "$SSH_HOST" "echo ok" 2>/dev/null | grep -q "ok"; then
         log_ok "SSH connection to $SSH_HOST verified"
     else
@@ -201,10 +254,16 @@ else
     fi
 fi
 
-# -----------------------------------------------------------------------------
-# Step 3: Create GitHub repo
-# -----------------------------------------------------------------------------
+# =============================================================================
+# PHASE 2: GITHUB
+# =============================================================================
 if [ "$SKIP_GITHUB" = false ]; then
+    echo ""
+    echo -e "${C_BOLD}${C_BLUE}--- Phase 2: GitHub Setup ---${C_RESET}"
+
+    # -------------------------------------------------------------------------
+    # Step 3: Create GitHub repo
+    # -------------------------------------------------------------------------
     step "GitHub Repository"
 
     REPO_FULL="${GITHUB_ORG}/${PROJECT_NAME}"
@@ -215,6 +274,7 @@ if [ "$SKIP_GITHUB" = false ]; then
         if gh repo view "$REPO_FULL" &> /dev/null; then
             log_skip "Repository $REPO_FULL already exists"
         else
+            log_info "Creating private repository..."
             gh repo create "$REPO_FULL" --private --description "Lucid Labs - ${PROJECT_NAME}"
             log_ok "Created repository: $REPO_FULL"
         fi
@@ -234,12 +294,11 @@ if [ "$SKIP_GITHUB" = false ]; then
         log_dry "Would set secrets: LUCIDLABS_HQ_HOST, LUCIDLABS_HQ_SSH_KEY"
         [ -n "$CONVEX_URL" ] && log_dry "Would set secret: NEXT_PUBLIC_CONVEX_URL=$CONVEX_URL"
     else
-        # Check if secrets already set (we can check if repo has them)
-        log_info "Setting repository secrets..."
-        log_info "Note: Organization secrets (HQ_HOST, SSH_KEY) are inherited."
+        log_info "Organization secrets (HQ_HOST, SSH_KEY) are inherited"
         log_info "Set project-specific secrets manually if needed:"
-        log_info "  gh secret set NEXT_PUBLIC_CONVEX_URL -R $REPO_FULL"
-        log_info "  gh secret set LINEAR_API_KEY -R $REPO_FULL"
+        log_detail "gh secret set NEXT_PUBLIC_CONVEX_URL -R $REPO_FULL"
+        log_detail "gh secret set LINEAR_API_KEY -R $REPO_FULL"
+        log_ok "Secrets configuration noted"
     fi
 
     # -------------------------------------------------------------------------
@@ -258,19 +317,29 @@ if [ "$SKIP_GITHUB" = false ]; then
             log_ok "Added remote: $EXPECTED_URL"
         elif [ "$CURRENT_REMOTE" != "$EXPECTED_URL" ]; then
             log_info "Remote 'origin' points to: $CURRENT_REMOTE"
-            log_info "Expected: $EXPECTED_URL"
-            log_info "Skipping remote update (may be intentional)"
+            log_detail "Expected: $EXPECTED_URL"
+            log_skip "Keeping existing remote (may be intentional)"
         else
-            log_skip "Remote already configured: $EXPECTED_URL"
+            log_skip "Remote already configured"
         fi
 
+        log_info "Pushing to origin/main..."
         if git push -u origin main 2>/dev/null; then
             log_ok "Pushed to origin/main"
         else
-            log_info "Push may require manual intervention (branch protection, etc.)"
+            log_info "Push may require manual intervention"
         fi
     fi
+else
+    # Count the 3 skipped GitHub steps
+    STEP=$((STEP + 3))
 fi
+
+# =============================================================================
+# PHASE 3: SERVER PROVISIONING
+# =============================================================================
+echo ""
+echo -e "${C_BOLD}${C_BLUE}--- Phase 3: Server Provisioning ---${C_RESET}"
 
 # -----------------------------------------------------------------------------
 # Step 6: Sync add-project.sh to server
@@ -280,26 +349,28 @@ step "Sync Server Scripts"
 if [ "$DRY_RUN" = true ]; then
     log_dry "Would rsync add-project.sh to $SSH_HOST:$REMOTE_SCRIPTS/"
 else
-    # Upload to /tmp first (nightwing has write access there)
-    rsync -avz -e "ssh -p $SSH_PORT" \
+    log_info "Uploading add-project.sh to server..."
+    rsync -avz --quiet -e "ssh -p $SSH_PORT" \
         "$LOCAL_INFRA_SCRIPTS/add-project.sh" \
         "$SSH_HOST:/tmp/add-project.sh"
 
-    # Use docker to move to root-owned directory (sudo docker is passwordless)
+    log_info "Installing script to /opt/lucidlabs/scripts/..."
     ssh -p "$SSH_PORT" "$SSH_HOST" "sudo docker run --rm \
         -v /opt/lucidlabs:/opt/lucidlabs \
         -v /tmp:/tmp \
         alpine sh -c 'mkdir -p /opt/lucidlabs/scripts && \
             cp /tmp/add-project.sh /opt/lucidlabs/scripts/add-project.sh && \
             chmod +x /opt/lucidlabs/scripts/add-project.sh && \
-            chown root:root /opt/lucidlabs/scripts/add-project.sh'"
+            chown root:root /opt/lucidlabs/scripts/add-project.sh'" 2>/dev/null
 
-    log_ok "Synced add-project.sh to server"
+    log_ok "Server scripts updated"
 fi
 
 # -----------------------------------------------------------------------------
 # Step 7: Run add-project.sh on server
 # -----------------------------------------------------------------------------
+REMOTE_PROJECT="$REMOTE_BASE/projects/$PROJECT_NAME"
+
 if [ "$SKIP_PROVISION" = false ]; then
     step "Provision Project on Server"
 
@@ -310,27 +381,33 @@ if [ "$SKIP_PROVISION" = false ]; then
     if [ "$DRY_RUN" = true ]; then
         log_dry "Would run: sudo $REMOTE_SCRIPTS/add-project.sh $ADD_ARGS"
     else
+        log_info "Running server provisioning (ports, Caddyfile, registry)..."
         ssh -p "$SSH_PORT" "$SSH_HOST" "sudo $REMOTE_SCRIPTS/add-project.sh $ADD_ARGS"
         log_ok "Server provisioning complete"
     fi
 else
+    step "Provision Project on Server"
     log_skip "Server provisioning skipped (--skip-provision)"
 fi
+
+# =============================================================================
+# PHASE 4: CODE DEPLOYMENT
+# =============================================================================
+echo ""
+echo -e "${C_BOLD}${C_BLUE}--- Phase 4: Code Deployment ---${C_RESET}"
 
 # -----------------------------------------------------------------------------
 # Step 8: Rsync project code
 # -----------------------------------------------------------------------------
 step "Sync Project Code"
 
-REMOTE_PROJECT="$REMOTE_BASE/projects/$PROJECT_NAME"
-
 if [ "$DRY_RUN" = true ]; then
     log_dry "Would rsync project code to $SSH_HOST:$REMOTE_PROJECT/"
 else
-    # Rsync to /tmp staging area first (nightwing has write access)
     STAGING="/tmp/deploy-${PROJECT_NAME}"
-    log_info "Syncing to staging area..."
-    rsync -avz -e "ssh -p $SSH_PORT" \
+
+    log_info "Uploading project files to staging area..."
+    rsync -avz --quiet -e "ssh -p $SSH_PORT" \
         --exclude='.git' \
         --exclude='node_modules' \
         --exclude='.next' \
@@ -342,21 +419,26 @@ else
         --delete \
         ./ "$SSH_HOST:$STAGING/"
 
-    # Move from staging to project dir via docker (root-owned directory)
-    log_info "Moving to project directory..."
+    log_info "Moving files to project directory..."
     ssh -p "$SSH_PORT" "$SSH_HOST" "sudo docker run --rm \
         -v /opt/lucidlabs:/opt/lucidlabs \
         -v /tmp:/tmp \
         alpine sh -c 'cp -a /tmp/deploy-${PROJECT_NAME}/. /opt/lucidlabs/projects/${PROJECT_NAME}/ && \
-            rm -rf /tmp/deploy-${PROJECT_NAME}'"
+            rm -rf /tmp/deploy-${PROJECT_NAME}'" 2>/dev/null
 
-    log_ok "Project code synced to server"
+    log_ok "Project code deployed to $REMOTE_PROJECT"
 fi
+
+# =============================================================================
+# PHASE 5: SERVICES
+# =============================================================================
+echo ""
+echo -e "${C_BOLD}${C_BLUE}--- Phase 5: Start Services ---${C_RESET}"
 
 # -----------------------------------------------------------------------------
 # Step 9: Start services
 # -----------------------------------------------------------------------------
-step "Start Services"
+step "Start Docker Containers"
 
 if [ "$DRY_RUN" = true ]; then
     [ "$HAS_CONVEX" = true ] && log_dry "Would start Convex instance"
@@ -364,34 +446,37 @@ if [ "$DRY_RUN" = true ]; then
 else
     # Start Convex if needed
     if [ "$HAS_CONVEX" = true ]; then
-        log_info "Starting Convex instance..."
-
-        # Check if containers already exist under a different project name
+        log_info "Starting Convex database..."
         EXISTING_CONVEX=$(ssh -p "$SSH_PORT" "$SSH_HOST" "sudo docker ps -a --filter 'name=${ABBREVIATION}-convex-backend' --format '{{.Names}}'" 2>/dev/null)
 
         if [ -n "$EXISTING_CONVEX" ]; then
-            log_info "Convex containers already exist, restarting..."
+            log_info "Convex containers exist, restarting..."
             ssh -p "$SSH_PORT" "$SSH_HOST" "sudo docker restart ${ABBREVIATION}-convex-backend ${ABBREVIATION}-convex-dashboard" 2>/dev/null || true
         else
-            ssh -p "$SSH_PORT" "$SSH_HOST" "cd $REMOTE_PROJECT && sudo docker compose -f docker-compose.convex.yml -p $PROJECT_NAME up -d"
+            log_info "Creating new Convex containers..."
+            ssh -p "$SSH_PORT" "$SSH_HOST" "cd $REMOTE_PROJECT && sudo docker compose -f docker-compose.convex.yml -p $PROJECT_NAME up -d" 2>/dev/null
         fi
-        log_ok "Convex instance started"
+        log_ok "Convex database running"
 
-        # Wait for Convex to be ready
         log_info "Waiting for Convex to initialize (15s)..."
         sleep 15
     fi
 
-    # Build and start frontend
-    log_info "Building and starting frontend..."
-    ssh -p "$SSH_PORT" "$SSH_HOST" "cd $REMOTE_PROJECT && sudo docker compose -p $PROJECT_NAME up -d --build"
-    log_ok "Frontend started"
+    log_info "Building and starting frontend container..."
+    ssh -p "$SSH_PORT" "$SSH_HOST" "cd $REMOTE_PROJECT && sudo docker compose -p $PROJECT_NAME up -d --build" 2>&1 | grep -E "^(#|Building| |Created|Started|Running)" | tail -5
+    log_ok "Frontend container running"
 fi
 
-# -----------------------------------------------------------------------------
-# Step 10: Deploy Convex Functions
-# -----------------------------------------------------------------------------
+# =============================================================================
+# PHASE 6: CONVEX DEPLOYMENT
+# =============================================================================
 if [ "$HAS_CONVEX" = true ]; then
+    echo ""
+    echo -e "${C_BOLD}${C_BLUE}--- Phase 6: Convex Functions & Data ---${C_RESET}"
+
+    # -------------------------------------------------------------------------
+    # Step 10: Deploy Convex Functions
+    # -------------------------------------------------------------------------
     step "Deploy Convex Functions"
 
     CONVEX_PROD_URL="https://${ABBREVIATION}-convex.lucidlabs.de"
@@ -399,7 +484,6 @@ if [ "$HAS_CONVEX" = true ]; then
     if [ "$DRY_RUN" = true ]; then
         log_dry "Would generate admin key and deploy Convex functions to $CONVEX_PROD_URL"
     else
-        # Generate admin key from the running Convex backend
         log_info "Generating Convex admin key..."
         ADMIN_KEY=$(ssh -p "$SSH_PORT" "$SSH_HOST" "sudo docker exec ${ABBREVIATION}-convex-backend /convex/generate_admin_key.sh 2>/dev/null" | tail -1)
 
@@ -409,44 +493,33 @@ if [ "$HAS_CONVEX" = true ]; then
         else
             log_ok "Admin key generated"
 
-            # Deploy Convex functions to production backend
-            log_info "Deploying Convex functions..."
+            log_info "Pushing schema, queries, and mutations to production..."
             if npx convex deploy --url "$CONVEX_PROD_URL" --admin-key "$ADMIN_KEY" --yes 2>&1; then
-                log_ok "Convex functions deployed"
+                log_ok "Convex functions deployed to production"
             else
                 log_err "Convex function deployment failed"
                 log_info "Try manually: npx convex deploy --url $CONVEX_PROD_URL --admin-key <key>"
             fi
         fi
     fi
-fi
 
-# -----------------------------------------------------------------------------
-# Step 11: Initial Data Seed (first deploy only)
-#
-# IMPORTANT: This step only runs on FIRST deployment to seed production
-# with local development data. After that, Production and Development
-# are SEPARATE environments with independent data.
-#
-# Convex Functions (schema, queries, mutations) are ALWAYS deployed
-# in Step 10 above. Only the DATA is separated after initial seed.
-#
-# To manually re-seed production later:
-#   npx convex export --path snapshot.zip
-#   npx convex import snapshot.zip --url <prod-url> --admin-key <key> --replace-all --yes
-# -----------------------------------------------------------------------------
-if [ "$HAS_CONVEX" = true ] && [ "$SKIP_DATA" = false ]; then
+    # -------------------------------------------------------------------------
+    # Step 11: Initial Data Seed (first deploy only)
+    # -------------------------------------------------------------------------
     step "Initial Data Seed"
 
-    # Check if production database already has data by querying a known table
-    PROD_HAS_DATA=false
-    if [ -n "${ADMIN_KEY:-}" ]; then
-        # Use curl to check if any tables have documents
-        DOC_CHECK=$(curl -s "${CONVEX_PROD_URL}/api/list_snapshot" \
-            -H "Authorization: Convex ${ADMIN_KEY}" 2>/dev/null || echo "")
-        if echo "$DOC_CHECK" | grep -q '"tables"' 2>/dev/null; then
-            # Response has tables info — check if there are actual documents
-            HAS_TABLES=$(echo "$DOC_CHECK" | python3 -c "
+    if [ "$SKIP_DATA" = true ]; then
+        log_skip "Data seed skipped (--skip-data)"
+    elif [ "$DRY_RUN" = true ]; then
+        log_dry "Would check if production needs initial data seed"
+    else
+        # Check if production database already has data
+        PROD_HAS_DATA=false
+        if [ -n "${ADMIN_KEY:-}" ]; then
+            DOC_CHECK=$(curl -s "${CONVEX_PROD_URL}/api/list_snapshot" \
+                -H "Authorization: Convex ${ADMIN_KEY}" 2>/dev/null || echo "")
+            if echo "$DOC_CHECK" | grep -q '"tables"' 2>/dev/null; then
+                HAS_TABLES=$(echo "$DOC_CHECK" | python3 -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
@@ -456,49 +529,52 @@ try:
 except:
     print('false')
 " 2>/dev/null || echo "false")
-            if [ "$HAS_TABLES" = "true" ]; then
-                PROD_HAS_DATA=true
+                if [ "$HAS_TABLES" = "true" ]; then
+                    PROD_HAS_DATA=true
+                fi
             fi
         fi
-    fi
 
-    if [ "$PROD_HAS_DATA" = true ]; then
-        log_skip "Production database already has data (not first deploy)"
-        log_info "Production and Development are separate environments."
-        log_info "Functions are deployed, but data stays independent."
-    elif [ "$DRY_RUN" = true ]; then
-        log_dry "Would export local Convex data and seed production (first deploy only)"
-    else
-        # Export local data (requires local Convex dev server or CONVEX_DEPLOYMENT set)
-        EXPORT_DIR="/tmp/convex-export-${PROJECT_NAME}"
-        EXPORT_PATH="${EXPORT_DIR}/snapshot.zip"
-        mkdir -p "$EXPORT_DIR"
-
-        log_info "First deploy detected. Seeding production from local data..."
-        if npx convex export --path "$EXPORT_PATH" --include-file-storage 2>&1; then
-            log_ok "Local data exported"
-
-            if [ -z "${ADMIN_KEY:-}" ]; then
-                ADMIN_KEY=$(ssh -p "$SSH_PORT" "$SSH_HOST" "sudo docker exec ${ABBREVIATION}-convex-backend /convex/generate_admin_key.sh 2>/dev/null" | tail -1)
-            fi
-
-            log_info "Importing data to production Convex..."
-            if npx convex import "$EXPORT_PATH" --url "$CONVEX_PROD_URL" --admin-key "$ADMIN_KEY" --replace-all --yes 2>&1; then
-                log_ok "Production database seeded from local data"
-            else
-                log_err "Data import failed"
-                log_info "Try manually: npx convex import $EXPORT_PATH --url $CONVEX_PROD_URL --admin-key <key> --replace-all --yes"
-            fi
-
-            rm -rf "$EXPORT_DIR"
+        if [ "$PROD_HAS_DATA" = true ]; then
+            log_skip "Production database already has data"
+            log_detail "Functions updated, but data stays independent (Production != Development)"
         else
-            log_info "No local Convex data to export (local dev server not running or no CONVEX_DEPLOYMENT)"
-            log_info "Production starts with empty database. Seed manually if needed."
+            EXPORT_DIR="/tmp/convex-export-${PROJECT_NAME}"
+            EXPORT_PATH="${EXPORT_DIR}/snapshot.zip"
+            mkdir -p "$EXPORT_DIR"
+
+            log_info "First deploy detected - seeding production from local data..."
+            if npx convex export --path "$EXPORT_PATH" --include-file-storage 2>&1; then
+                log_ok "Local data exported"
+
+                if [ -z "${ADMIN_KEY:-}" ]; then
+                    ADMIN_KEY=$(ssh -p "$SSH_PORT" "$SSH_HOST" "sudo docker exec ${ABBREVIATION}-convex-backend /convex/generate_admin_key.sh 2>/dev/null" | tail -1)
+                fi
+
+                log_info "Importing data to production..."
+                if npx convex import "$EXPORT_PATH" --url "$CONVEX_PROD_URL" --admin-key "$ADMIN_KEY" --replace-all --yes 2>&1; then
+                    log_ok "Production database seeded from local data"
+                else
+                    log_err "Data import failed"
+                    log_detail "npx convex import $EXPORT_PATH --url $CONVEX_PROD_URL --admin-key <key> --replace-all --yes"
+                fi
+                rm -rf "$EXPORT_DIR"
+            else
+                log_info "No local Convex data to export (dev server not running)"
+                log_detail "Production starts with empty database. Seed manually if needed."
+            fi
         fi
     fi
-elif [ "$SKIP_DATA" = true ]; then
-    log_skip "Data seed skipped (--skip-data)"
+else
+    # Skip Convex steps in counter
+    STEP=$((STEP + 2))
 fi
+
+# =============================================================================
+# PHASE 7: VERIFICATION
+# =============================================================================
+echo ""
+echo -e "${C_BOLD}${C_BLUE}--- Phase 7: Verification ---${C_RESET}"
 
 # -----------------------------------------------------------------------------
 # Step 12: Health check
@@ -506,49 +582,159 @@ fi
 step "Health Check"
 
 FRONTEND_URL="https://${SUBDOMAIN}.lucidlabs.de"
+HEALTH_FRONTEND="PENDING"
+HEALTH_CONVEX="PENDING"
 
 if [ "$DRY_RUN" = true ]; then
     log_dry "Would check: $FRONTEND_URL"
+    HEALTH_FRONTEND="DRY_RUN"
+    HEALTH_CONVEX="DRY_RUN"
 else
     log_info "Waiting for services to start (20s)..."
     sleep 20
 
+    # Check frontend
     HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL" 2>/dev/null || echo "000")
 
     if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "307" ] || [ "$HTTP_CODE" = "308" ]; then
-        log_ok "Frontend responding: $FRONTEND_URL (HTTP $HTTP_CODE)"
+        log_ok "Frontend: $FRONTEND_URL (HTTP $HTTP_CODE)"
+        HEALTH_FRONTEND="LIVE"
     else
-        log_err "Frontend not responding: $FRONTEND_URL (HTTP $HTTP_CODE)"
-        log_info "Check container logs: ssh $SSH_HOST 'docker logs ${ABBREVIATION}-frontend'"
+        log_err "Frontend: $FRONTEND_URL (HTTP $HTTP_CODE)"
+        log_detail "Check logs: ssh $SSH_HOST 'sudo docker logs ${ABBREVIATION}-frontend --tail 20'"
+        HEALTH_FRONTEND="DOWN"
     fi
 
+    # Check Convex
     if [ "$HAS_CONVEX" = true ]; then
         CONVEX_URL="https://${ABBREVIATION}-convex.lucidlabs.de"
         CONVEX_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${CONVEX_URL}/version" 2>/dev/null || echo "000")
 
         if [ "$CONVEX_CODE" = "200" ]; then
-            log_ok "Convex responding: $CONVEX_URL (HTTP $CONVEX_CODE)"
+            log_ok "Convex API: $CONVEX_URL (HTTP $CONVEX_CODE)"
+            HEALTH_CONVEX="LIVE"
         else
-            log_err "Convex not responding: $CONVEX_URL (HTTP $CONVEX_CODE)"
-            log_info "Check container logs: ssh $SSH_HOST 'docker logs ${ABBREVIATION}-convex-backend'"
+            log_err "Convex API: $CONVEX_URL (HTTP $CONVEX_CODE)"
+            log_detail "Check logs: ssh $SSH_HOST 'sudo docker logs ${ABBREVIATION}-convex-backend --tail 20'"
+            HEALTH_CONVEX="DOWN"
         fi
     fi
 fi
 
-# -----------------------------------------------------------------------------
-# Summary
-# -----------------------------------------------------------------------------
+# =============================================================================
+# DEPLOYMENT SUMMARY
+# =============================================================================
+DEPLOY_END=$(date +%s)
+DEPLOY_DURATION=$((DEPLOY_END - DEPLOY_START))
+DEPLOY_MINS=$((DEPLOY_DURATION / 60))
+DEPLOY_SECS=$((DEPLOY_DURATION % 60))
+
 echo ""
-echo "============================================================================="
-echo "  DEPLOYMENT COMPLETE"
-echo "============================================================================="
 echo ""
-echo "  Frontend:         $FRONTEND_URL"
-[ "$HAS_CONVEX" = true ] && echo "  Convex API:       https://${ABBREVIATION}-convex.lucidlabs.de"
-[ "$SKIP_GITHUB" = false ] && echo "  GitHub:           https://github.com/${GITHUB_ORG}/${PROJECT_NAME}"
+
+if [ "$HEALTH_FRONTEND" = "LIVE" ] || [ "$DRY_RUN" = true ]; then
+    # Success!
+    echo -e "${C_GREEN}${C_BOLD}"
+    echo "    ==========================================================="
+    echo ""
+    echo "      Deployment successful!"
+    echo ""
+    echo "      $PROJECT_NAME is now live."
+    echo ""
+    echo "    ==========================================================="
+    echo -e "${C_RESET}"
+else
+    echo -e "${C_YELLOW}${C_BOLD}"
+    echo "    ==========================================================="
+    echo ""
+    echo "      Deployment completed with warnings."
+    echo "      Check the details below."
+    echo ""
+    echo "    ==========================================================="
+    echo -e "${C_RESET}"
+fi
+
+# URLs section
+echo -e "${C_BOLD}  Your Project URLs${C_RESET}"
+echo -e "  ${C_DIM}$(printf '%.0s-' {1..55})${C_RESET}"
 echo ""
-if [ "$DRY_RUN" = true ]; then
-    echo "  (DRY RUN - no changes were made)"
+echo -e "  Frontend:           ${C_CYAN}${C_BOLD}https://${SUBDOMAIN}.lucidlabs.de${C_RESET}"
+if [ "$HAS_CONVEX" = true ]; then
+    echo -e "  Convex API:         ${C_CYAN}https://${ABBREVIATION}-convex.lucidlabs.de${C_RESET}"
+fi
+if [ "$SKIP_GITHUB" = false ]; then
+    echo -e "  GitHub:             ${C_CYAN}https://github.com/${GITHUB_ORG}/${PROJECT_NAME}${C_RESET}"
+fi
+echo ""
+
+# Convex access section
+if [ "$HAS_CONVEX" = true ] && [ -n "${ADMIN_KEY:-}" ] && [ "$DRY_RUN" = false ]; then
+    echo -e "${C_BOLD}  Convex Access (Terminal)${C_RESET}"
+    echo -e "  ${C_DIM}$(printf '%.0s-' {1..55})${C_RESET}"
+    echo ""
+    echo -e "  Production URL:     ${C_CYAN}https://${ABBREVIATION}-convex.lucidlabs.de${C_RESET}"
+    echo -e "  Admin Key:          ${C_YELLOW}${ADMIN_KEY}${C_RESET}"
+    echo ""
+    echo -e "  ${C_DIM}Deploy functions:${C_RESET}"
+    echo -e "  ${C_DIM}  npx convex deploy --url https://${ABBREVIATION}-convex.lucidlabs.de --admin-key ${ADMIN_KEY}${C_RESET}"
+    echo ""
+    echo -e "  ${C_DIM}Open Convex dashboard:${C_RESET}"
+    echo -e "  ${C_DIM}  ssh $SSH_HOST 'sudo docker logs ${ABBREVIATION}-convex-dashboard --tail 5'${C_RESET}"
+    echo ""
+    echo -e "  ${C_DIM}Export production data:${C_RESET}"
+    echo -e "  ${C_DIM}  npx convex export --path backup.zip --url https://${ABBREVIATION}-convex.lucidlabs.de --admin-key ${ADMIN_KEY}${C_RESET}"
+    echo ""
+    echo -e "  ${C_DIM}Import data to production:${C_RESET}"
+    echo -e "  ${C_DIM}  npx convex import data.zip --url https://${ABBREVIATION}-convex.lucidlabs.de --admin-key ${ADMIN_KEY} --replace-all --yes${C_RESET}"
     echo ""
 fi
-echo "============================================================================="
+
+# Container status
+echo -e "${C_BOLD}  Container Status${C_RESET}"
+echo -e "  ${C_DIM}$(printf '%.0s-' {1..55})${C_RESET}"
+echo ""
+if [ "$HEALTH_FRONTEND" = "LIVE" ]; then
+    echo -e "  ${ABBREVIATION}-frontend           ${C_GREEN}LIVE${C_RESET}   https://${SUBDOMAIN}.lucidlabs.de"
+elif [ "$HEALTH_FRONTEND" = "DRY_RUN" ]; then
+    echo -e "  ${ABBREVIATION}-frontend           ${C_MAGENTA}DRY RUN${C_RESET}"
+else
+    echo -e "  ${ABBREVIATION}-frontend           ${C_RED}DOWN${C_RESET}   Check logs above"
+fi
+
+if [ "$HAS_CONVEX" = true ]; then
+    if [ "$HEALTH_CONVEX" = "LIVE" ]; then
+        echo -e "  ${ABBREVIATION}-convex-backend     ${C_GREEN}LIVE${C_RESET}   https://${ABBREVIATION}-convex.lucidlabs.de"
+        echo -e "  ${ABBREVIATION}-convex-dashboard   ${C_GREEN}LIVE${C_RESET}"
+    elif [ "$HEALTH_CONVEX" = "DRY_RUN" ]; then
+        echo -e "  ${ABBREVIATION}-convex-backend     ${C_MAGENTA}DRY RUN${C_RESET}"
+    else
+        echo -e "  ${ABBREVIATION}-convex-backend     ${C_RED}DOWN${C_RESET}   Check logs above"
+    fi
+fi
+echo ""
+
+# Deployment info
+echo -e "${C_BOLD}  Deployment Info${C_RESET}"
+echo -e "  ${C_DIM}$(printf '%.0s-' {1..55})${C_RESET}"
+echo ""
+echo -e "  Duration:           ${DEPLOY_MINS}m ${DEPLOY_SECS}s"
+echo -e "  Server:             LUCIDLABS-HQ (Elestio/Hetzner)"
+echo -e "  Directory:          $REMOTE_PROJECT"
+echo -e "  Deployed at:        $(date '+%Y-%m-%d %H:%M:%S')"
+if [ "$DRY_RUN" = true ]; then
+    echo ""
+    echo -e "  ${C_MAGENTA}(DRY RUN - no changes were made)${C_RESET}"
+fi
+echo ""
+
+# Quick reference
+echo -e "${C_BOLD}  Quick Reference${C_RESET}"
+echo -e "  ${C_DIM}$(printf '%.0s-' {1..55})${C_RESET}"
+echo ""
+echo -e "  ${C_DIM}View logs:${C_RESET}    ssh $SSH_HOST 'sudo docker logs ${ABBREVIATION}-frontend --tail 50'"
+echo -e "  ${C_DIM}Restart:${C_RESET}      ssh $SSH_HOST 'sudo docker restart ${ABBREVIATION}-frontend'"
+echo -e "  ${C_DIM}Rebuild:${C_RESET}      ssh $SSH_HOST 'cd $REMOTE_PROJECT && sudo docker compose -p $PROJECT_NAME up -d --build'"
+echo -e "  ${C_DIM}SSH in:${C_RESET}       ssh $SSH_HOST"
+echo ""
+echo -e "${C_BOLD}=============================================================================${C_RESET}"
+echo ""

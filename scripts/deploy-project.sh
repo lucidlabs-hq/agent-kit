@@ -47,6 +47,7 @@ HAS_CONVEX=false
 HAS_MASTRA=false
 SKIP_GITHUB=false
 SKIP_PROVISION=false
+SKIP_DATA=false
 DRY_RUN=false
 
 while [[ $# -gt 0 ]]; do
@@ -79,6 +80,10 @@ while [[ $# -gt 0 ]]; do
             SKIP_PROVISION=true
             shift
             ;;
+        --skip-data)
+            SKIP_DATA=true
+            shift
+            ;;
         --dry-run)
             DRY_RUN=true
             shift
@@ -98,6 +103,7 @@ if [ -z "$PROJECT_NAME" ] || [ -z "$ABBREVIATION" ] || [ -z "$SUBDOMAIN" ]; then
     echo "  --has-mastra       Include Mastra AI agent layer"
     echo "  --skip-github      Skip GitHub repo creation/setup"
     echo "  --skip-provision   Skip server provisioning (add-project.sh)"
+    echo "  --skip-data        Skip local data export/import to production"
     echo "  --dry-run          Show what would happen without making changes"
     echo ""
     echo "Example:"
@@ -383,7 +389,119 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Step 10: Health check
+# Step 10: Deploy Convex Functions
+# -----------------------------------------------------------------------------
+if [ "$HAS_CONVEX" = true ]; then
+    step "Deploy Convex Functions"
+
+    CONVEX_PROD_URL="https://${ABBREVIATION}-convex.lucidlabs.de"
+
+    if [ "$DRY_RUN" = true ]; then
+        log_dry "Would generate admin key and deploy Convex functions to $CONVEX_PROD_URL"
+    else
+        # Generate admin key from the running Convex backend
+        log_info "Generating Convex admin key..."
+        ADMIN_KEY=$(ssh -p "$SSH_PORT" "$SSH_HOST" "sudo docker exec ${ABBREVIATION}-convex-backend /convex/generate_admin_key.sh 2>/dev/null" | tail -1)
+
+        if [ -z "$ADMIN_KEY" ]; then
+            log_err "Failed to generate admin key"
+            log_info "Try manually: ssh $SSH_HOST 'sudo docker exec ${ABBREVIATION}-convex-backend /convex/generate_admin_key.sh'"
+        else
+            log_ok "Admin key generated"
+
+            # Deploy Convex functions to production backend
+            log_info "Deploying Convex functions..."
+            if npx convex deploy --url "$CONVEX_PROD_URL" --admin-key "$ADMIN_KEY" --yes 2>&1; then
+                log_ok "Convex functions deployed"
+            else
+                log_err "Convex function deployment failed"
+                log_info "Try manually: npx convex deploy --url $CONVEX_PROD_URL --admin-key <key>"
+            fi
+        fi
+    fi
+fi
+
+# -----------------------------------------------------------------------------
+# Step 11: Initial Data Seed (first deploy only)
+#
+# IMPORTANT: This step only runs on FIRST deployment to seed production
+# with local development data. After that, Production and Development
+# are SEPARATE environments with independent data.
+#
+# Convex Functions (schema, queries, mutations) are ALWAYS deployed
+# in Step 10 above. Only the DATA is separated after initial seed.
+#
+# To manually re-seed production later:
+#   npx convex export --path snapshot.zip
+#   npx convex import snapshot.zip --url <prod-url> --admin-key <key> --replace-all --yes
+# -----------------------------------------------------------------------------
+if [ "$HAS_CONVEX" = true ] && [ "$SKIP_DATA" = false ]; then
+    step "Initial Data Seed"
+
+    # Check if production database already has data by querying a known table
+    PROD_HAS_DATA=false
+    if [ -n "${ADMIN_KEY:-}" ]; then
+        # Use curl to check if any tables have documents
+        DOC_CHECK=$(curl -s "${CONVEX_PROD_URL}/api/list_snapshot" \
+            -H "Authorization: Convex ${ADMIN_KEY}" 2>/dev/null || echo "")
+        if echo "$DOC_CHECK" | grep -q '"tables"' 2>/dev/null; then
+            # Response has tables info — check if there are actual documents
+            HAS_TABLES=$(echo "$DOC_CHECK" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    tables = data.get('tables', [])
+    has_data = any(t.get('numDocuments', 0) > 0 for t in tables if not t['name'].startswith('_'))
+    print('true' if has_data else 'false')
+except:
+    print('false')
+" 2>/dev/null || echo "false")
+            if [ "$HAS_TABLES" = "true" ]; then
+                PROD_HAS_DATA=true
+            fi
+        fi
+    fi
+
+    if [ "$PROD_HAS_DATA" = true ]; then
+        log_skip "Production database already has data (not first deploy)"
+        log_info "Production and Development are separate environments."
+        log_info "Functions are deployed, but data stays independent."
+    elif [ "$DRY_RUN" = true ]; then
+        log_dry "Would export local Convex data and seed production (first deploy only)"
+    else
+        # Export local data (requires local Convex dev server or CONVEX_DEPLOYMENT set)
+        EXPORT_DIR="/tmp/convex-export-${PROJECT_NAME}"
+        EXPORT_PATH="${EXPORT_DIR}/snapshot.zip"
+        mkdir -p "$EXPORT_DIR"
+
+        log_info "First deploy detected. Seeding production from local data..."
+        if npx convex export --path "$EXPORT_PATH" --include-file-storage 2>&1; then
+            log_ok "Local data exported"
+
+            if [ -z "${ADMIN_KEY:-}" ]; then
+                ADMIN_KEY=$(ssh -p "$SSH_PORT" "$SSH_HOST" "sudo docker exec ${ABBREVIATION}-convex-backend /convex/generate_admin_key.sh 2>/dev/null" | tail -1)
+            fi
+
+            log_info "Importing data to production Convex..."
+            if npx convex import "$EXPORT_PATH" --url "$CONVEX_PROD_URL" --admin-key "$ADMIN_KEY" --replace-all --yes 2>&1; then
+                log_ok "Production database seeded from local data"
+            else
+                log_err "Data import failed"
+                log_info "Try manually: npx convex import $EXPORT_PATH --url $CONVEX_PROD_URL --admin-key <key> --replace-all --yes"
+            fi
+
+            rm -rf "$EXPORT_DIR"
+        else
+            log_info "No local Convex data to export (local dev server not running or no CONVEX_DEPLOYMENT)"
+            log_info "Production starts with empty database. Seed manually if needed."
+        fi
+    fi
+elif [ "$SKIP_DATA" = true ]; then
+    log_skip "Data seed skipped (--skip-data)"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 12: Health check
 # -----------------------------------------------------------------------------
 step "Health Check"
 

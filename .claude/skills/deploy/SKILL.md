@@ -177,9 +177,8 @@ Check deployment status for the current project.
 # Read project info
 PROJECT_NAME=$(basename "$(pwd)")
 
-# Check registry
-ssh -p 2222 lucidlabs-hq "cat /opt/lucidlabs/registry.json" 2>/dev/null | \
-  jq --arg name "$PROJECT_NAME" '.projects[] | select(.name == $name)'
+# Check registry (python3, no jq on server)
+ssh -p 2222 lucidlabs-hq "python3 -c \"import json; [print(json.dumps(p, indent=2)) for p in json.load(open('/opt/lucidlabs/registry.json'))['projects'] if p['name']=='$PROJECT_NAME']\"" 2>/dev/null
 
 # Container status
 ssh -p 2222 lucidlabs-hq "docker ps --filter 'name=ABBREVIATION' --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
@@ -251,14 +250,22 @@ Host lucidlabs-hq-root
   IdentityFile ~/.ssh/lucidlabs-hq
 ```
 
-### Sudoers (One-Time Setup)
+### Sudoers (One-Time Setup, already configured 2026-02-09)
+
+Deploy scripts need passwordless sudo for non-interactive SSH. This is configured via
+`/etc/sudoers.d/lucidlabs-deploy` on the server. Only deploy scripts and Docker are
+passwordless — all other sudo still requires a password.
 
 ```bash
+# Setup (already done, documented here for reference):
 ssh lucidlabs-hq
-echo 'nightwing ALL=(ALL) NOPASSWD: /opt/lucidlabs/scripts/*.sh, /usr/bin/docker, /usr/bin/docker compose' | sudo tee /etc/sudoers.d/lucidlabs-deploy
+echo 'nightwing ALL=(ALL) NOPASSWD: /opt/lucidlabs/scripts/*.sh, /usr/bin/docker, /usr/bin/docker-compose' \
+  | sudo tee /etc/sudoers.d/lucidlabs-deploy
 sudo chmod 440 /etc/sudoers.d/lucidlabs-deploy
-sudo visudo -c
+sudo visudo -c  # must print "parsed OK"
 ```
+
+See `infrastructure/lucidlabs-hq/README.md` for full security rationale.
 
 ---
 

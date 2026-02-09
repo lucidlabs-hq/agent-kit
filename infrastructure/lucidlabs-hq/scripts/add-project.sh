@@ -134,11 +134,118 @@ echo ""
 echo "============================================================================="
 echo ""
 
-# Check jq is available
-if ! command -v jq &> /dev/null; then
-    log_err "jq is required but not installed. Install with: apt-get install -y jq"
+# Check python3 is available (used for JSON operations)
+if ! command -v python3 &> /dev/null; then
+    log_err "python3 is required but not installed."
     exit 1
 fi
+
+# JSON helper: query registry with python3 (jq replacement)
+# Usage: reg_query '<python expression using data>'
+reg_query() {
+    python3 -c "
+import json, sys
+with open('$REGISTRY') as f:
+    data = json.load(f)
+$1
+" 2>/dev/null
+}
+
+# JSON helper: get max port from registry, handling both old and new schema
+# Old schema: services.frontend.port, services.convex.backendPort
+# New schema: ports.frontend, ports.convexBackend
+reg_max_port() {
+    local field=$1
+    python3 -c "
+import json
+with open('$REGISTRY') as f:
+    data = json.load(f)
+ports = []
+for p in data.get('projects', []):
+    # New schema: ports.frontend, ports.convexBackend, etc.
+    if 'ports' in p and isinstance(p['ports'], dict):
+        ports.append(p['ports'].get('$field', 0) or 0)
+    # Old schema fallback
+    elif '$field' == 'frontend' and 'services' in p:
+        svc = p['services']
+        if isinstance(svc.get('frontend'), dict):
+            ports.append(svc['frontend'].get('port', 0) or 0)
+    elif '$field' == 'convexBackend' and 'services' in p:
+        svc = p['services']
+        if isinstance(svc.get('convex'), dict):
+            ports.append(svc['convex'].get('backendPort', 0) or 0)
+    elif '$field' == 'convexDashboard' and 'services' in p:
+        svc = p['services']
+        if isinstance(svc.get('convex'), dict):
+            ports.append(svc['convex'].get('dashboardPort', 0) or 0)
+    elif '$field' == 'mastra' and 'services' in p:
+        ports.append(0)
+print(max(ports) if ports else 0)
+" 2>/dev/null
+}
+
+# JSON helper: check if project exists in registry
+reg_project_exists() {
+    python3 -c "
+import json
+with open('$REGISTRY') as f:
+    data = json.load(f)
+for p in data.get('projects', []):
+    if p['name'] == '$1':
+        print(p['name'])
+        break
+" 2>/dev/null
+}
+
+# JSON helper: get port for existing project (handles both schemas)
+reg_project_port() {
+    local project_name=$1
+    local field=$2
+    python3 -c "
+import json
+with open('$REGISTRY') as f:
+    data = json.load(f)
+for p in data.get('projects', []):
+    if p['name'] != '$project_name':
+        continue
+    # New schema
+    if 'ports' in p and isinstance(p['ports'], dict):
+        print(p['ports'].get('$field', 0) or 0)
+        break
+    # Old schema fallback
+    elif '$field' == 'frontend' and 'services' in p:
+        svc = p['services']
+        if isinstance(svc.get('frontend'), dict):
+            print(svc['frontend'].get('port', 0) or 0)
+            break
+    elif '$field' == 'convexBackend' and 'services' in p:
+        svc = p['services']
+        if isinstance(svc.get('convex'), dict):
+            print(svc['convex'].get('backendPort', 0) or 0)
+            break
+    elif '$field' == 'convexDashboard' and 'services' in p:
+        svc = p['services']
+        if isinstance(svc.get('convex'), dict):
+            print(svc['convex'].get('dashboardPort', 0) or 0)
+            break
+    else:
+        print(0)
+        break
+" 2>/dev/null
+}
+
+# JSON helper: update registry with python3
+reg_update() {
+    python3 -c "
+import json
+with open('$REGISTRY') as f:
+    data = json.load(f)
+$1
+with open('$REGISTRY', 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+" 2>/dev/null
+}
 
 # Check registry exists
 if [ ! -f "$REGISTRY" ]; then
@@ -153,7 +260,7 @@ if [ ! -f "$CADDYFILE" ]; then
 fi
 
 # Check project not already in registry (unless re-running)
-EXISTING=$(jq -r --arg name "$PROJECT_NAME" '.projects[] | select(.name == $name) | .name' "$REGISTRY" 2>/dev/null || echo "")
+EXISTING=$(reg_project_exists "$PROJECT_NAME")
 
 # -----------------------------------------------------------------------------
 # Step 1: Port Allocation
@@ -167,12 +274,11 @@ allocate_port() {
     local step=$3
     local port_field=$4
 
-    # Get highest allocated port in this range from registry
+    # Get highest allocated port in this range from registry (handles both schemas)
     local highest
-    highest=$(jq -r "[.projects[].ports.$port_field // 0] | max" "$REGISTRY" 2>/dev/null || echo "0")
+    highest=$(reg_max_port "$port_field")
 
-    if [ "$highest" = "null" ] || [ "$highest" = "0" ] || [ "$highest" -lt "$range_min" ]; then
-        # No ports allocated yet, start at range_min
+    if [ -z "$highest" ] || [ "$highest" = "null" ] || [ "$highest" = "0" ] || [ "$highest" -lt "$range_min" ]; then
         echo "$range_min"
         return
     fi
@@ -203,13 +309,13 @@ fi
 # If project already exists, use existing ports
 if [ -n "$EXISTING" ]; then
     log_warn "Project already in registry, using existing port allocation"
-    PORT_FRONTEND=$(jq -r --arg name "$PROJECT_NAME" '.projects[] | select(.name == $name) | .ports.frontend' "$REGISTRY")
+    PORT_FRONTEND=$(reg_project_port "$PROJECT_NAME" "frontend")
     if [ "$HAS_CONVEX" = true ]; then
-        PORT_CONVEX_BACKEND=$(jq -r --arg name "$PROJECT_NAME" '.projects[] | select(.name == $name) | .ports.convexBackend' "$REGISTRY")
-        PORT_CONVEX_DASHBOARD=$(jq -r --arg name "$PROJECT_NAME" '.projects[] | select(.name == $name) | .ports.convexDashboard' "$REGISTRY")
+        PORT_CONVEX_BACKEND=$(reg_project_port "$PROJECT_NAME" "convexBackend")
+        PORT_CONVEX_DASHBOARD=$(reg_project_port "$PROJECT_NAME" "convexDashboard")
     fi
     if [ "$HAS_MASTRA" = true ]; then
-        PORT_MASTRA=$(jq -r --arg name "$PROJECT_NAME" '.projects[] | select(.name == $name) | .ports.mastra // 0' "$REGISTRY")
+        PORT_MASTRA=$(reg_project_port "$PROJECT_NAME" "mastra")
     fi
 fi
 
@@ -470,22 +576,16 @@ echo ""
 
 TIMESTAMP=$(date -Iseconds)
 
-# Build ports object
-PORTS_JSON=$(jq -n \
-    --argjson frontend "$PORT_FRONTEND" \
-    --argjson convexBackend "$PORT_CONVEX_BACKEND" \
-    --argjson convexDashboard "$PORT_CONVEX_DASHBOARD" \
-    --argjson mastra "$PORT_MASTRA" \
-    '{frontend: $frontend, convexBackend: $convexBackend, convexDashboard: $convexDashboard, mastra: $mastra}')
-
 if [ -n "$EXISTING" ]; then
     log_skip "Project already in registry (updating status)"
     if [ "$DRY_RUN" = false ]; then
-        jq --arg name "$PROJECT_NAME" \
-           --arg ts "$TIMESTAMP" \
-           '(.projects[] | select(.name == $name) | .status) = "provisioned" |
-            (.projects[] | select(.name == $name) | .lastUpdate) = $ts' \
-           "$REGISTRY" > "$REGISTRY.tmp" && mv "$REGISTRY.tmp" "$REGISTRY"
+        reg_update "
+for p in data.get('projects', []):
+    if p['name'] == '$PROJECT_NAME':
+        p['status'] = 'provisioned'
+        p['lastUpdate'] = '$TIMESTAMP'
+        break
+"
         log_ok "Registry updated (status: provisioned)"
     fi
 else
@@ -496,33 +596,36 @@ else
             CONVEX_URL_VAL="https://${ABBREVIATION}-convex.${DOMAIN}"
         fi
 
-        jq --arg name "$PROJECT_NAME" \
-           --arg abbr "$ABBREVIATION" \
-           --arg sub "$SUBDOMAIN" \
-           --arg url "https://${SUBDOMAIN}.${DOMAIN}" \
-           --arg convexUrl "$CONVEX_URL_VAL" \
-           --argjson ports "$PORTS_JSON" \
-           --arg repo "lucidlabs-hq/$PROJECT_NAME" \
-           --arg ts "$TIMESTAMP" \
-           --argjson hasConvex "$HAS_CONVEX" \
-           --argjson hasMastra "$HAS_MASTRA" \
-           '.projects += [{
-               name: $name,
-               abbreviation: $abbr,
-               subdomain: $sub,
-               url: $url,
-               convexUrl: (if $hasConvex then $convexUrl else null end),
-               ports: $ports,
-               repo: $repo,
-               status: "provisioned",
-               services: {
-                   frontend: true,
-                   convex: $hasConvex,
-                   mastra: $hasMastra
-               },
-               deployed: null,
-               lastUpdate: $ts
-           }]' "$REGISTRY" > "$REGISTRY.tmp" && mv "$REGISTRY.tmp" "$REGISTRY"
+        HAS_CONVEX_PY="False"
+        HAS_MASTRA_PY="False"
+        [ "$HAS_CONVEX" = true ] && HAS_CONVEX_PY="True"
+        [ "$HAS_MASTRA" = true ] && HAS_MASTRA_PY="True"
+
+        reg_update "
+new_project = {
+    'name': '$PROJECT_NAME',
+    'abbreviation': '$ABBREVIATION',
+    'subdomain': '$SUBDOMAIN',
+    'url': 'https://${SUBDOMAIN}.${DOMAIN}',
+    'convexUrl': '$CONVEX_URL_VAL' if $HAS_CONVEX_PY else None,
+    'ports': {
+        'frontend': $PORT_FRONTEND,
+        'convexBackend': $PORT_CONVEX_BACKEND,
+        'convexDashboard': $PORT_CONVEX_DASHBOARD,
+        'mastra': $PORT_MASTRA
+    },
+    'repo': 'lucidlabs-hq/$PROJECT_NAME',
+    'status': 'provisioned',
+    'services': {
+        'frontend': True,
+        'convex': $HAS_CONVEX_PY,
+        'mastra': $HAS_MASTRA_PY
+    },
+    'deployed': None,
+    'lastUpdate': '$TIMESTAMP'
+}
+data.setdefault('projects', []).append(new_project)
+"
         log_ok "Added to registry"
     fi
 fi

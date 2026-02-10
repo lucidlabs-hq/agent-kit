@@ -1383,6 +1383,30 @@ Rules:
   - `AGENTS.md`
   - `.claude/reference/*`
 
+### Two-Strike Rule (Roadblock Protocol)
+
+**If the same approach fails twice → STOP. No guesswork.**
+
+When you encounter an error or roadblock:
+
+1. **First attempt fails:** Adjust and try a different variation
+2. **Second attempt fails:** STOP immediately. Do NOT try a third time with guesswork
+3. **Research phase:** Perform targeted research (web search, docs, codebase analysis)
+4. **Report findings:** Present what you learned to the user before proceeding
+5. **Only continue** with a clear, evidence-based approach
+
+**This rule is absolute.** Blindly retrying with variations is not engineering — it's gambling. Every action must be intentional and informed. If you don't understand why something failed, you don't have enough information to fix it.
+
+**Examples of violations:**
+- Trying 3 different file paths hoping one works
+- Retrying a deploy command with slightly different flags
+- Guessing package names or config options
+
+**Correct behavior:**
+- First SSH path fails → try the alternative you know about
+- Second path fails → STOP, inspect the server (`docker inspect`, `find`, etc.) to discover the actual path
+- Only proceed when you have concrete evidence of the correct approach
+
 ---
 
 ## Command Enforcement

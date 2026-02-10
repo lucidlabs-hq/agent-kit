@@ -637,6 +637,19 @@ This ensures all AI agents and developers have current knowledge.
 
 ---
 
+## README Port Documentation Rule (MANDATORY)
+
+**Every project README.md MUST include a Ports section documenting both development and production ports.**
+
+The section must contain two tables:
+
+1. **Development** - Service name, port, localhost URL
+2. **Production** - Service name, internal port, external port, domain
+
+When adding or changing ports (in docker-compose.yml, package.json scripts, or env defaults), the README Ports section MUST be updated in the same commit.
+
+---
+
 ## New Project Initialization Rule
 
 **MANDATORY:** When creating a new project from this template:

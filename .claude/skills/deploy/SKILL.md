@@ -83,6 +83,23 @@ cp "$UPSTREAM/scripts/deploy-project.sh" ./scripts/deploy-project.sh
 chmod +x ./scripts/deploy-project.sh
 ```
 
+### Auth Configuration (Phase 4.5)
+
+The deploy script automatically injects centralized auth environment variables into each project's `.env.local`:
+
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `AUTH_CONVEX_URL` | `https://auth-convex.lucidlabs.de` | Shared auth Convex instance |
+| `AUTH_CONVEX_SITE_URL` | `https://auth-convex.lucidlabs.de` | BetterAuth session validation endpoint |
+| `NEXT_PUBLIC_AUTH_CONVEX_URL` | `https://auth-convex.lucidlabs.de` | Client-side auth Convex URL |
+| `NEXT_PUBLIC_AUTH_ENABLED` | `true` | Enables auth in production |
+| `BETTER_AUTH_SECRET` | (shared secret) | JWT signing key (from auth-convex instance) |
+| `NEXT_PUBLIC_APP_URL` | `https://<subdomain>.lucidlabs.de` | App URL for auth callbacks |
+
+The shared secret is read from the auth-convex instance on the server. If no auth-convex instance exists yet, this phase is skipped with a warning.
+
+**Important:** Auth env vars are only injected once (idempotent). Re-deploying will not overwrite existing auth config.
+
 ### Post-Deploy
 
 After successful deployment:

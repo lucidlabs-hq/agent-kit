@@ -12,7 +12,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Settings, LogOut, Bot } from "lucide-react";
+import { Home, Settings, LogOut, Bot, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -40,6 +40,11 @@ const primaryNavItems: NavItemConfig[] = [
     title: "Dashboard",
     href: "/",
     icon: <Home className="size-5" />,
+  },
+  {
+    title: "Reporting",
+    href: "/reporting",
+    icon: <BarChart3 className="size-5" />,
   },
   {
     title: "Agent",

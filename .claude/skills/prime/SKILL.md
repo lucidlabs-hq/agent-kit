@@ -375,6 +375,98 @@ fi
 
 ---
 
+#### 0.1.0c Test Health Audit (NACH Security Reminders)
+
+**IMMER anzeigen** nach Security Reminders. This is the upfront quality audit - shows whether the last session left things in good shape.
+
+**Logik:**
+
+```bash
+cd frontend
+
+# Check if test infrastructure exists
+if grep -q '"test"' package.json 2>/dev/null; then
+  # Run tests silently and capture result
+  TEST_OUTPUT=$(pnpm run test 2>&1)
+  TEST_EXIT=$?
+
+  # Run coverage if tests pass
+  if [ $TEST_EXIT -eq 0 ]; then
+    COVERAGE_OUTPUT=$(pnpm run test:coverage 2>&1)
+  fi
+else
+  echo "Tests not configured"
+fi
+```
+
+**Parse test output for:**
+- Total tests, passed, failed
+- Coverage percentage (lines, branches, functions)
+- Files with/without test coverage
+
+**Anzeige (IMMER - auch wenn keine Tests konfiguriert):**
+
+If tests are configured and all pass:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  TEST HEALTH                                                    │
+│  ───────────                                                    │
+│                                                                 │
+│  Status:       ALL PASSING                                      │
+│  Unit Tests:   12 passed, 0 failed           Coverage: 64%     │
+│  Test Files:   3/7 files covered                                │
+│                                                                 │
+│  Uncovered:    lib/notion-data.ts, lib/auth-client.ts           │
+│                lib/auth-server.ts, lib/convex.ts                │
+│                                                                 │
+│  Last session left tests in good shape.                         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+If tests fail (last session left broken state):
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  TEST HEALTH                                                    │
+│  ───────────                                                    │
+│                                                                 │
+│  Status:       FAILING (action needed)                          │
+│  Unit Tests:   10 passed, 2 FAILED                              │
+│                                                                 │
+│  Failures:                                                      │
+│    lib/__tests__/utils.test.ts:15    "merges classes"           │
+│    lib/__tests__/auth.test.ts:42     "validates session"        │
+│                                                                 │
+│  Last session left failing tests. Fix before new work.          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+If tests are not configured:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  TEST HEALTH                                                    │
+│  ───────────                                                    │
+│                                                                 │
+│  Status:       NOT CONFIGURED                                   │
+│                                                                 │
+│  No test infrastructure found.                                  │
+│  Run /test-setup to initialize Vitest + Playwright.             │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Rules:**
+- ALWAYS show this block (even if tests not configured)
+- If tests fail, this is the FIRST thing the developer should address
+- Show uncovered files to guide test writing priorities
+- Coverage thresholds: 60% minimum, 80% target
+
+---
+
 #### 0.1.1 Data Pools (random pick exactly one)
 
 **GREETING_POOL** (pick 1, use `developer.name` from JSON):

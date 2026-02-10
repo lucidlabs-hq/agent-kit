@@ -117,7 +117,7 @@ MINIO_USE_SSL=true
 
 ### 3. n8n MCP Server
 
-**Zweck:** Workflow Automation, Agent Trigger, External Integrations
+**Zweck:** Workflow Automation, Agent Trigger, External Integrations, Deployments
 
 | Feature | Verfügbar |
 |---------|-----------|
@@ -126,26 +126,54 @@ MINIO_USE_SSL=true
 | Workflow erstellen | ✅ |
 | Execution History | ✅ |
 
-**Setup (Option A - Community):**
+**Lucid Labs n8n Instanz:**
+```
+Host: https://a1-automate.lucidlabs.de
+```
+
+**Setup:**
 ```bash
-claude mcp add n8n-server -- npx -y @anthropic-ai/mcp-server-n8n
+claude mcp add n8n -- npx -y @anthropic-ai/mcp-server-n8n
 ```
 
-**Setup (Option B - n8n Native):**
-n8n hat native MCP-Unterstützung via **MCP Server Trigger** Node.
+Dann in `~/.claude.json` die Credentials hinzufügen:
 
-**Environment Variables:**
-```env
-N8N_HOST=https://n8n.example.com
-N8N_API_KEY=your-api-key
+```json
+{
+  "mcpServers": {
+    "n8n": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-server-n8n"],
+      "env": {
+        "N8N_HOST": "https://a1-automate.lucidlabs.de",
+        "N8N_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
 ```
+
+**API Key erstellen:**
+1. https://a1-automate.lucidlabs.de öffnen
+2. Settings → API → Create API Key
+3. Key in `~/.claude.json` eintragen
 
 **Tools:**
 - `list_workflows` - Workflows auflisten
 - `execute_workflow` - Workflow ausführen
 - `get_executions` - Execution History
+- `create_workflow` - Workflow erstellen
 
-**Referenz:** [n8n Workflow Skill](./../skills/n8n-workflow/SKILL.md)
+**Use Cases:**
+- **Deployments** - Projekte auf LUCIDLABS-HQ deployen
+- **Caddyfile Updates** - Reverse Proxy konfigurieren
+- **Scheduled Tasks** - Backups, Reports, etc.
+- **Notifications** - Slack, Email bei Events
+
+**Referenz:**
+- [n8n Workflow Skill](./../skills/n8n-workflow/SKILL.md)
+- [Deploy Skill](./../skills/deploy/SKILL.md)
 
 ---
 

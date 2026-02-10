@@ -15,9 +15,15 @@ Skills extend Claude's capabilities in this project. Each skill is a directory w
 | `/plan-feature` | Plan feature implementation | Planning |
 | `/init-project` | Initialize new project | Planning |
 | `/execute` | Execute implementation plan | Implementation |
+| `/test` | **Run tests, coverage, gap analysis (MANDATORY before commit)** | Validation |
+| `/test-setup` | **Initialize Vitest + Playwright test infrastructure** | Setup |
 | `/commit` | Create formatted git commit | Implementation |
 | `/update-readme` | Update README file | Implementation |
 | `/visual-verify` | **UI Verification via agent-browser (fast)** | Validation |
+| `/browser` | **Interactive browser automation (open, click, fill, screenshot)** | Any |
+| `/design-system-guard` | **Validate UI against Lucid Labs design system** | Validation |
+| `/mistral` | **Setup Mistral AI for EU-friendly LLM + PDF analysis** | Setup |
+| `/llm-evaluate` | **LLM cost/performance evaluation, model selection** | Planning |
 | `/pre-production` | **Security & Quality Check vor Deploy** | Validation |
 | `/screenshot` | Visual verification screenshots | Validation |
 | `/session-end` | **End session, update Linear, clean state** | Any |

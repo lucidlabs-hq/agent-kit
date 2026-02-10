@@ -84,6 +84,29 @@
 
 ---
 
+## Reusable Templates
+
+### Document Processing Template
+- **Was:** invoice-accounting-assistant als Template für ähnliche Use Cases
+- **Pattern:**
+  - Frontend: Next.js + PDF Upload + Tesseract OCR
+  - Backend: Mastra Agent + Historical Data Matching
+  - Evaluation: PromptFoo Baseline Tests
+  - Integration: MCP Server für Claude Desktop
+  - Automation: N8N Workflow Templates
+- **Anwendbar für:**
+  - Rechnungsverarbeitung (aktuell)
+  - Vertragsanalyse
+  - Dokumentenklassifikation
+  - Formularerkennung
+- **Priorität:** High
+- **Notizen:**
+  - Komponenten in Pool extrahieren
+  - PdfUploader als shared component
+  - PromptFoo config als Vorlage
+
+---
+
 ## Developer Experience
 
 ### CLI Tool für Agent Kit
@@ -144,4 +167,4 @@ _Abgeschlossene Projekte (zur Referenz):_
 
 ---
 
-**Last Updated:** 2026-01-28
+**Last Updated:** 2026-01-30

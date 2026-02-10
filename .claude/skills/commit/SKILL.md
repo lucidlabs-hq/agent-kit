@@ -9,6 +9,24 @@ allowed-tools: Read, Write, Bash
 
 Create a well-formatted commit with automatic PROJECT-STATUS.md and README updates.
 
+## Step 0: MANDATORY Test Gate
+
+**Tests MUST pass before committing.** This is non-negotiable.
+
+```bash
+cd frontend && pnpm run test
+```
+
+If tests fail:
+- DO NOT proceed with the commit
+- Report the failures
+- Fix the failing tests first
+- Re-run `/test` until all pass
+
+If `pnpm run test` script does not exist:
+- Warn: "No test infrastructure. Run /test-setup first."
+- Proceed with commit but flag the gap
+
 ## Step 1: Analyze Changes
 
 Run these commands to understand what's being committed:

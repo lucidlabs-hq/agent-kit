@@ -100,6 +100,7 @@ volumes:
 | Project | Frontend | Convex Backend | Convex Dashboard | Caddy Domain |
 |---------|----------|----------------|------------------|--------------|
 | **cotinga-test-suite** | 3050 | 3214 | 6794 | cotinga-test-suite.lucidlabs.de |
+| **client-service-reporting** | 3070 | 3212 | 6793 | reporting.lucidlabs.de |
 | **invoice-assistant** | 3060 | 3216 | 6796 | invoice.lucidlabs.de |
 | **(Template)** | 30X0 | 32X4 | 67X4 | project.lucidlabs.de |
 
@@ -168,4 +169,4 @@ ssh -p 2222 root@91.98.70.29 "cat /opt/lucidlabs/caddy/Caddyfile"
 
 ---
 
-**Last Updated:** 2026-01-30
+**Last Updated:** 2026-02-09

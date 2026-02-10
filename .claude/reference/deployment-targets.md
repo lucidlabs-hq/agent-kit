@@ -130,52 +130,85 @@ Bei jedem Projekt muss entschieden werden, wo es deployt wird:
 └── registry.json              # Welche Projekte sind deployt
 ```
 
-### registry.json
+### registry.json - Stand 2026-02-09
+
+Verifiziert via SSH. Aktueller Inhalt auf dem Server:
 
 ```json
 {
   "server": {
     "name": "lucidlabs-hq",
     "host": "projects.lucidlabs.de",
-    "ip": "xxx.xxx.xxx.xxx",
     "provider": "elestio",
-    "created": "2026-01-28"
+    "datacenter": "hetzner-fsn1",
+    "architecture": "arm64",
+    "size": "MEDIUM-2C-4G-CAX",
+    "created": "2026-01-28",
+    "network": "lucidlabs-network"
+  },
+  "domains": {
+    "primary": "lucidlabs.de",
+    "wildcard": "*.lucidlabs.de"
   },
   "projects": [
     {
+      "name": "cotinga-test-suite",
+      "subdomain": "cotinga-test-suite",
+      "url": "https://cotinga-test-suite.lucidlabs.de",
+      "convexUrl": "https://cotinga-convex.lucidlabs.de",
+      "status": "deployed"
+    },
+    {
       "name": "invoice-accounting-assistant",
-      "subdomain": "invoice.lucidlabs.de",
-      "port": 3001,
-      "repo": "lucidlabs-hq/invoice-accounting-assistant",
-      "status": "active",
-      "deployed": "2026-01-28"
+      "subdomain": "invoice",
+      "url": "https://invoice.lucidlabs.de",
+      "status": "pending"
     }
   ]
 }
 ```
 
-### Caddyfile (zentral)
+**Deployment Status der Projekte:**
+
+| Projekt | Status | URL | Anmerkung |
+|---------|--------|-----|-----------|
+| cotinga-test-suite | ✅ deployed | cotinga-test-suite.lucidlabs.de | Referenz-Deployment |
+| invoice-accounting-assistant | ⚠️ pending | invoice.lucidlabs.de | Caddyfile-Eintrag vorhanden, nicht deployed |
+| client-service-reporting | ❌ nicht registriert | reporting.lucidlabs.de | Deployment geplant |
+
+### Caddyfile (zentral) - Stand 2026-02-09
 
 ```
 # /opt/lucidlabs/caddy/Caddyfile
+# Verifiziert via SSH am 2026-02-09
 
 # Invoice Accounting Assistant
 invoice.lucidlabs.de {
-    reverse_proxy invoice-accounting-assistant-frontend-1:3000
-
+    reverse_proxy invoice-frontend:3000
     handle /api/agent/* {
-        reverse_proxy invoice-accounting-assistant-mastra-1:4000
+        reverse_proxy invoice-mastra:4000
     }
 }
 
-# Neola
-neola.lucidlabs.de {
-    reverse_proxy neola-frontend-1:3000
+# Cotinga Test Suite (deployed, live)
+cotinga-test-suite.lucidlabs.de {
+    reverse_proxy cotinga-frontend:3000
 }
 
-# Monitoring
-monitoring.lucidlabs.de {
-    reverse_proxy uptime-kuma:3001
+# Client Service Reporting (geplant)
+# reporting.lucidlabs.de { ... }
+
+# Shared Services
+portkey.lucidlabs.de {
+    reverse_proxy lucidlabs-portkey:8787
+}
+
+convex.lucidlabs.de {
+    reverse_proxy lucidlabs-convex:3210
+}
+
+cotinga-convex.lucidlabs.de {
+    reverse_proxy cotinga-convex-backend:3210
 }
 ```
 
@@ -438,6 +471,6 @@ git push origin main
 
 ---
 
-**Version:** 1.0
-**Last Updated:** January 2026
+**Version:** 1.1
+**Last Updated:** 2026-02-09 (Server-Audit verifiziert)
 **Maintainer:** Lucid Labs GmbH

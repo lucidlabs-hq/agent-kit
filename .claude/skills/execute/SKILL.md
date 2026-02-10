@@ -160,8 +160,8 @@ Execute ALL validation commands from the plan in order:
 cd frontend && pnpm run lint
 cd frontend && pnpm run type-check
 
-# Level 2: Unit Tests
-pnpm run test
+# Level 2: Unit Tests (MANDATORY GATE)
+cd frontend && pnpm run test
 
 # Level 3: Build
 cd frontend && pnpm run build
@@ -171,6 +171,44 @@ If any command fails:
 - Fix the issue
 - Re-run the command
 - Continue only when it passes
+
+### 5.5 Post-Implementation Test Gate (MANDATORY)
+
+After ALL implementation tasks are complete, run the full test suite with coverage:
+
+```bash
+cd frontend && pnpm run test
+cd frontend && pnpm run test:coverage
+```
+
+**This is a hard gate:**
+1. ALL unit tests must pass - zero failures allowed
+2. Coverage must not have decreased from before implementation
+3. New/modified lib files SHOULD have corresponding test files
+4. Report any new files without tests as gaps
+
+If tests fail:
+- DO NOT proceed to manual testing or commit
+- Fix the implementation until tests pass
+- Re-run until green
+
+Show results:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  POST-IMPLEMENTATION TEST GATE                                  │
+│  ─────────────────────────────                                  │
+│                                                                 │
+│  Tests:      ALL PASSING (12/12)                                │
+│  Coverage:   64% lines | 58% branches | 70% functions           │
+│                                                                 │
+│  New files without tests:                                       │
+│    (none - all new files have tests)                            │
+│                                                                 │
+│  Result:     GATE PASSED - ready for manual testing             │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ### 6. Manual Testing
 

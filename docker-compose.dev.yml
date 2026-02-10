@@ -1,22 +1,45 @@
-# Docker Compose - Development
-# For local development (database only)
+# =============================================================================
+# Agent Kit - Local Development
+#
+# Starts Convex with Dashboard for local development.
+# Uses different ports to avoid conflicts with other projects.
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up -d
+#   docker compose -f docker-compose.dev.yml exec backend ./generate_admin_key.sh
+#
+# Services:
+#   - Convex Backend:   http://localhost:3220
+#   - Convex Dashboard: http://localhost:6792
+#
+# =============================================================================
 
 services:
-  db:
-    image: pgvector/pgvector:pg16
+  backend:
+    image: ghcr.io/get-convex/convex-backend:latest
+    container_name: convex-agent-kit
     ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=app_dev
+      - "3220:3210"   # Backend API
+      - "3221:3211"   # HTTP Actions
     volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
+      - convex-agent-kit-data:/convex/data
+    environment:
+      - CONVEX_SITE_URL=http://localhost:3001
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "curl", "-f", "http://localhost:3210/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  dashboard:
+    image: ghcr.io/get-convex/convex-dashboard:latest
+    container_name: convex-agent-kit-dashboard
+    ports:
+      - "6792:6791"
+    environment:
+      - CONVEX_BACKEND_URL=http://backend:3210
+    depends_on:
+      - backend
 
 volumes:
-  postgres_dev_data:
+  convex-agent-kit-data:

@@ -22,9 +22,25 @@ pnpm run build                   # Production Build (Node.js)
 |------|--------|
 | **Auto-start Frontend** | ALWAYS start `pnpm run dev` in background at session start |
 | **Auto-start Convex** | ALWAYS start `npx convex dev` in background at session start (keeps functions synced) |
-| **Keep Servers Running** | Both frontend and Convex dev servers should run throughout the session |
-| **Report URL** | Tell user the localhost URL after server starts |
+| **Auto-start Mastra** | If project has `mastra/` directory, ALWAYS start Mastra dev server in background at session start |
+| **Keep Servers Running** | ALL project services (frontend, Convex, Mastra) must run throughout the session |
+| **Report URL** | Tell user the localhost URL after each server starts |
 | **Convex Sync** | After creating/modifying Convex schema or functions, wait for Convex dev to sync (watch the terminal) |
+
+### Full-Stack Component Rule (MANDATORY)
+
+**Every project component chosen at setup MUST be started in dev mode AND deployed to production.**
+
+When a project includes these directories, the corresponding services are MANDATORY:
+
+| Directory | Dev Command | Production |
+|-----------|-------------|------------|
+| `frontend/` | `pnpm run dev` | docker-compose: `frontend` service |
+| `convex/` | `npx convex dev` | docker-compose.convex.yml |
+| `mastra/` | `cd mastra && pnpm run dev` | docker-compose: `mastra` service |
+| `n8n/` | docker-compose.dev.yml | docker-compose: `n8n` service |
+
+**No partial deployments.** If a component exists in the repo, it MUST be deployed. If a service is missing from docker-compose.yml, add it before deploying.
 
 ## Project Overview
 
@@ -88,10 +104,17 @@ pnpm run build                   # Production Build (Node.js)
 |-----------|-----------|---------|
 | **Framework** | Better Auth | Modern TypeScript auth |
 | **Database** | Convex Adapter | Session/user storage |
-| **Features** | OAuth, Magic Link, Password | Standard auth flows |
+| **Login Method** | Magic Link only (via Resend) | Passwordless authentication |
 | **Sessions** | Convex tables | Reactive, automatic sync |
 
 **Integration:** [Better Auth + Convex](https://www.better-auth.com/docs/integrations/convex)
+
+**MANDATORY Auth Rule:**
+- **Magic Links via Resend** is the ONLY authentication method. No passwords, no OAuth, no social login.
+- All projects use `magicLinkClient()` plugin in `auth-client.ts`
+- Email delivery is handled by Resend
+- Accounts are admin-created only (no self-signup)
+- This is non-negotiable across all LUCIDLABS-HQ projects
 
 ### Runtime & Package Manager
 

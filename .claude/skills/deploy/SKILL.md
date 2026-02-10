@@ -42,6 +42,57 @@ gh auth status
 ls docker-compose.yml frontend/Dockerfile
 ```
 
+### Auth Verification (MANDATORY)
+
+**Every deployment MUST pass auth verification. No exceptions.**
+
+#### 1. Code Check
+
+Verify these auth files exist in the project:
+
+```bash
+# All of these must exist
+ls frontend/middleware.ts \
+   frontend/lib/auth-server.ts \
+   frontend/lib/auth-helpers.ts \
+   frontend/lib/auth-client.ts \
+   frontend/app/api/auth/[...all]/route.ts \
+   frontend/lib/convex.ts \
+   frontend/components/auth/login-form.tsx
+```
+
+Additionally verify:
+- `frontend/lib/convex.ts` exports **dual connections** (`projectConvex` + `authConvex`)
+- `frontend/lib/auth-client.ts` uses `magicLinkClient()` plugin (Magic Links via Resend only - no passwords, no OAuth)
+- `frontend/components/providers/ConvexClientProvider.tsx` wraps with both `ConvexBetterAuthProvider(authConvex)` and `ConvexProvider(projectConvex)`
+
+#### 2. Config Check
+
+Verify `docker-compose.yml` contains:
+
+| Variable | Type | Required |
+|----------|------|----------|
+| `NEXT_PUBLIC_AUTH_ENABLED` | build arg | Yes (default: true) |
+| `AUTH_CONVEX_URL` | runtime env | Yes |
+| `AUTH_CONVEX_SITE_URL` | runtime env | Yes |
+| `BETTER_AUTH_SECRET` | runtime env | Yes |
+
+#### 3. Post-Deploy Auth Check
+
+```bash
+# MUST return 307 redirect to /login
+curl -sI https://<subdomain>.lucidlabs.de/ | head -5
+
+# MUST return 200 with login form
+curl -sI https://<subdomain>.lucidlabs.de/login | head -5
+```
+
+#### 4. Blocker Rule
+
+**If any auth check fails, the deployment is FAILED.** Do NOT mark it as successful. Warn the user immediately and suggest fixes.
+
+---
+
 ### Read Project Context
 
 ```bash

@@ -21,8 +21,10 @@ pnpm run build                   # Production Build (Node.js)
 | Rule | Action |
 |------|--------|
 | **Auto-start Frontend** | ALWAYS start `pnpm run dev` in background at session start |
-| **Keep Server Running** | Dev server should run throughout the session |
+| **Auto-start Convex** | ALWAYS start `npx convex dev` in background at session start (keeps functions synced) |
+| **Keep Servers Running** | Both frontend and Convex dev servers should run throughout the session |
 | **Report URL** | Tell user the localhost URL after server starts |
+| **Convex Sync** | After creating/modifying Convex schema or functions, wait for Convex dev to sync (watch the terminal) |
 
 ## Project Overview
 
@@ -581,6 +583,8 @@ Status display → Badge (with border)
 | `.claude/reference/architecture.md` | Platform architecture, tech stack |
 | `.claude/reference/design-system.md` | UI/UX, Tailwind v4, shadcn/ui |
 | `.claude/reference/error-handling.md` | Error handling patterns |
+| `.claude/reference/auth-architecture.md` | **Centralized BetterAuth, cross-subdomain SSO, roles** |
+| `.claude/reference/betterauth-convex-setup.md` | **BetterAuth + Convex setup guide, pitfalls, Docker config** |
 | `.claude/reference/ssr-hydration.md` | SSR, hydration, Date.now() pitfalls |
 | `.claude/reference/mastra-best-practices.md` | AI agents, tools, workflows |
 | `.claude/reference/deployment-best-practices.md` | Docker, Caddy, Elestio, CI/CD |

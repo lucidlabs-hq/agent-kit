@@ -315,7 +315,102 @@ Die Convex CLI generiert diese Config:
 | `npx convex login` | Cloud-Login für Codegen |
 | `npx convex dev` | Watch mode + Codegen |
 | `npx convex dev --once` | Einmalig generieren |
-| `npx convex deploy` | Production deployment |
+| `npx convex deploy --url <URL> --admin-key <KEY>` | Production/local deployment |
+
+---
+
+## Admin Key & Function Deployment (MANDATORY KNOWLEDGE)
+
+### Admin Key abrufen
+
+**Der Admin Key wird vom Convex-Container selbst generiert.** Er ist NICHT in .env-Dateien gespeichert.
+
+```bash
+# Lokal: Admin Key vom Docker-Container generieren
+docker exec {PREFIX}-convex-backend /convex/generate_admin_key.sh
+
+# Beispiel für client-service-reporting:
+docker exec csr-convex-backend /convex/generate_admin_key.sh
+
+# Remote (Production auf lucidlabs-hq):
+ssh lucidlabs-hq "sudo docker exec {PREFIX}-convex-backend /convex/generate_admin_key.sh"
+```
+
+**Format des Keys:** `convex-self-hosted|<hex-string>`
+
+### Functions deployen (Schema + Queries + Mutations)
+
+**KRITISCH: Immer vom ROOT-Verzeichnis des Projekts deployen, NICHT aus `frontend/`!**
+
+Der `convex/` Ordner und `convex.json` liegen im Projekt-Root.
+
+```bash
+# 1. Admin Key holen
+ADMIN_KEY=$(docker exec {PREFIX}-convex-backend /convex/generate_admin_key.sh 2>/dev/null | tail -1)
+
+# 2. Vom ROOT-Verzeichnis deployen
+cd /path/to/project   # NICHT cd frontend/!
+npx convex deploy --url http://localhost:{PORT} --admin-key "$ADMIN_KEY"
+```
+
+**Beispiel für client-service-reporting:**
+```bash
+cd /path/to/client-service-reporting
+ADMIN_KEY=$(docker exec csr-convex-backend /convex/generate_admin_key.sh 2>/dev/null | tail -1)
+npx convex deploy --url http://localhost:3212 --admin-key "$ADMIN_KEY"
+```
+
+### Wann Functions deployen?
+
+Functions MÜSSEN deployed werden nach:
+- Schema-Änderungen (`convex/schema.ts`)
+- Neuen/geänderten Functions (`convex/functions/*.ts`)
+- Wechsel der Convex-Instanz (Cloud → Lokal oder umgekehrt)
+- Docker-Container Neustart
+
+### ACHTUNG: Häufige Fehler
+
+| Fehler | Ursache | Fix |
+|--------|---------|-----|
+| `BadAdminKey` | Falscher Key oder alter Key | Key neu generieren: `docker exec ... generate_admin_key.sh` |
+| `Could not find public function` | Functions nicht deployed | `npx convex deploy` vom ROOT |
+| Deploy geht an Convex Cloud | ROOT `.env.local` zeigt auf Cloud | ROOT `.env.local` auf `CONVEX_URL=http://localhost:{PORT}` setzen |
+| Deploy aus `frontend/` findet kein Schema | `convex/` liegt im ROOT | **Immer vom ROOT deployen** |
+
+### ROOT .env.local für Convex CLI
+
+Das ROOT `.env.local` (nicht `frontend/.env.local`) steuert wohin `npx convex dev/deploy` connected:
+
+```env
+# ROOT/.env.local — für Convex CLI
+CONVEX_URL=http://localhost:{PORT}
+```
+
+**NIEMALS** `CONVEX_DEPLOYMENT=dev:aware-retriever-410` oder ähnliche Cloud-Referenzen im ROOT `.env.local` belassen. Das führt dazu, dass Deploys an die Cloud gehen statt an die lokale Instanz.
+
+### Vollständiger Workflow: Convex-Instanz wechseln
+
+```bash
+# 1. Docker Container starten
+docker compose -f docker-compose.dev.yml up -d
+
+# 2. Warten bis healthy
+docker compose -f docker-compose.dev.yml ps
+
+# 3. ROOT .env.local auf lokal setzen
+echo 'CONVEX_URL=http://localhost:{PORT}' > .env.local
+
+# 4. Frontend .env.local prüfen
+grep NEXT_PUBLIC_CONVEX_URL frontend/.env.local
+# Muss: http://localhost:{PORT}
+
+# 5. Admin Key holen + Functions deployen
+ADMIN_KEY=$(docker exec {PREFIX}-convex-backend /convex/generate_admin_key.sh 2>/dev/null | tail -1)
+npx convex deploy --url http://localhost:{PORT} --admin-key "$ADMIN_KEY"
+
+# 6. Frontend starten
+cd frontend && pnpm run dev
+```
 
 ---
 
@@ -342,14 +437,39 @@ Nach Login:
 npx convex dev --once
 ```
 
+### "BadAdminKey: The provided admin key was invalid"
+
+Admin Key neu generieren — der Key ist instanz-spezifisch:
+```bash
+docker exec {PREFIX}-convex-backend /convex/generate_admin_key.sh 2>/dev/null | tail -1
+```
+
+### "Could not find public function for 'functions/tickets:getPublishStatus'"
+
+Functions nicht deployed. Vom ROOT deployen:
+```bash
+ADMIN_KEY=$(docker exec {PREFIX}-convex-backend /convex/generate_admin_key.sh 2>/dev/null | tail -1)
+npx convex deploy --url http://localhost:{PORT} --admin-key "$ADMIN_KEY"
+```
+
 ### Schema-Änderungen nicht sichtbar
 
 ```bash
-# Neu generieren
-npx convex dev --once
+# Functions deployen (IMMER vom ROOT!)
+ADMIN_KEY=$(docker exec {PREFIX}-convex-backend /convex/generate_admin_key.sh 2>/dev/null | tail -1)
+npx convex deploy --url http://localhost:{PORT} --admin-key "$ADMIN_KEY"
 
 # Falls nötig: Container neustarten
 docker compose -f docker-compose.dev.yml restart
+```
+
+### Deploy geht an Convex Cloud statt lokal
+
+ROOT `.env.local` prüfen — darf KEINE Cloud-Referenz enthalten:
+```bash
+cat .env.local
+# FALSCH: CONVEX_DEPLOYMENT=dev:aware-retriever-410
+# RICHTIG: CONVEX_URL=http://localhost:{PORT}
 ```
 
 ---

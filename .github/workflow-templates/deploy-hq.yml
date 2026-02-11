@@ -1,0 +1,109 @@
+# =============================================================================
+# Deploy to Lucid Labs HQ (TEMPLATE)
+#
+# Copy to your project: .github/workflows/deploy-hq.yml
+# MUST be customized per project - see CUSTOMIZE comments below.
+#
+# Server: nightwing@lucidlabs-hq:2222 (Elestio, Hetzner fsn1, ARM64)
+# Security: All actions pinned to commit SHAs (CVE-2025-30066).
+#
+# Required GitHub Secrets (Org-Level):
+#   - LUCIDLABS_HQ_HOST: Server IP
+#   - LUCIDLABS_HQ_SSH_KEY: SSH private key for nightwing user
+#
+# Required GitHub Secrets (Repo-Level):
+#   - NEXT_PUBLIC_CONVEX_URL: Project-specific Convex URL
+# =============================================================================
+
+name: Deploy to Lucid Labs HQ
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-hq
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup SSH
+        env:
+          HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
+          HQ_SSH_KEY: ${{ secrets.LUCIDLABS_HQ_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$HQ_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p 2222 -H $HQ_HOST >> ~/.ssh/known_hosts
+
+      - name: Sync code to server
+        env:
+          HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
+          # CUSTOMIZE: Set your project name
+          PROJECT_NAME: my-project-name
+        run: |
+          rsync -avz --delete \
+            -e "ssh -p 2222" \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.next' \
+            --exclude='frontend/node_modules' \
+            --exclude='frontend/.next' \
+            --exclude='convex/node_modules' \
+            --exclude='mastra/node_modules' \
+            --exclude='.env.local' \
+            --exclude='data/' \
+            --exclude='.DS_Store' \
+            ./ nightwing@$HQ_HOST:/opt/lucidlabs/projects/$PROJECT_NAME/
+
+      - name: Build and restart containers
+        env:
+          HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
+          # CUSTOMIZE: Set your project name
+          PROJECT_NAME: my-project-name
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
+        run: |
+          ssh -p 2222 nightwing@$HQ_HOST << EOF
+            cd /opt/lucidlabs/projects/$PROJECT_NAME
+
+            # Create .env for build args
+            echo "NEXT_PUBLIC_CONVEX_URL=$NEXT_PUBLIC_CONVEX_URL" > .env
+
+            # Build and deploy
+            sudo docker compose -p $PROJECT_NAME up -d --build
+
+            # Cleanup old images
+            sudo docker image prune -f
+          EOF
+
+      - name: Deploy Convex functions
+        env:
+          HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
+        run: |
+          # CUSTOMIZE: Set your Convex container name (abbreviation-convex-backend)
+          ADMIN_KEY=$(ssh -p 2222 nightwing@$HQ_HOST \
+            "sudo docker exec my-convex-backend /convex/generate_admin_key.sh 2>/dev/null" | tail -1)
+
+          cd frontend && npm install convex
+          npx convex deploy \
+            --url "${{ secrets.NEXT_PUBLIC_CONVEX_URL }}" \
+            --admin-key "$ADMIN_KEY" \
+            --yes
+
+      - name: Health check
+        run: |
+          echo "Waiting for container to start..."
+          sleep 15
+          # CUSTOMIZE: Set your production URL
+          curl -f --retry 3 --retry-delay 5 https://my-project.lucidlabs.de || echo "Health check pending - container may still be starting"

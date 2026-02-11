@@ -677,6 +677,33 @@ NODE_ENV=development
 PORT=3000
 EOF
 
+    # Sync Infrastructure
+    print_step "Setting up sync infrastructure..."
+    mkdir -p scripts
+    if [[ -f "$SCRIPT_DIR/scripts/sync-upstream.sh" ]]; then
+        cp "$SCRIPT_DIR/scripts/sync-upstream.sh" scripts/sync-upstream.sh
+        chmod +x scripts/sync-upstream.sh
+        print_success "Copied sync-upstream.sh"
+    fi
+    if [[ -f "$SCRIPT_DIR/scripts/promote.sh" ]]; then
+        cp "$SCRIPT_DIR/scripts/promote.sh" scripts/promote.sh
+        chmod +x scripts/promote.sh
+        print_success "Copied promote.sh"
+    fi
+
+    # Create .upstream-sync.json with current upstream HEAD
+    local upstream_head
+    upstream_head=$(cd "$SCRIPT_DIR" && git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+    cat > ".upstream-sync.json" << EOF
+{
+  "upstream_repo": "lucidlabs-hq/agent-kit",
+  "last_sync_commit": "$upstream_head",
+  "last_sync_date": "$(date +%Y-%m-%d)",
+  "synced_files": {}
+}
+EOF
+    print_success "Created .upstream-sync.json"
+
     # Initialize Git
     print_step "Initializing Git repository..."
     git init -q

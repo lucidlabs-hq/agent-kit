@@ -2,7 +2,6 @@
 
 > **How patterns flow between upstream (agent-kit) and downstream (projects)**
 > Last updated: 2026-02-11
-> Sync verification: VERIFIED-2026-02-11
 
 ## Overview
 

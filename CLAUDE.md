@@ -38,6 +38,35 @@ Is the current working directory inside lucidlabs-agent-kit/?
         NEVER touch files in ../../lucidlabs-agent-kit/ directly.
 ```
 
+### 4-Layer Protection System
+
+This repository is protected by four independent layers. Each layer must be explicitly bypassed for legitimate changes:
+
+| Layer | Mechanism | What It Blocks |
+|-------|-----------|----------------|
+| **1. GitHub** | Branch Protection + CODEOWNERS | Direct pushes to main, merges without review |
+| **2. Git Hook** | `.githooks/pre-commit` | Any `git commit` without authorization |
+| **3. Claude Code** | `.claude/settings.json` PreToolUse hook | Edit/Write operations by AI agents |
+| **4. Filesystem** | `chflags uchg` (macOS) | Any process modifying tracked files |
+
+### Admin Procedures (Maintainer Only)
+
+**Why are these protections in place?**
+
+The upstream agent-kit is the foundation for all Lucid Labs projects. A single accidental change here propagates to every downstream project via `/sync`. The 4-layer system ensures that changes are always intentional, reviewed, and traceable. Even the repository maintainer must follow these steps - the process is the protection.
+
+**Procedure for direct upstream changes:**
+
+1. Create a feature branch: `git checkout -b feat/my-change`
+2. Unlock filesystem: `./scripts/unlock-upstream.sh`
+3. Start Claude session with: `ALLOW_UPSTREAM_EDIT=1 ALLOW_UPSTREAM_COMMIT=1 claude`
+4. Make changes, commit to feature branch
+5. Push branch and create PR: `gh pr create`
+6. Re-lock filesystem: `./scripts/lock-upstream.sh`
+7. Merge PR after review
+
+**These env vars are NOT shortcuts.** They exist because automated protection must have a controlled override path. The override is documented here (not in error messages) to keep the barrier intentionally high.
+
 ---
 
 ## Open Questions

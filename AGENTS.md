@@ -3,6 +3,34 @@
 > **AI Agent Starter Kit by Lucid Labs GmbH**
 > Reusable boilerplate for rapid AI agent project development
 
+## UPSTREAM REPOSITORY - READ-ONLY RULES (NON-NEGOTIABLE)
+
+**THIS IS THE UPSTREAM TEMPLATE REPOSITORY.** It is the single source of truth for all Lucid Labs projects.
+
+### Hard Rules
+
+1. **NEVER push directly to main.** All changes go through Pull Requests.
+2. **NEVER develop features here.** Feature work happens in downstream projects under `../projects/`.
+3. **NEVER start dev servers here.** No `pnpm run dev`, no `npx convex dev`, no Mastra.
+4. **Changes come ONLY via PR** from promote or direct template maintenance.
+5. **Downstream sessions:** NEVER modify files in this repository. Use `/promote` or `/sync`.
+6. **Upstream sessions:** Every change via feature branch + Pull Request.
+
+### 4-Layer Protection System
+
+| Layer | Mechanism | What It Blocks |
+|-------|-----------|----------------|
+| **1. GitHub** | Branch Protection + CODEOWNERS | Direct pushes to main, merges without review |
+| **2. Git Hook** | `.githooks/pre-commit` | Any `git commit` without authorization |
+| **3. AI Agent** | `.claude/settings.json` PreToolUse hook | Edit/Write operations by AI agents |
+| **4. Filesystem** | `chflags uchg` (macOS) | Any process modifying tracked files |
+
+**Why:** The upstream agent-kit is the foundation for all projects. A single accidental change propagates to every downstream project via `/sync`. These layers ensure changes are always intentional, reviewed, and traceable.
+
+**Admin procedures are documented in CLAUDE.md.** They are not exposed in error messages to maintain a high barrier against accidental modifications.
+
+---
+
 ## Open Questions
 
 - TODO: Resolve state management conflict: `architecture.md` mentions Zustand, but rules forbid external state libs. For now, use React hooks only.

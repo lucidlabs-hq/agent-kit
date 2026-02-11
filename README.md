@@ -827,6 +827,52 @@ git commit -m "chore: sync new-skill from upstream template"
 
 ---
 
+## Repository Protection
+
+The upstream agent-kit is protected by a 4-layer system to prevent accidental modifications. Every layer operates independently - even if one fails, the others catch it.
+
+### Protection Layers
+
+| Layer | Mechanism | Purpose |
+|-------|-----------|---------|
+| **GitHub** | Branch Protection + CODEOWNERS | No direct pushes to main, all changes need PR review |
+| **Git Hook** | `.githooks/pre-commit` | Blocks any `git commit` without explicit authorization |
+| **Claude Code** | `.claude/settings.json` PreToolUse hook | Blocks AI agents from editing files |
+| **Filesystem** | `chflags uchg` (macOS) | OS-level immutability on all tracked files |
+
+### Why This Exists
+
+The upstream template is the foundation for all Lucid Labs projects. Changes here propagate to every downstream project via `/sync`. A single accidental modification can break infrastructure across multiple projects. These layers ensure that every change is intentional, reviewed, and traceable.
+
+### Making Changes (Admin Only)
+
+All legitimate changes follow this procedure:
+
+1. **Create a feature branch** - `git checkout -b feat/my-change`
+2. **Unlock the filesystem** - `./scripts/unlock-upstream.sh`
+3. **Start an authorized session** - `ALLOW_UPSTREAM_EDIT=1 ALLOW_UPSTREAM_COMMIT=1 claude`
+4. **Make changes and commit** on the feature branch
+5. **Push and create PR** - `git push -u origin feat/my-change && gh pr create`
+6. **Re-lock the filesystem** - `./scripts/lock-upstream.sh`
+7. **Merge after review**
+
+For pattern promotions from downstream projects, use `./scripts/promote.sh` which handles authorization automatically.
+
+### Lock/Unlock Scripts
+
+```bash
+# Lock all tracked files (run after changes are complete)
+./scripts/lock-upstream.sh
+
+# Check lock status
+./scripts/lock-upstream.sh --status
+
+# Unlock for maintenance (admin only)
+./scripts/unlock-upstream.sh
+```
+
+---
+
 ## Security Practices
 
 Agent Kit includes built-in security workflows for pre-production checks.

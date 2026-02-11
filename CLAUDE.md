@@ -87,11 +87,39 @@ pnpm run build                   # Production Build (Node.js)
 | Rule | Action |
 |------|--------|
 | **Auto-start Frontend** | ALWAYS start `pnpm run dev` in background at session start |
-| **Auto-start Convex** | ALWAYS start `npx convex dev` in background at session start (keeps functions synced) |
+| **Auto-start Convex** | ALWAYS verify Convex backend is running (Docker) and deploy functions at session start (see Convex Self-Hosted Rule below) |
 | **Auto-start Mastra** | If project has `mastra/` directory, ALWAYS start Mastra dev server in background at session start |
 | **Keep Servers Running** | ALL project services (frontend, Convex, Mastra) must run throughout the session |
 | **Report URL** | Tell user the localhost URL after each server starts |
-| **Convex Sync** | After creating/modifying Convex schema or functions, wait for Convex dev to sync (watch the terminal) |
+| **Convex Sync** | After creating/modifying Convex schema or functions, ALWAYS re-deploy with `npx convex deploy --url --admin-key` (see below) |
+
+### Convex Self-Hosted Sync Rule (MANDATORY)
+
+**`npx convex dev` does NOT work in non-interactive terminals (AI agents, CI/CD).** It prompts for input and fails silently or with errors. For self-hosted Convex, ALWAYS use the deploy command instead.
+
+**At session start:**
+
+```bash
+# 1. Verify Convex backend is running
+lsof -i :{CONVEX_PORT} -P | head -3
+
+# 2. Deploy functions (schema + queries + mutations)
+ADMIN_KEY=$(docker exec {PREFIX}-convex-backend /convex/generate_admin_key.sh 2>/dev/null | tail -1)
+npx convex deploy --url http://localhost:{CONVEX_PORT} --admin-key "$ADMIN_KEY"
+```
+
+**After ANY change to `convex/schema.ts` or `convex/functions/*.ts`:**
+
+```bash
+ADMIN_KEY=$(docker exec {PREFIX}-convex-backend /convex/generate_admin_key.sh 2>/dev/null | tail -1)
+npx convex deploy --url http://localhost:{CONVEX_PORT} --admin-key "$ADMIN_KEY"
+```
+
+**Replace `{PREFIX}` and `{CONVEX_PORT}` with project-specific values from `registry.json`.**
+
+**Why this rule exists:** Without explicit deploy, new or modified Convex functions exist locally but are not registered on the backend. This causes `Could not find public function` runtime errors. The admin key is generated fresh each time from the Docker container — it is never stored in env files.
+
+See: `.claude/reference/convex-self-hosted.md` for full documentation.
 
 ### Config Backup Rule (MANDATORY)
 
@@ -126,7 +154,7 @@ When a project includes these directories, the corresponding services are MANDAT
 | Directory | Dev Command | Production |
 |-----------|-------------|------------|
 | `frontend/` | `pnpm run dev` | docker-compose: `frontend` service |
-| `convex/` | `npx convex dev` | docker-compose.convex.yml |
+| `convex/` | `npx convex deploy --url --admin-key` (self-hosted) | docker-compose.convex.yml |
 | `mastra/` | `cd mastra && pnpm run dev` | docker-compose: `mastra` service |
 | `n8n/` | docker-compose.dev.yml | docker-compose: `n8n` service |
 
@@ -622,13 +650,17 @@ Production ports müssen AUCH registriert werden, um Caddy-Konflikte zu vermeide
 **Registrierung:** Update `/opt/lucidlabs/registry.json` auf dem Server nach Deployment.
 
 ```bash
-# CORRECT: Run from project directory
+# CORRECT: Deploy from project root with admin key (self-hosted)
 cd /path/to/my-project
-npx convex dev --once
+ADMIN_KEY=$(docker exec {PREFIX}-convex-backend /convex/generate_admin_key.sh 2>/dev/null | tail -1)
+npx convex deploy --url http://localhost:{CONVEX_PORT} --admin-key "$ADMIN_KEY"
+
+# WRONG: npx convex dev (fails in non-interactive terminals)
+npx convex dev  # Prompts for input, fails in AI agents and CI/CD!
 
 # WRONG: Running convex from wrong directory
 cd /some/other/path
-npx convex dev  # May connect to wrong backend!
+npx convex deploy  # May connect to wrong backend!
 ```
 
 ---
@@ -729,6 +761,8 @@ Status display → Badge (with border)
 | `.claude/reference/ssh-keys.md` | **SSH Key Anleitung für Entwickler** |
 | `.claude/reference/watchtower.md` | **Automatic Docker container updates** |
 | `.claude/reference/scaling.md` | Stateless patterns, Convex scaling |
+| `.claude/reference/future-plans.md` | **Feature roadmap with checkboxes** |
+| `.claude/reference/time-tracking-concept.md` | **Time tracking architecture, heartbeat mechanism** |
 | `.claude/reference/ci-cd-security.md` | **CI/CD security: SHA-pinning, workflow architecture, branch protection** |
 | `.claude/reference/session-handoff.md` | **Projekt-Wechsel ohne Session-Neustart** |
 | `.claude/reference/pnpm-workspaces.md` | **pnpm Workspace setup for Monorepo CI** |
@@ -1017,9 +1051,9 @@ cd backend
 pnpm install                     # Dependencies (einmalig)
 pnpm run dev                     # Dev Server (port 4000)
 
-# Convex
-npx convex dev                   # Start Convex dev server
-npx convex deploy                # Deploy to cloud
+# Convex (Self-Hosted)
+ADMIN_KEY=$(docker exec {PREFIX}-convex-backend /convex/generate_admin_key.sh 2>/dev/null | tail -1)
+npx convex deploy --url http://localhost:{CONVEX_PORT} --admin-key "$ADMIN_KEY"  # Deploy functions
 ```
 
 ### Testing
@@ -1128,15 +1162,18 @@ export class ExamplePage {
 ### Feature Implementation Flow
 
 ```
-/plan-feature → /execute → /validation:self-audit → /commit
+/plan-feature → /execute (creates branch) → /validation:self-audit → /commit → /pr
 ```
 
 | Step | Command | Purpose |
 |------|---------|---------|
 | 1. Plan | `/plan-feature [name]` | Create implementation plan |
-| 2. Implement | `/execute [plan]` | Execute the plan |
+| 2. Implement | `/execute [plan]` | Create feature branch + execute the plan |
 | 3. Audit | `/validation:self-audit` | Verify compliance with all standards |
-| 4. Commit | `/commit` | Create formatted commit |
+| 4. Commit | `/commit` | Create formatted commit (on feature branch) |
+| 5. Ship | `/pr` | Push branch + open Pull Request |
+
+**Branch lifecycle:** `/execute` creates the feature branch from `main`. All commits land there. `/pr` pushes and opens the PR. After merge, auto-deploy runs.
 
 ### Self-Audit Checklist
 
@@ -1232,6 +1269,7 @@ This project uses Claude Code Skills instead of legacy commands. Skills follow t
 ├── init-project/SKILL.md
 ├── linear/SKILL.md
 ├── session-end/SKILL.md
+├── time-report/SKILL.md
 ├── productizer/SKILL.md
 ├── visual-verify/SKILL.md
 ├── pre-production/SKILL.md
@@ -1263,6 +1301,7 @@ This project uses Claude Code Skills instead of legacy commands. Skills follow t
 | `/llm-evaluate` | LLM cost/performance evaluation, model selection | Planning |
 | `/screenshot` | Visual verification screenshots | Validation |
 | `/session-end` | End session, update Linear, clean state | Any |
+| `/time-report` | Cross-project time report (all sessions) | Any |
 | `/productizer` | Bridge Linear ↔ Productive.io for customer reporting | Any |
 | `/notion-publish` | Publish markdown to Notion (private pages) | Any |
 | `/clone-skill` | Clone skills from central repository | Any |

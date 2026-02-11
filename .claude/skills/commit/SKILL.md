@@ -9,23 +9,29 @@ allowed-tools: Read, Write, Bash
 
 Create a well-formatted commit with automatic PROJECT-STATUS.md and README updates.
 
-## Step 0: MANDATORY Test Gate
-
-**Tests MUST pass before committing.** This is non-negotiable.
+## Step 0: Branch Safety Check
 
 ```bash
-cd frontend && pnpm run test
+CURRENT_BRANCH=$(git branch --show-current)
 ```
 
-If tests fail:
-- DO NOT proceed with the commit
-- Report the failures
-- Fix the failing tests first
-- Re-run `/test` until all pass
+**If on `main`:**
 
-If `pnpm run test` script does not exist:
-- Warn: "No test infrastructure. Run /test-setup first."
-- Proceed with commit but flag the gap
+```
+⚠️  WARNING: You are committing to main directly.
+    All changes should go through feature branches.
+
+    Expected workflow:
+    1. /execute creates a feature branch
+    2. /commit commits on the feature branch
+    3. /pr pushes and creates a Pull Request
+
+    Continue anyway? (Only for hotfixes or initial setup)
+```
+
+Ask user for confirmation before proceeding on `main`. For normal feature work, suggest running `/execute` first to create the branch.
+
+**If on a feature branch:** Continue normally.
 
 ## Step 1: Analyze Changes
 

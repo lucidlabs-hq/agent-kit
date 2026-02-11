@@ -252,8 +252,8 @@ check_domain_keywords() {
 detect_promotable_changes() {
     local changes=()
 
-    print_step "Scanning for promotable changes..."
-    echo ""
+    print_step "Scanning for promotable changes..." >&2
+    echo "" >&2
 
     # Find all files in whitelisted paths
     for pattern in "${WHITELIST_PATTERNS[@]}"; do
@@ -315,12 +315,12 @@ select_changes() {
     local -a selected=()
 
     if [[ ${#changes[@]} -eq 0 ]]; then
-        print_info "No promotable changes found."
+        print_info "No promotable changes found." >&2
         return
     fi
 
-    echo -e "${BOLD}Promotable changes found:${NC}"
-    echo ""
+    echo -e "${BOLD}Promotable changes found:${NC}" >&2
+    echo "" >&2
 
     local i=1
     for change in "${changes[@]}"; do
@@ -338,11 +338,11 @@ select_changes() {
             warning=" ${YELLOW}⚠ domain keywords: $keywords${NC}"
         fi
 
-        echo -e "  [${CYAN}$i${NC}] $path (${status_color}$status${NC})$warning"
+        echo -e "  [${CYAN}$i${NC}] $path (${status_color}$status${NC})$warning" >&2
         ((i++))
     done
 
-    echo ""
+    echo "" >&2
 
     if [[ "$PROMOTE_ALL" == true ]]; then
         selected=("${changes[@]}")
@@ -350,7 +350,7 @@ select_changes() {
         read -p "Enter numbers to promote (e.g., 1,3,5 or 'all' or 'q' to quit): " selection
 
         if [[ "$selection" == "q" ]] || [[ "$selection" == "quit" ]]; then
-            print_info "Cancelled."
+            print_info "Cancelled." >&2
             exit 0
         fi
 
@@ -367,7 +367,7 @@ select_changes() {
         fi
     fi
 
-    # Return selected
+    # Return selected (to stdout for capture)
     printf '%s\n' "${selected[@]}"
 }
 
@@ -572,16 +572,22 @@ main() {
     print_info "Upstream:   $UPSTREAM_PATH"
     echo ""
 
-    # Detect changes
-    mapfile -t all_changes < <(detect_promotable_changes)
+    # Detect changes (bash 3 compatible - no mapfile)
+    all_changes=()
+    while IFS= read -r line; do
+        [[ -n "$line" ]] && all_changes+=("$line")
+    done < <(detect_promotable_changes)
 
     if [[ ${#all_changes[@]} -eq 0 ]]; then
         print_info "No promotable changes found."
         exit 0
     fi
 
-    # Select changes
-    mapfile -t selected_changes < <(select_changes "${all_changes[@]}")
+    # Select changes (bash 3 compatible - no mapfile)
+    selected_changes=()
+    while IFS= read -r line; do
+        [[ -n "$line" ]] && selected_changes+=("$line")
+    done < <(select_changes "${all_changes[@]}")
 
     if [[ ${#selected_changes[@]} -eq 0 ]]; then
         print_info "No changes selected."

@@ -71,12 +71,7 @@ Existiert .claude/PROJECT-CONTEXT.md?
 │  Repository Type:   DOWNSTREAM                                              │
 │  Active Project:    invoice-accounting-assistant                            │
 │  PRD:               .claude/PRD.md                                          │
-│  Upstream:          ../../lucidlabs-agent-kit (READ-ONLY)                   │
-│                                                                             │
-│  Upstream Interaction:                                                      │
-│    /sync     Pull updates FROM upstream                                     │
-│    /promote  Push patterns TO upstream (via PR)                             │
-│    Direct file access to upstream: FORBIDDEN                                │
+│  Upstream:          ../../lucidlabs-agent-kit                               │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -90,23 +85,6 @@ Existiert .claude/PROJECT-CONTEXT.md?
 │                                                                             │
 │  Working Directory: /Users/.../lucidlabs-agent-kit                          │
 │  Repository Type:   UPSTREAM (Agent Kit Template)                           │
-│                                                                             │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
-│  UPSTREAM PROTECTION ACTIVE                                                 │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
-│                                                                             │
-│  This is the UPSTREAM template repository.                                  │
-│  Direct pushes to main are BLOCKED (GitHub Branch Protection).              │
-│                                                                             │
-│  Allowed actions:                                                           │
-│    - Browse/read code and documentation                                     │
-│    - Select a downstream project to work in                                 │
-│    - Template maintenance (via feature branch + PR only)                    │
-│                                                                             │
-│  NOT allowed:                                                               │
-│    - Feature development (use downstream projects)                          │
-│    - git push origin main (blocked by GitHub)                               │
-│    - Starting dev servers (no application runs here)                        │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -203,23 +181,15 @@ b) **Handoff-Bestätigung anzeigen:**
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                                                                             │
-│  SESSION HANDOFF COMPLETE                                                   │
+│  ✓ SESSION HANDOFF COMPLETE                                                 │
 │                                                                             │
 │  ───────────────────────────────────────────────────────────────────────    │
 │                                                                             │
 │  Neues Working Directory:                                                   │
 │  /Users/.../projects/invoice-accounting-assistant                           │
 │                                                                             │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
-│  UPSTREAM BOUNDARY ACTIVE                                                   │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
-│                                                                             │
-│  Ich arbeite ab jetzt AUSSCHLIESSLICH in diesem Projekt.                    │
-│  Das Upstream Repository (lucidlabs-agent-kit) ist READ-ONLY.               │
-│                                                                             │
-│  Upstream holen:  /sync (Updates aus dem Template ziehen)                   │
-│  Upstream geben:  /promote (Patterns ins Template befoerdern, via PR)       │
-│  Direkt anfassen: VERBOTEN                                                  │
+│  ⚠️  WICHTIG: Ich arbeite ab jetzt NUR in diesem Projekt.                   │
+│      Das Upstream Repository (lucidlabs-agent-kit) wird NICHT verändert.    │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -402,98 +372,6 @@ fi
 ```
 
 **Falls keine Reminders fällig:** Block nicht anzeigen (stille Prüfung).
-
----
-
-#### 0.1.0c Test Health Audit (NACH Security Reminders)
-
-**IMMER anzeigen** nach Security Reminders. This is the upfront quality audit - shows whether the last session left things in good shape.
-
-**Logik:**
-
-```bash
-cd frontend
-
-# Check if test infrastructure exists
-if grep -q '"test"' package.json 2>/dev/null; then
-  # Run tests silently and capture result
-  TEST_OUTPUT=$(pnpm run test 2>&1)
-  TEST_EXIT=$?
-
-  # Run coverage if tests pass
-  if [ $TEST_EXIT -eq 0 ]; then
-    COVERAGE_OUTPUT=$(pnpm run test:coverage 2>&1)
-  fi
-else
-  echo "Tests not configured"
-fi
-```
-
-**Parse test output for:**
-- Total tests, passed, failed
-- Coverage percentage (lines, branches, functions)
-- Files with/without test coverage
-
-**Anzeige (IMMER - auch wenn keine Tests konfiguriert):**
-
-If tests are configured and all pass:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  TEST HEALTH                                                    │
-│  ───────────                                                    │
-│                                                                 │
-│  Status:       ALL PASSING                                      │
-│  Unit Tests:   12 passed, 0 failed           Coverage: 64%     │
-│  Test Files:   3/7 files covered                                │
-│                                                                 │
-│  Uncovered:    lib/notion-data.ts, lib/auth-client.ts           │
-│                lib/auth-server.ts, lib/convex.ts                │
-│                                                                 │
-│  Last session left tests in good shape.                         │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-If tests fail (last session left broken state):
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  TEST HEALTH                                                    │
-│  ───────────                                                    │
-│                                                                 │
-│  Status:       FAILING (action needed)                          │
-│  Unit Tests:   10 passed, 2 FAILED                              │
-│                                                                 │
-│  Failures:                                                      │
-│    lib/__tests__/utils.test.ts:15    "merges classes"           │
-│    lib/__tests__/auth.test.ts:42     "validates session"        │
-│                                                                 │
-│  Last session left failing tests. Fix before new work.          │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-If tests are not configured:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  TEST HEALTH                                                    │
-│  ───────────                                                    │
-│                                                                 │
-│  Status:       NOT CONFIGURED                                   │
-│                                                                 │
-│  No test infrastructure found.                                  │
-│  Run /test-setup to initialize Vitest + Playwright.             │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**Rules:**
-- ALWAYS show this block (even if tests not configured)
-- If tests fail, this is the FIRST thing the developer should address
-- Show uncovered files to guide test writing priorities
-- Coverage thresholds: 60% minimum, 80% target
 
 ---
 
@@ -697,6 +575,109 @@ Zeige die Boot Sequence aus 0.1 mit:
 
 Dann direkt weiter zu **0.3 Session-Optionen** (Tickets, etc.).
 
+#### 0.2.1 Stale Session Recovery (VOR Session-Start!)
+
+**KRITISCH:** Before starting a new session, check if a previous session crashed without `/session-end`.
+
+```bash
+TIME_DIR="$HOME/.claude-time"
+PROJECT_NAME=$(basename "$(pwd)")
+CURRENT_SESSION="$TIME_DIR/current-session.txt"
+HEARTBEAT_FILE="$TIME_DIR/heartbeat-${PROJECT_NAME}.txt"
+HEARTBEAT_PID_FILE="$TIME_DIR/heartbeat-${PROJECT_NAME}.pid"
+SESSION_FILE="$TIME_DIR/sessions/$PROJECT_NAME.json"
+STALE_THRESHOLD=600  # 10 minutes (2x heartbeat interval)
+MAX_SESSION_SECONDS=28800  # 8 hours cap
+```
+
+**Recovery-Logik:**
+
+```
+Existiert current-session.txt?
+├── NEIN → Alles sauber, weiter zu 0.3
+└── JA → Vorherige Session wurde nicht beendet!
+    │
+    ├── Existiert heartbeat-{project}.txt?
+    │   ├── JA → Lese letzten Heartbeat-Epoch als End-Time
+    │   └── NEIN → Verwende Start-Epoch + 30min als geschaetzte Dauer
+    │
+    ├── Berechne Dauer: END_EPOCH - START_EPOCH
+    │   └── Cap bei MAX_SESSION_SECONDS (8h)
+    │
+    ├── Speichere recovered Session in sessions/{project}.json:
+    │   {
+    │     "date": "2026-02-11",
+    │     "start": "14:00",
+    │     "end": "15:25",
+    │     "duration_minutes": 85,
+    │     "recovered": true,
+    │     "recovery_source": "heartbeat" | "estimated",
+    │     "linear_issue": null,
+    │     "commits": [],
+    │     "synced_to_productive": false
+    │   }
+    │
+    ├── Zeige Recovery-Banner:
+    │
+    │   ┌──────────────────────────────────────────────────────────────────────┐
+    │   │  SESSION RECOVERY                                                    │
+    │   │  ────────────────                                                    │
+    │   │                                                                      │
+    │   │  Previous session did not end cleanly.                               │
+    │   │  Recovered: ~85 min (via heartbeat)                                  │
+    │   │  Saved to: ~/.claude-time/sessions/{project}.json                    │
+    │   │                                                                      │
+    │   └──────────────────────────────────────────────────────────────────────┘
+    │
+    └── Aufraeumen:
+        rm -f "$CURRENT_SESSION"
+        rm -f "$HEARTBEAT_FILE"
+        kill $(cat "$HEARTBEAT_PID_FILE" 2>/dev/null) 2>/dev/null
+        rm -f "$HEARTBEAT_PID_FILE"
+```
+
+**Recovery-Schritte als Bash:**
+
+```bash
+if [ -f "$CURRENT_SESSION" ]; then
+  # Previous session was not ended cleanly
+  mkdir -p "$TIME_DIR/sessions"
+  START_EPOCH=$(grep "^Started:" "$CURRENT_SESSION" | awk '{print $2}')
+
+  if [ -f "$HEARTBEAT_FILE" ]; then
+    END_EPOCH=$(cat "$HEARTBEAT_FILE")
+    RECOVERY_SOURCE="heartbeat"
+  else
+    # No heartbeat found - estimate 30 min session
+    END_EPOCH=$((START_EPOCH + 1800))
+    RECOVERY_SOURCE="estimated"
+  fi
+
+  # Calculate duration with 8h cap
+  DURATION_SECONDS=$((END_EPOCH - START_EPOCH))
+  if [ "$DURATION_SECONDS" -gt "$MAX_SESSION_SECONDS" ]; then
+    DURATION_SECONDS=$MAX_SESSION_SECONDS
+  fi
+  DURATION_MINUTES=$((DURATION_SECONDS / 60))
+
+  # Extract time components for session record
+  START_TIME=$(date -r "$START_EPOCH" "+%H:%M" 2>/dev/null || date -d "@$START_EPOCH" "+%H:%M" 2>/dev/null)
+  END_TIME=$(date -r "$END_EPOCH" "+%H:%M" 2>/dev/null || date -d "@$END_EPOCH" "+%H:%M" 2>/dev/null)
+  SESSION_DATE=$(date -r "$START_EPOCH" "+%Y-%m-%d" 2>/dev/null || date -d "@$START_EPOCH" "+%Y-%m-%d" 2>/dev/null)
+
+  # Save recovered session to sessions/{project}.json
+  # (append to existing sessions array or create new file)
+
+  # Show recovery banner
+  # Clean up stale files
+  rm -f "$CURRENT_SESSION" "$HEARTBEAT_FILE"
+  kill "$(cat "$HEARTBEAT_PID_FILE" 2>/dev/null)" 2>/dev/null
+  rm -f "$HEARTBEAT_PID_FILE"
+fi
+```
+
+---
+
 #### 0.3 Session-Optionen anzeigen
 
 Nach der Begrüßung zeige die Arbeitsoptionen:
@@ -738,8 +719,8 @@ Linear MCP Query:
 
 **Future Plans laden:**
 ```bash
-# Prüfe ob Future Plans existieren
-cat .claude/reference/LOCAL-future-plans.md 2>/dev/null | grep "## Zu Implementieren" -A 20
+# Show next 10 open items from future-plans.md
+cat .claude/reference/future-plans.md 2>/dev/null | grep -E "^- \[ \]" | head -10
 ```
 
 **Lokale TODOs laden:**
@@ -834,10 +815,23 @@ Zeige das Dashboard im folgenden Format:
 Nach dem Dashboard automatisch neue Session registrieren:
 
 ```bash
-# Session-Start Zeit speichern
-echo "Session gestartet: $(date -Iseconds)" >> "$TIME_DIR/current-session.txt"
-echo "Project: $PROJECT_NAME" >> "$TIME_DIR/current-session.txt"
+TIME_DIR="$HOME/.claude-time"
+PROJECT_NAME=$(basename "$(pwd)")
+
+# Write session file with epoch for crash-safe duration calculation
+cat > "$TIME_DIR/current-session.txt" << EOF
+Started: $(date +%s)
+StartISO: $(date -Iseconds)
+Project: $PROJECT_NAME
+EOF
+
+# Start heartbeat background process (writes epoch every 5 min)
+(while true; do date +%s > "$TIME_DIR/heartbeat-${PROJECT_NAME}.txt"; sleep 300; done) &
+HEARTBEAT_PID=$!
+echo "$HEARTBEAT_PID" > "$TIME_DIR/heartbeat-${PROJECT_NAME}.pid"
 ```
+
+**WICHTIG:** The heartbeat runs in background and writes the current epoch to `heartbeat-{project}.txt` every 300 seconds (5 minutes). If the session crashes, the next `/prime` can use this file to determine the approximate end time of the crashed session.
 
 **Falls keine Daten vorhanden (erstes Mal):**
 

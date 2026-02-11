@@ -418,11 +418,16 @@ cd frontend && pnpm run dev
 
 ### "Cannot prompt for input in non-interactive terminals"
 
-Lösung: Im echten Terminal ausführen, nicht in Claude/AI.
+**This is the most common issue for AI agents and CI/CD.** `npx convex dev` and `npx convex dev --once` both require interactive input for self-hosted configuration.
+
+**Lösung:** NEVER use `npx convex dev` in non-interactive terminals. Use `npx convex deploy` with explicit URL and admin key instead:
 
 ```bash
-npx convex login
+ADMIN_KEY=$(docker exec {PREFIX}-convex-backend /convex/generate_admin_key.sh 2>/dev/null | tail -1)
+npx convex deploy --url http://localhost:{PORT} --admin-key "$ADMIN_KEY"
 ```
+
+For initial `npx convex login` (one-time setup), this must be done in a real interactive terminal by the developer.
 
 ### "_generated nicht gefunden"
 

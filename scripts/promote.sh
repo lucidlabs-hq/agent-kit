@@ -429,9 +429,19 @@ execute_promotion() {
     # Switch to upstream directory
     cd "$UPSTREAM_PATH"
 
+    # Unlock upstream files if lock script exists (macOS chflags)
+    if [[ -f "$UPSTREAM_PATH/scripts/unlock-upstream.sh" ]]; then
+        print_step "Unlocking upstream files..."
+        "$UPSTREAM_PATH/scripts/unlock-upstream.sh"
+    fi
+
     # Check for uncommitted changes
     if [[ -n "$(git status --porcelain)" ]]; then
         print_error "Upstream has uncommitted changes. Please commit or stash them first."
+        # Re-lock before exit
+        if [[ -f "$UPSTREAM_PATH/scripts/lock-upstream.sh" ]]; then
+            "$UPSTREAM_PATH/scripts/lock-upstream.sh" 2>/dev/null || true
+        fi
         exit 1
     fi
 
@@ -461,14 +471,14 @@ execute_promotion() {
     # Stage changes
     git add .
 
-    # Create commit
+    # Create commit (ALLOW_UPSTREAM_COMMIT bypasses the pre-commit hook)
     local commit_msg="feat: promote patterns from $PROJECT_NAME
 
 Promoted files:
 $(printf '- %s\n' "${changes[@]}" | sed 's/|/ (/' | sed 's/$/)/')"
 
     print_step "Creating commit..."
-    git commit -m "$commit_msg"
+    ALLOW_UPSTREAM_COMMIT=1 git commit -m "$commit_msg"
 
     print_success "Committed $copied files"
     echo ""
@@ -505,6 +515,12 @@ $(printf '- %s\n' "${changes[@]}" | sed 's/|/ (/' | sed 's/$/)/')
     else
         print_info "Push branch and create PR manually:"
         echo "  git push -u origin $branch"
+    fi
+
+    # Re-lock upstream files
+    if [[ -f "$UPSTREAM_PATH/scripts/lock-upstream.sh" ]]; then
+        print_step "Re-locking upstream files..."
+        "$UPSTREAM_PATH/scripts/lock-upstream.sh"
     fi
 
     # Switch back

@@ -1,0 +1,15 @@
+# CODEOWNERS - Lucid Labs Agent Kit (Upstream Template)
+#
+# All changes to this repository require approval from the template maintainer.
+# This is enforced by GitHub Branch Protection + "Require review from Code Owners".
+
+# Default: all files require maintainer approval
+* @adamkassama
+
+# Critical infrastructure - explicit ownership
+CLAUDE.md @adamkassama
+AGENTS.md @adamkassama
+.claude/reference/ @adamkassama
+.claude/skills/ @adamkassama
+scripts/ @adamkassama
+.github/ @adamkassama

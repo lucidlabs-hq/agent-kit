@@ -10,6 +10,46 @@ argument-hint: [--dry-run]
 
 Pull updates from the upstream agent-kit template into this downstream project.
 
+## Self-Bootstrap (Automatic)
+
+**If `scripts/sync-upstream.sh` does not exist in this project, bootstrap first:**
+
+```bash
+# 1. Detect upstream path
+UPSTREAM="../../lucidlabs-agent-kit"
+
+# 2. Verify upstream exists
+if [ ! -f "$UPSTREAM/CLAUDE.md" ]; then
+  echo "ERROR: Upstream agent-kit not found at $UPSTREAM"
+  echo "Expected structure: lucidlabs/lucidlabs-agent-kit/ alongside lucidlabs/projects/"
+  exit 1
+fi
+
+# 3. Create scripts directory
+mkdir -p scripts
+
+# 4. Copy sync scripts
+cp "$UPSTREAM/scripts/sync-upstream.sh" scripts/sync-upstream.sh
+chmod +x scripts/sync-upstream.sh
+cp "$UPSTREAM/scripts/promote.sh" scripts/promote.sh
+chmod +x scripts/promote.sh
+
+# 5. Create version tracking file
+UPSTREAM_HEAD=$(cd "$UPSTREAM" && git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+cat > .upstream-sync.json << EOF
+{
+  "upstream_repo": "lucidlabs-hq/agent-kit",
+  "last_sync_commit": "$UPSTREAM_HEAD",
+  "last_sync_date": "$(date +%Y-%m-%d)",
+  "synced_files": {}
+}
+EOF
+
+echo "Bootstrapped sync infrastructure. Now running sync..."
+```
+
+After bootstrap, proceed with normal sync below.
+
 ## Expected Folder Structure
 
 ```
@@ -37,65 +77,45 @@ lucidlabs/
 
 ## What Gets Synced
 
-| Syncable ✅ | Description |
-|-------------|-------------|
+| Syncable | Description |
+|----------|-------------|
 | `.claude/skills/*` | Claude Code skills |
 | `.claude/reference/*` | Best practice documentation |
 | `frontend/components/ui/*` | Generic UI components |
 | `frontend/lib/utils.ts` | Utility functions |
 | `frontend/lib/hooks/*` | Generic React hooks |
 | `scripts/*` | Utility scripts |
-| `CLAUDE.md` | Development rules |
+| `CLAUDE.md` | Development rules (respects zone marker) |
 | `WORKFLOW.md` | Workflow documentation |
 
 ## What Does NOT Get Synced
 
-| Not Synced ❌ | Reason |
-|---------------|--------|
+| Not Synced | Reason |
+|------------|--------|
 | `.claude/PRD.md` | Project-specific requirements |
 | `frontend/app/*` | Project-specific pages |
 | `mastra/src/agents/*` | Domain-specific agents |
 | `convex/*` | Project-specific database |
 
-## Example Session
+## CLAUDE.md Zone Marker
 
+CLAUDE.md has a zone marker that divides upstream content from project-specific content:
+
+```markdown
+<!-- UPSTREAM-SYNC-END -->
 ```
-╔═══════════════════════════════════════════════════════════════════╗
-║                      UPSTREAM SYNC                                ║
-╚═══════════════════════════════════════════════════════════════════╝
 
-ℹ Downstream: ~/coding/repos/lucidlabs/projects/customer-portal
-ℹ Upstream:   ~/coding/repos/lucidlabs/lucidlabs-agent-kit
+- Content BEFORE the marker can be synced from upstream
+- Content AFTER the marker is project-specific and never overwritten
+- If the marker is missing, sync will WARN and skip CLAUDE.md
 
-▶ Scanning for syncable updates...
+## Version Tracking
 
-  [1] .claude/skills/code-review/SKILL.md (NEW)
-  [2] .claude/reference/api-patterns.md (MODIFIED)
-  [3] frontend/lib/utils.ts (MODIFIED)
+After syncing, update `.upstream-sync.json` with the current upstream HEAD:
 
-Enter numbers to sync (e.g., 1,2,3 or 'all' or 'q' to quit): 1,2
-
-▶ Preview of changes:
-
---- .claude/skills/code-review/SKILL.md (NEW) ---
-+ New file from upstream
-
---- .claude/reference/api-patterns.md (MODIFIED) ---
-- Old content
-+ New content from upstream
-
-Apply these changes? [y/N]: y
-
-▶ Syncing files...
-✓ Synced: .claude/skills/code-review/SKILL.md
-✓ Synced: .claude/reference/api-patterns.md
-
-✓ Synced 2 file(s) from upstream
-
-Suggested commit:
-
-  git add .
-  git commit -m "chore: sync updates from upstream agent-kit"
+```bash
+UPSTREAM_HEAD=$(cd ../../lucidlabs-agent-kit && git rev-parse --short HEAD)
+# Update last_sync_commit and last_sync_date in .upstream-sync.json
 ```
 
 ## Options
@@ -142,3 +162,7 @@ git cherry-pick <commit-hash>
 # Or diff and copy manually
 diff -r ../../lucidlabs-agent-kit/.claude/skills .claude/skills
 ```
+
+## Reference
+
+See `.claude/reference/promote-sync.md` for the full architecture documentation.

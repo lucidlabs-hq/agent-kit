@@ -1,5 +1,8 @@
 # Dependencies
 node_modules/
+
+# Config backups
+.backups/
 .pnpm-store/
 
 # Environment

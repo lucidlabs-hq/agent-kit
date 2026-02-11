@@ -27,6 +27,30 @@ pnpm run build                   # Production Build (Node.js)
 | **Report URL** | Tell user the localhost URL after each server starts |
 | **Convex Sync** | After creating/modifying Convex schema or functions, wait for Convex dev to sync (watch the terminal) |
 
+### Config Backup Rule (MANDATORY)
+
+**BEFORE modifying any configuration file, ALWAYS create a backup first.**
+
+This applies to: workflow files (`.github/workflows/`), `docker-compose.yml`, `Caddyfile`, `package.json`, `.env` files, `tsconfig.json`, CI/CD configs, and any other infrastructure/config file that is already working in production.
+
+**Procedure:**
+
+1. **Create backup directory:** `.backups/<date>/` in the project root (e.g. `.backups/2026-02-11/`)
+2. **Copy the original file** before making changes: `cp path/to/config .backups/<date>/config.backup`
+3. **For git-tracked files:** Also use `git show HEAD:path/to/file > .backups/<date>/filename.backup` to preserve the last committed version
+4. **Document changes:** Create `.backups/<date>/CHANGES.md` listing what was changed and why
+
+**Backup directory is gitignored.** Add `.backups/` to `.gitignore` if not already present.
+
+**Why:** Configuration files that are already working in production must never be blindly overwritten. If something breaks, we need the ability to instantly restore the previous version without digging through git history.
+
+```bash
+# Example: Before modifying deploy-hq.yml
+mkdir -p .backups/2026-02-11
+cp .github/workflows/deploy-hq.yml .backups/2026-02-11/deploy-hq.yml.backup
+# Now safe to edit .github/workflows/deploy-hq.yml
+```
+
 ### Full-Stack Component Rule (MANDATORY)
 
 **Every project component chosen at setup MUST be started in dev mode AND deployed to production.**
@@ -163,6 +187,29 @@ pnpm run start                   # Production Server
 | **Container** | Docker Compose | Containerization |
 | **CI/CD** | GitHub Actions | Automated testing & deployment |
 | **Monitoring** | Sentry / LogTail | Error tracking & logging |
+
+### CI/CD Pipeline
+
+Every project uses a PR-based workflow with two GitHub Actions workflows:
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `ci.yml` | PR against `main` | Lint + Type-Check + Build (parallel) |
+| `deploy-hq.yml` | Push to `main` (after merge) | Rsync + Docker Build + Convex Deploy + Health Check |
+
+**Security (mandatory):**
+- All Actions pinned to commit SHAs (not tags) - see CVE-2025-30066
+- Only first-party Actions allowed (`actions/checkout`, `actions/setup-node`, `pnpm/action-setup`)
+- Minimal permissions (`contents: read`)
+- SSH keys only in deploy job
+
+**Branch Protection (mandatory for all repos):**
+- Required status checks: `lint`, `type-check`, `build`
+- Required 1 approving review
+- No direct push to main
+
+**Templates:** `.github/workflow-templates/` in Agent Kit.
+**Full docs:** `.claude/reference/ci-cd-security.md`
 
 ---
 
@@ -616,7 +663,10 @@ Status display → Badge (with border)
 | `.claude/reference/ssh-keys.md` | **SSH Key Anleitung für Entwickler** |
 | `.claude/reference/watchtower.md` | **Automatic Docker container updates** |
 | `.claude/reference/scaling.md` | Stateless patterns, Convex scaling |
+| `.claude/reference/ci-cd-security.md` | **CI/CD security: SHA-pinning, workflow architecture, branch protection** |
 | `.claude/reference/session-handoff.md` | **Projekt-Wechsel ohne Session-Neustart** |
+| `.claude/reference/pnpm-workspaces.md` | **pnpm Workspace setup for Monorepo CI** |
+| `.claude/reference/promote-sync.md` | **Promote & Sync architecture between upstream/downstream** |
 | `.claude/reference/task-system.md` | Task tracking, custom subagents, Swarm |
 | `convex/README.md` | Convex database setup, queries, mutations |
 | `mastra/README.md` | Mastra setup guide |
@@ -759,7 +809,25 @@ When implementing features that require UI components:
 
 ---
 
-## Git Commits
+## Git Workflow (MANDATORY)
+
+### PR-Only Rule (Non-Negotiable)
+
+**ALL changes to `main` MUST go through Pull Requests.** Direct pushes to main are blocked by Branch Protection.
+
+```
+Feature Branch  →  PR (CI: lint + type-check + build)  →  Review  →  Merge  →  Auto-Deploy
+```
+
+**This applies to everyone: developers, AI agents, admins. No exceptions.**
+
+| Allowed | NOT Allowed |
+|---------|-------------|
+| `git push origin feature/my-branch` | `git push origin main` |
+| `gh pr create` | Direct commits on main |
+| `/pr` skill | `git push --force origin main` |
+
+**Use the `/pr` skill** to create branches, commit, push, and open PRs in one flow.
 
 ### Commit Message Rules
 
@@ -1153,10 +1221,8 @@ See: https://code.claude.com/docs/en/skills
 ## Environment Variables
 
 ```env
-# Database (Convex)
-NEXT_PUBLIC_CONVEX_URL=https://your-project.convex.cloud
-# Or for self-hosted:
-# NEXT_PUBLIC_CONVEX_URL=http://localhost:3210
+# Database (Convex - self-hosted, NEVER use convex.cloud)
+NEXT_PUBLIC_CONVEX_URL=http://localhost:3210
 
 # AI
 ANTHROPIC_API_KEY=sk-ant-...
@@ -1455,9 +1521,12 @@ Claude MUST:
 
 Any deviation from the PIV model is considered an error.
 
+<!-- UPSTREAM-SYNC-END -->
+<!-- Everything ABOVE this marker is synced from upstream agent-kit. -->
+<!-- Everything BELOW this marker is project-specific and will NOT be overwritten by sync. -->
 
 ---
 
-**Last Updated:** January 2026
+**Last Updated:** February 2026
 **Maintainer:** Lucid Labs GmbH
-**Version:** 1.0
+**Version:** 1.1

@@ -1,6 +1,6 @@
 # Time Tracking Konzept für Claude Code Sessions
 
-> **Status:** Konzept
+> **Status:** Phase 1 (Heartbeat + Recovery + Report) - Implemented February 2026
 > **Ziel:** Automatisches Tracking der Entwicklungszeit pro Session, Entwickler und Projekt
 
 ---
@@ -65,7 +65,7 @@ Wir brauchen eine Möglichkeit zu wissen:
 
 ### 1. Lokales Tracking (Automatisch)
 
-**Session-Datei:** `~/.claude-time/sessions/YYYY-MM-DD-project-name.json`
+**Session-Datei:** `~/.claude-time/sessions/{project-name}.json` (one file per project, sessions array inside)
 
 ```json
 {
@@ -362,11 +362,15 @@ Synct alle nicht-synchronisierten Sessions zu Productive.io
 
 ## Implementierungsplan
 
-### Phase 1: Lokales Tracking (Sofort)
+### Phase 1: Lokales Tracking (Implemented)
 
-- [ ] Hook für Session Start/End erstellen
-- [ ] Lokale JSON-Datei Struktur
-- [ ] `/time-report` Skill
+- [x] Hook für Session Start/End erstellen
+- [x] Lokale JSON-Datei Struktur
+- [x] `/time-report` Skill
+- [x] Crash-safe heartbeat (background process every 5 min)
+- [x] Stale session recovery in `/prime`
+- [x] Epoch-based duration calculation in `/session-end`
+- [x] Cross-project `/time-report` with period filters
 
 ### Phase 2: Productive.io Sync (Kurz)
 
@@ -395,6 +399,60 @@ Synct alle nicht-synchronisierten Sessions zu Productive.io
 3. **Opt-in Sync:** Sync zu Productive.io ist explizite Aktion
 4. **Transparenz:** Kunde sieht nur aggregierte Daten, keine Details
 5. **Datenschutz:** Entwickler-Details bleiben intern
+
+---
+
+## Heartbeat Mechanism (Phase 1)
+
+### How it works
+
+```
+/prime startet               Heartbeat alle 5min            /session-end oder Crash
+    |                              |                                |
+    v                              v                                v
+current-session.txt          heartbeat-{project}.txt         - Heartbeat stoppen
+ (Start-Epoch)                (letzter Epoch)                - Session speichern
+                                                             - Dateien aufraeumen
+
+Bei Crash: Naechster /prime erkennt stale current-session.txt
+           -> Liest heartbeat als End-Time -> Speichert als "recovered: true"
+```
+
+### Parameters
+
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| Heartbeat interval | 300 sec (5 min) | Accuracy vs. overhead |
+| Stale threshold | 600 sec (10 min) | 2x interval |
+| Max session duration | 8 hours | Plausibility cap |
+
+### Files
+
+| File | Purpose | Lifetime |
+|------|---------|----------|
+| `~/.claude-time/current-session.txt` | Session start epoch + project name | Created by `/prime`, deleted by `/session-end` |
+| `~/.claude-time/heartbeat-{project}.txt` | Last heartbeat epoch | Written every 5 min, deleted at session end |
+| `~/.claude-time/heartbeat-{project}.pid` | Background process PID | For cleanup at session end |
+
+### Session Data Format (Extended)
+
+```json
+{
+  "date": "2026-02-11",
+  "start": "14:00",
+  "end": "15:25",
+  "duration_minutes": 85,
+  "recovered": true,
+  "recovery_source": "heartbeat",
+  "linear_issue": null,
+  "commits": [],
+  "synced_to_productive": false
+}
+```
+
+Two optional fields added for crash recovery:
+- `recovered` (boolean): `true` if session was recovered from a crash
+- `recovery_source` (string): `"heartbeat"` or `"estimated"` depending on data available
 
 ---
 

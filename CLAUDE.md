@@ -729,6 +729,8 @@ Status display → Badge (with border)
 | `.claude/reference/ssh-keys.md` | **SSH Key Anleitung für Entwickler** |
 | `.claude/reference/watchtower.md` | **Automatic Docker container updates** |
 | `.claude/reference/scaling.md` | Stateless patterns, Convex scaling |
+| `.claude/reference/future-plans.md` | **Feature roadmap with checkboxes** |
+| `.claude/reference/time-tracking-concept.md` | **Time tracking architecture, heartbeat mechanism** |
 | `.claude/reference/ci-cd-security.md` | **CI/CD security: SHA-pinning, workflow architecture, branch protection** |
 | `.claude/reference/session-handoff.md` | **Projekt-Wechsel ohne Session-Neustart** |
 | `.claude/reference/pnpm-workspaces.md` | **pnpm Workspace setup for Monorepo CI** |
@@ -1128,15 +1130,18 @@ export class ExamplePage {
 ### Feature Implementation Flow
 
 ```
-/plan-feature → /execute → /validation:self-audit → /commit
+/plan-feature → /execute (creates branch) → /validation:self-audit → /commit → /pr
 ```
 
 | Step | Command | Purpose |
 |------|---------|---------|
 | 1. Plan | `/plan-feature [name]` | Create implementation plan |
-| 2. Implement | `/execute [plan]` | Execute the plan |
+| 2. Implement | `/execute [plan]` | Create feature branch + execute the plan |
 | 3. Audit | `/validation:self-audit` | Verify compliance with all standards |
-| 4. Commit | `/commit` | Create formatted commit |
+| 4. Commit | `/commit` | Create formatted commit (on feature branch) |
+| 5. Ship | `/pr` | Push branch + open Pull Request |
+
+**Branch lifecycle:** `/execute` creates the feature branch from `main`. All commits land there. `/pr` pushes and opens the PR. After merge, auto-deploy runs.
 
 ### Self-Audit Checklist
 
@@ -1232,6 +1237,7 @@ This project uses Claude Code Skills instead of legacy commands. Skills follow t
 ├── init-project/SKILL.md
 ├── linear/SKILL.md
 ├── session-end/SKILL.md
+├── time-report/SKILL.md
 ├── productizer/SKILL.md
 ├── visual-verify/SKILL.md
 ├── pre-production/SKILL.md
@@ -1263,6 +1269,7 @@ This project uses Claude Code Skills instead of legacy commands. Skills follow t
 | `/llm-evaluate` | LLM cost/performance evaluation, model selection | Planning |
 | `/screenshot` | Visual verification screenshots | Validation |
 | `/session-end` | End session, update Linear, clean state | Any |
+| `/time-report` | Cross-project time report (all sessions) | Any |
 | `/productizer` | Bridge Linear ↔ Productive.io for customer reporting | Any |
 | `/notion-publish` | Publish markdown to Notion (private pages) | Any |
 | `/clone-skill` | Clone skills from central repository | Any |

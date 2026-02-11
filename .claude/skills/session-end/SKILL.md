@@ -39,18 +39,58 @@ Clean up and sync state before ending a development session.
 
 ### 0. Time Tracking - Session speichern (ZUERST!)
 
-**Session-Dauer berechnen und speichern:**
+**0a. Stop Heartbeat (before anything else):**
 
 ```bash
 TIME_DIR="$HOME/.claude-time"
 PROJECT_NAME=$(basename "$(pwd)")
 SESSION_FILE="$TIME_DIR/sessions/$PROJECT_NAME.json"
 CURRENT_SESSION="$TIME_DIR/current-session.txt"
+HEARTBEAT_PID_FILE="$TIME_DIR/heartbeat-${PROJECT_NAME}.pid"
+HEARTBEAT_FILE="$TIME_DIR/heartbeat-${PROJECT_NAME}.txt"
 
-# Lies Session-Startzeit
-if [ -f "$CURRENT_SESSION" ]; then
-  START_TIME=$(grep "Session gestartet:" "$CURRENT_SESSION" | head -1 | cut -d: -f2-)
+# Stop heartbeat background process
+if [ -f "$HEARTBEAT_PID_FILE" ]; then
+  HEARTBEAT_PID=$(cat "$HEARTBEAT_PID_FILE")
+  kill "$HEARTBEAT_PID" 2>/dev/null
+  rm -f "$HEARTBEAT_PID_FILE" "$HEARTBEAT_FILE"
 fi
+```
+
+**0b. Calculate session duration (epoch-based):**
+
+```bash
+if [ -f "$CURRENT_SESSION" ]; then
+  START_EPOCH=$(grep "^Started:" "$CURRENT_SESSION" | awk '{print $2}')
+  END_EPOCH=$(date +%s)
+  DURATION_SECONDS=$((END_EPOCH - START_EPOCH))
+
+  # Cap at 8 hours for plausibility
+  MAX_SESSION_SECONDS=28800
+  if [ "$DURATION_SECONDS" -gt "$MAX_SESSION_SECONDS" ]; then
+    DURATION_SECONDS=$MAX_SESSION_SECONDS
+  fi
+
+  DURATION_MINUTES=$((DURATION_SECONDS / 60))
+
+  # Extract human-readable times
+  START_ISO=$(grep "^StartISO:" "$CURRENT_SESSION" | awk '{print $2}')
+  START_TIME=$(echo "$START_ISO" | cut -dT -f2 | cut -d: -f1-2)
+  END_TIME=$(date "+%H:%M")
+  SESSION_DATE=$(date "+%Y-%m-%d")
+fi
+```
+
+**0c. Save session and cleanup:**
+
+After saving the session entry to `$SESSION_FILE` (append to sessions array), clean up:
+
+```bash
+# Remove current-session marker
+rm -f "$CURRENT_SESSION"
+
+# Update developer.json aggregates
+# Read current total, add DURATION_MINUTES, write back total_minutes_all_time
 ```
 
 **Session-Zusammenfassung anzeigen (KOMPAKT):**

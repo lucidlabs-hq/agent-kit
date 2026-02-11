@@ -25,7 +25,54 @@ If no argument provided, list available plans:
 - Review the testing strategy
 - Check the patterns to follow
 
-### 2. Pre-Flight Checks
+### 2. Create Feature Branch (MANDATORY)
+
+**BEFORE any code changes, create a feature branch from latest `main`.**
+
+```bash
+# Derive branch name from plan file
+# Example: .agents/plans/2026-02-11-crash-safe-session-tracking.md
+#        → feature/crash-safe-session-tracking
+PLAN_FILE="$ARGUMENTS"
+BRANCH_NAME=$(basename "$PLAN_FILE" .md | sed 's/^[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}-//')
+BRANCH_NAME="feature/$BRANCH_NAME"
+
+# Ensure we branch from latest main
+git checkout main
+git pull origin main
+
+# Create and switch to feature branch
+git checkout -b "$BRANCH_NAME"
+```
+
+**Show confirmation:**
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  FEATURE BRANCH CREATED                                              │
+│  ──────────────────────                                              │
+│                                                                      │
+│  Branch:  feature/crash-safe-session-tracking                        │
+│  Base:    main (up to date)                                          │
+│  Plan:    .agents/plans/2026-02-11-crash-safe-session-tracking.md    │
+│                                                                      │
+│  All commits will land on this branch.                               │
+│  Use /pr when implementation is complete.                            │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+**Branch naming rules:**
+- Strip date prefix from plan filename (`YYYY-MM-DD-`)
+- Prefix with `feature/` (or `fix/` if plan is a bugfix)
+- Lowercase, kebab-case
+- If no plan file given, ask user for branch name
+
+**Safety checks:**
+- If already on a feature branch: Ask user if they want to continue on it or create a new one
+- If there are uncommitted changes: STOP and ask user to commit or stash first
+
+### 3. Pre-Flight Checks
 
 Before starting implementation:
 
@@ -160,8 +207,8 @@ Execute ALL validation commands from the plan in order:
 cd frontend && pnpm run lint
 cd frontend && pnpm run type-check
 
-# Level 2: Unit Tests (MANDATORY GATE)
-cd frontend && pnpm run test
+# Level 2: Unit Tests
+pnpm run test
 
 # Level 3: Build
 cd frontend && pnpm run build
@@ -171,44 +218,6 @@ If any command fails:
 - Fix the issue
 - Re-run the command
 - Continue only when it passes
-
-### 5.5 Post-Implementation Test Gate (MANDATORY)
-
-After ALL implementation tasks are complete, run the full test suite with coverage:
-
-```bash
-cd frontend && pnpm run test
-cd frontend && pnpm run test:coverage
-```
-
-**This is a hard gate:**
-1. ALL unit tests must pass - zero failures allowed
-2. Coverage must not have decreased from before implementation
-3. New/modified lib files SHOULD have corresponding test files
-4. Report any new files without tests as gaps
-
-If tests fail:
-- DO NOT proceed to manual testing or commit
-- Fix the implementation until tests pass
-- Re-run until green
-
-Show results:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  POST-IMPLEMENTATION TEST GATE                                  │
-│  ─────────────────────────────                                  │
-│                                                                 │
-│  Tests:      ALL PASSING (12/12)                                │
-│  Coverage:   64% lines | 58% branches | 70% functions           │
-│                                                                 │
-│  New files without tests:                                       │
-│    (none - all new files have tests)                            │
-│                                                                 │
-│  Result:     GATE PASSED - ready for manual testing             │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
 
 ### 6. Manual Testing
 

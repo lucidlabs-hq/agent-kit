@@ -3,6 +3,43 @@
 > **AI Agent Starter Kit by Lucid Labs GmbH**
 > Reusable boilerplate for rapid AI agent project development
 
+## UPSTREAM REPOSITORY - READ-ONLY RULES (NON-NEGOTIABLE)
+
+**THIS IS THE UPSTREAM TEMPLATE REPOSITORY.** It is the single source of truth for all Lucid Labs projects.
+
+### What This Repo Is For
+
+| Allowed | NOT Allowed |
+|---------|-------------|
+| Spawning new projects via `create-agent-project.sh` | Direct feature development |
+| Receiving promoted patterns via `/promote` (always through PR) | Running `pnpm run dev` or any dev server |
+| Serving as sync source for downstream projects | Direct code changes without PR |
+| Maintaining shared reference docs and skills | Any `git push origin main` |
+
+### Hard Rules
+
+1. **NEVER push directly to main.** Branch Protection enforces this. All changes go through Pull Requests.
+2. **NEVER develop features here.** This is a template, not a project. Feature work happens in downstream projects under `../projects/`.
+3. **NEVER start dev servers here.** No `pnpm run dev`, no `npx convex dev`, no Mastra. This repo has no running application.
+4. **Changes come ONLY from two sources:**
+   - **Promote** (`/promote`): Battle-tested patterns from downstream projects, always via PR
+   - **Direct edits**: Only for template infrastructure (scripts, reference docs, CLAUDE.md rules), always via PR
+5. **If you are a Claude session working in a downstream project:** You must NEVER create, modify, or delete files in this repository. Use `/promote` or `/sync` skills instead.
+6. **If you are a Claude session working directly in this repo:** Every change MUST go through a feature branch and Pull Request. No exceptions, no `--admin` merge bypasses.
+
+### Detection Rule for AI Agents
+
+**Before making any file change, check:**
+```
+Is the current working directory inside lucidlabs-agent-kit/?
+  YES → You are in the UPSTREAM. Only template maintenance is allowed.
+        Create a branch. Make changes. Open a PR.
+  NO  → You are in a downstream project. Normal development rules apply.
+        NEVER touch files in ../../lucidlabs-agent-kit/ directly.
+```
+
+---
+
 ## Open Questions
 
 - TODO: Resolve state management conflict: `architecture.md` mentions Zustand, but rules forbid external state libs. For now, use React hooks only.
@@ -804,6 +841,24 @@ When implementing features that require UI components:
 3. If `type: upstream` or file doesn't exist → you're in the template
 
 **Exception:** Use `/promote` skill to intentionally copy proven patterns TO upstream.
+
+### Upstream Interaction Rules (HARD BOUNDARY)
+
+**From a downstream project, the ONLY permitted interactions with upstream are:**
+
+| Permitted | How | Direct File Access? |
+|-----------|-----|---------------------|
+| Pull updates | `/sync` skill or `./scripts/sync-upstream.sh` | READ only (copies TO downstream) |
+| Push patterns | `/promote` skill or `./scripts/promote.sh` | Creates PR in upstream (never direct push) |
+| Spawn new project | `./scripts/create-agent-project.sh` | READ only (copies FROM upstream) |
+
+**FORBIDDEN from any downstream project session:**
+- `cd ../../lucidlabs-agent-kit && [any write operation]`
+- Writing, editing, or deleting ANY file under `../../lucidlabs-agent-kit/`
+- `git push` to ANY branch in the upstream repo (use scripts which handle branching)
+- Opening the upstream repo as a working directory
+
+**This is a hard boundary.** The upstream is a curated knowledge base, not a workspace. Treat it like a package registry: you consume from it (`/sync`) and contribute to it (`/promote`), but you never write to it directly.
 
 **Rationale:** Downstream projects are customer-specific. Creating files in upstream pollutes the shared template and causes sync conflicts.
 

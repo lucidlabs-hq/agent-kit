@@ -71,7 +71,12 @@ Existiert .claude/PROJECT-CONTEXT.md?
 │  Repository Type:   DOWNSTREAM                                              │
 │  Active Project:    invoice-accounting-assistant                            │
 │  PRD:               .claude/PRD.md                                          │
-│  Upstream:          ../../lucidlabs-agent-kit                               │
+│  Upstream:          ../../lucidlabs-agent-kit (READ-ONLY)                   │
+│                                                                             │
+│  Upstream Interaction:                                                      │
+│    /sync     Pull updates FROM upstream                                     │
+│    /promote  Push patterns TO upstream (via PR)                             │
+│    Direct file access to upstream: FORBIDDEN                                │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -85,6 +90,23 @@ Existiert .claude/PROJECT-CONTEXT.md?
 │                                                                             │
 │  Working Directory: /Users/.../lucidlabs-agent-kit                          │
 │  Repository Type:   UPSTREAM (Agent Kit Template)                           │
+│                                                                             │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│  UPSTREAM PROTECTION ACTIVE                                                 │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                                             │
+│  This is the UPSTREAM template repository.                                  │
+│  Direct pushes to main are BLOCKED (GitHub Branch Protection).              │
+│                                                                             │
+│  Allowed actions:                                                           │
+│    - Browse/read code and documentation                                     │
+│    - Select a downstream project to work in                                 │
+│    - Template maintenance (via feature branch + PR only)                    │
+│                                                                             │
+│  NOT allowed:                                                               │
+│    - Feature development (use downstream projects)                          │
+│    - git push origin main (blocked by GitHub)                               │
+│    - Starting dev servers (no application runs here)                        │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -181,15 +203,23 @@ b) **Handoff-Bestätigung anzeigen:**
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                                                                             │
-│  ✓ SESSION HANDOFF COMPLETE                                                 │
+│  SESSION HANDOFF COMPLETE                                                   │
 │                                                                             │
 │  ───────────────────────────────────────────────────────────────────────    │
 │                                                                             │
 │  Neues Working Directory:                                                   │
 │  /Users/.../projects/invoice-accounting-assistant                           │
 │                                                                             │
-│  ⚠️  WICHTIG: Ich arbeite ab jetzt NUR in diesem Projekt.                   │
-│      Das Upstream Repository (lucidlabs-agent-kit) wird NICHT verändert.    │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│  UPSTREAM BOUNDARY ACTIVE                                                   │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                                             │
+│  Ich arbeite ab jetzt AUSSCHLIESSLICH in diesem Projekt.                    │
+│  Das Upstream Repository (lucidlabs-agent-kit) ist READ-ONLY.               │
+│                                                                             │
+│  Upstream holen:  /sync (Updates aus dem Template ziehen)                   │
+│  Upstream geben:  /promote (Patterns ins Template befoerdern, via PR)       │
+│  Direkt anfassen: VERBOTEN                                                  │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```

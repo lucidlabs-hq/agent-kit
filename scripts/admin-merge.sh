@@ -202,9 +202,11 @@ fi
 
 step "Checking CI status..."
 
-CI_STATE=$(gh pr checks "$PR_NUMBER" --json state --jq '.[].state' 2>/dev/null | sort -u)
+CI_STATE=$(gh pr checks "$PR_NUMBER" --json state --jq '.[].state' 2>/dev/null | sort -u || true)
 
-if echo "$CI_STATE" | grep -q "FAILURE"; then
+if [[ -z "$CI_STATE" ]]; then
+    info "No CI checks configured."
+elif echo "$CI_STATE" | grep -q "FAILURE"; then
     warn "Some CI checks have failed."
     read -p "  Continue anyway? [y/N] " -r CONFIRM
     if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then

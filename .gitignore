@@ -64,5 +64,8 @@ test-results/
 # Cursor Rules (IDE-specific)
 /.cursorrules
 
+# Stack Monitor (project-local decisions, not tracked)
+.stack-monitor.json
+
 # Note: .claude/, CLAUDE.md, and AGENTS.md are tracked for consistency
 *.local.md

@@ -164,8 +164,10 @@ Each project:
 |-------|-----------|---------|
 | **Auth Framework** | Better Auth | Modern TypeScript auth |
 | **Database Adapter** | Convex Adapter | Session/user storage in Convex |
-| **Providers** | OAuth, Magic Link, Password | Flexible auth methods |
+| **Login Method** | Magic Link only (via Resend) | Passwordless authentication |
 | **Sessions** | Convex tables | Real-time session sync |
+
+**MANDATORY:** Magic Links via Resend is the ONLY authentication method. No passwords, no OAuth, no social login. Accounts are admin-created only (no self-signup).
 
 **Integration:** [Better Auth + Convex](https://www.better-auth.com/docs/integrations/convex)
 
@@ -178,16 +180,42 @@ Each project:
 | **Fast LLM** | Claude Haiku / Gemini Flash | Classification, quick decisions |
 | **Embeddings** | OpenAI text-embedding-3-small | RAG vector search |
 
+### AI Gateway
+
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| **Gateway** | Portkey | LLM Proxy, cost tracking, fallbacks |
+| **Endpoint** | `http://lucidlabs-portkey:8787` | Internal HQ access |
+| **Dashboard** | portkey.lucidlabs.de (optional) | Cost monitoring |
+
+### Runtime & Package Manager
+
+| Aspect | Details |
+|--------|---------|
+| **Package Manager** | pnpm (ONLY - never npm/yarn/bun install) |
+| **Dev Runtime** | Bun (fast development) |
+| **Prod Runtime** | Node.js (stable production) |
+| **Interface** | Always `pnpm run <script>` - never call runtimes directly |
+
 ### Infrastructure
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| **Hosting** | Elestio | Self-hosted Docker containers |
+| **Production** | Elestio | Self-hosted Docker (data privacy) |
+| **Prototypes** | Vercel | Quick deployments, previews |
 | **Reverse Proxy** | Caddy | Auto HTTPS, routing |
 | **Container** | Docker Compose | Containerization |
-| **IaC** | Terraform | Infrastructure as Code |
 | **CI/CD** | GitHub Actions | Automated testing & deployment |
 | **Monitoring** | Sentry / LogTail | Error tracking & logging |
+
+### CI/CD Pipeline
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `ci.yml` | PR against `main` | Lint + Type-Check + Build (parallel) |
+| `deploy-hq.yml` | Push to `main` (after merge) | Rsync + Docker Build + Convex Deploy + Health Check |
+
+**Security:** All Actions pinned to commit SHAs. Only first-party Actions. Minimal permissions. See `ci-cd-security.md`.
 
 ---
 

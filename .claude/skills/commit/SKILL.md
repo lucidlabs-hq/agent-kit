@@ -43,6 +43,29 @@ git diff HEAD --stat
 git diff HEAD
 ```
 
+## Step 1.5: Pre-Commit Quality Gate (MANDATORY)
+
+Run quality checks before committing. ALL must pass:
+
+```bash
+# a) Tests
+pnpm run test        # fail = STOP
+
+# b) Lint
+pnpm run lint        # fail = STOP
+
+# c) Type check
+pnpm run type-check  # fail = STOP
+```
+
+If any command fails: fix the issue, then re-run. Do NOT commit with failing checks.
+
+After automated checks pass, run **code-reviewer** subagent on `git diff --cached`:
+- CRITICAL findings = STOP, fix required
+- WARNINGS = list them, user decides whether to proceed
+
+See `.claude/reference/quality-gates.md` for full gate architecture.
+
 ## Step 2: Determine Commit Type
 
 | Type | When to Use | Updates README? |

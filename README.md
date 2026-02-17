@@ -52,6 +52,129 @@ See [Upstream/Downstream Workflow](#upstreamdownstream-workflow) for step-by-ste
 
 ---
 
+## Architecture Overview
+
+### CLAUDE.md Router Pattern
+
+CLAUDE.md is a **lightweight router** (~250 lines) that points AI agents to the right reference document for each context. All detailed rules, standards, and patterns live in `.claude/reference/`.
+
+```
+CLAUDE.md (Router, ~250 lines)
+  │
+  ├── Upstream Protection Rules (always loaded)
+  ├── Context-Aware Reference Loading Table
+  ├── Quality Gates Summary
+  └── Reference Documentation Index
+        │
+        ▼
+.claude/reference/ (46 specialized documents)
+  ├── code-standards.md        → Language, naming, TypeScript, React, anti-patterns
+  ├── session-rules.md         → Auto-start rules, config backup
+  ├── project-rules.md         → Skills catalog, task management, workflow
+  ├── quality-gates.md         → Gate architecture, subagents, failure protocol
+  ├── architecture.md          → Platform architecture, tech stack
+  ├── design-system.md         → UI/UX, Tailwind v4, shadcn/ui
+  ├── piv-workflow.md          → PIV phases (Plan/Implement/Validate)
+  ├── promote-sync.md          → Upstream/downstream rules
+  ├── git-workflow.md          → PR workflow, commit messages
+  ├── testing-strategy.md      → Test pyramid, Vitest, Playwright
+  └── ... (36 more specialized docs)
+```
+
+**Why?** AI agents load only the doc they need for the current task, keeping context efficient. Previously, CLAUDE.md was 1251 lines — now it's 253.
+
+### Quality Gate Architecture
+
+Every code change passes through mandatory quality gates. The **Change Size Classification (S/M/L)** determines which gates run:
+
+```
+Implementation ──► Classify (S/M/L) ──► Post-Implementation Gate ──► Visual Verification (L only)
+                                              │                              │
+                                         architecture-guard           agent-browser
+                                         design-system-guard          open pages
+                                         ssr-safety-checker           screenshot
+                                         mastra-validator             fix loop
+                                                                            │
+                                                                            ▼
+                              Commit ──► Pre-Commit Gate ──► PR ──► Pre-PR Gate ──► Deploy
+                                              │                        │
+                                         test-runner               code-reviewer
+                                         code-reviewer             error-handling-reviewer
+                                         (lint, type-check)        architecture-guard
+```
+
+**Change Size Classification:**
+
+| Level | Criteria | Visual Verification? |
+|-------|----------|---------------------|
+| **S (Small)** | 1-2 files, config/docs only | No |
+| **M (Medium)** | 3-10 files, single component | No |
+| **L (Large)** | 10+ files, new feature with UI | **YES** |
+
+**Gates by Level:**
+
+| Gate | S | M | L |
+|------|---|---|---|
+| Architecture Guard | - | YES | YES |
+| Design System / SSR Guards | - | YES | YES |
+| Unit Tests | YES | YES | YES |
+| **Visual Verification** | - | - | **YES** |
+| Pre-Commit (lint, test, review) | YES | YES | YES |
+| Pre-PR (review, architecture) | YES | YES | YES |
+
+**Visual Verification Gate (L-level with UI):**
+
+When triggered, the agent communicates clearly to the user, then:
+1. Starts the dev server
+2. Opens each affected page in agent-browser
+3. Takes screenshots (desktop + mobile)
+4. Checks for errors, layout issues, broken interactions
+5. **If issues found:** fixes the code and re-verifies (loop until clean)
+6. Only proceeds to commit when all pages work
+
+**Failure Protocol:** CRITICAL/HIGH = STOP. WARNING = user decides. INFO = continue.
+
+See `.claude/reference/quality-gates.md` for full documentation.
+
+### Subagent Architecture
+
+Specialized AI subagents are invoked automatically by skills and quality gates:
+
+| Agent | Model | Purpose | Triggered By |
+|-------|-------|---------|-------------|
+| **architecture-guard** | Haiku | CLAUDE.md compliance, pattern validation | `/execute`, `/pr` |
+| **code-reviewer** | Sonnet | Code quality, security, best practices | `/commit`, `/pr` |
+| **design-system-guard** | Haiku | UI compliance (colors, typography, layout) | `/execute` (UI changes) |
+| **ssr-safety-checker** | Haiku | Hydration mismatch detection | `/execute` (component changes) |
+| **mastra-validator** | Haiku | Mastra framework compliance | `/execute` (mastra/ changes) |
+| **error-handling-reviewer** | Haiku | API error handling patterns | `/pr` |
+| **test-runner** | Haiku | Test execution, coverage validation | `/commit` |
+| **session-closer** | Haiku | Session cleanup, Linear sync | `/session-end` |
+
+Agents are defined in `.claude/agents/` and invoked automatically when appropriate.
+
+### Skill Workflow
+
+Skills encode best practices into repeatable commands:
+
+```
+/prime ──► /plan-feature ──► /execute ──► /commit ──► /pr ──► /deploy
+  │            │                 │            │          │         │
+  │            │                 │            │          │         │
+  Load      Create plan     Implement +   Quality    Quality   Security
+  context   from PRD        quality gates  gate +     gate +    scan +
+  + Linear                               commit     push PR    deploy
+```
+
+| Phase | Skill | What It Does |
+|-------|-------|-------------|
+| **Context** | `/prime` | Load project context, check Linear, show dashboard |
+| **Planning** | `/plan-feature` | Create implementation plan from requirements |
+| **Implementation** | `/execute` | Execute plan with TDD, run quality gates |
+| **Commit** | `/commit` | Pre-commit gate (test+lint+review), formatted commit |
+| **Ship** | `/pr` | Pre-PR gate (review+architecture), push branch, create PR |
+| **Deploy** | `/deploy` | Pre-deploy gate (security), deploy to LUCIDLABS-HQ |
+
 ## Overview
 
 Agent Kit provides a complete foundation for building AI agent applications:
@@ -62,9 +185,9 @@ Agent Kit provides a complete foundation for building AI agent applications:
 | **AI Agents** | Mastra | Agent definitions, tools, workflows |
 | **Database** | Convex | Realtime sync, vector search |
 | **File Storage** | MinIO | S3-compatible object storage |
+| **LLM Gateway** | Portkey | Multi-model routing, cost tracking |
 | **Workflows** | n8n | Automation, integrations |
 | **Deployment** | Docker + Caddy | Self-hosted, auto HTTPS |
-| **Infrastructure** | Terraform | Infrastructure as Code |
 
 ## Quick Start
 
@@ -614,26 +737,86 @@ Bei Projekt-Initialisierung (`./scripts/create-agent-project.sh --interactive`) 
 
 ## Documentation
 
+### Core Documents
+
 | Document | Purpose |
 |----------|---------|
-| [CLAUDE.md](./CLAUDE.md) | Development rules & conventions |
-| [WORKFLOW.md](./WORKFLOW.md) | Step-by-step workflow guide |
-| [.claude/reference/aidd-methodology.md](./.claude/reference/aidd-methodology.md) | **AIDD: Adaptive AI Discovery & Delivery** |
-| [.claude/reference/linear-setup.md](./.claude/reference/linear-setup.md) | **Linear MCP setup guide** |
-| [.claude/reference/productive-integration.md](./.claude/reference/productive-integration.md) | **Productive.io & Delivery Units** |
-| [.claude/reference/minio-integration.md](./.claude/reference/minio-integration.md) | **MinIO S3-compatible file storage** |
-| [.claude/reference/ai-framework-choice.md](./.claude/reference/ai-framework-choice.md) | **Mastra vs Vercel AI SDK decision guide** |
-| [.claude/reference/mcp-servers.md](./.claude/reference/mcp-servers.md) | **All MCP servers overview** |
-| [.claude/reference/azure-openai-integration.md](./.claude/reference/azure-openai-integration.md) | **Azure OpenAI (GDPR-konform)** |
-| [.claude/reference/service-dashboard-audit.md](./.claude/reference/service-dashboard-audit.md) | Service Dashboard gap analysis |
-| [.claude/PRD.md](./.claude/PRD.md) | Product requirements template |
-| [.claude/skills/README.md](./.claude/skills/README.md) | Skills documentation |
-| [scripts/promote.sh](./scripts/promote.sh) | Promote patterns to upstream |
-| [scripts/sync-upstream.sh](./scripts/sync-upstream.sh) | Sync updates from upstream |
-| [convex/README.md](./convex/README.md) | Database setup |
-| [mastra/README.md](./mastra/README.md) | AI agents guide |
-| [n8n/README.md](./n8n/README.md) | Workflow templates |
-| [terraform/README.md](./terraform/README.md) | Deployment guide |
+| [CLAUDE.md](./CLAUDE.md) | **Router** — Points AI agents to the right reference doc (~250 lines) |
+| [AGENTS.md](./AGENTS.md) | Mirror of CLAUDE.md rules for Cursor/Windsurf/other AI IDEs |
+| [WORKFLOW.md](./WORKFLOW.md) | Step-by-step development workflow guide |
+
+### Reference Documentation (`.claude/reference/`)
+
+**Code & Standards:**
+
+| Document | Purpose |
+|----------|---------|
+| `code-standards.md` | Language, naming, style, TypeScript, React, anti-patterns |
+| `design-system.md` | UI/UX, Tailwind v4, shadcn/ui components |
+| `shadcn-ui-setup.md` | shadcn/ui configuration and usage |
+| `ssr-hydration.md` | SSR safety, hydration mismatch prevention |
+| `error-handling.md` | Error handling patterns |
+
+**Architecture & Infrastructure:**
+
+| Document | Purpose |
+|----------|---------|
+| `architecture.md` | Platform architecture, tech stack, project structure |
+| `deployment-best-practices.md` | Docker, Caddy, Elestio, CI/CD |
+| `deployment-targets.md` | LUCIDLABS-HQ vs DEDICATED deployment |
+| `ci-cd-security.md` | SHA-pinning, workflow architecture, branch protection |
+| `scaling.md` | Stateless patterns, Convex scaling |
+| `port-registry.md` | Port allocations, conflict checking |
+
+**Workflow & Process:**
+
+| Document | Purpose |
+|----------|---------|
+| `project-rules.md` | Skills catalog, task management, dev workflow |
+| `quality-gates.md` | Gate architecture, subagents, test enforcement |
+| `session-rules.md` | Auto-start rules, config backup, full-stack components |
+| `piv-workflow.md` | PIV phases (Plan/Implement/Validate) |
+| `git-workflow.md` | PR workflow, commit messages, branch lifecycle |
+| `testing-strategy.md` | Test pyramid, Vitest, Playwright |
+| `code-review-checklist.md` | Pre-commit review checklist |
+| `promote-sync.md` | Upstream/downstream flow, downstream rules |
+
+**AI & Agents:**
+
+| Document | Purpose |
+|----------|---------|
+| `ai-framework-choice.md` | Mastra vs Vercel AI SDK decision guide |
+| `mastra-best-practices.md` | AI agents, tools, workflows |
+| `llm-configuration.md` | LLM model selection, pricing, Portkey config |
+| `vercel-ai-sdk.md` | Vercel AI SDK examples and setup |
+| `mcp-servers.md` | All MCP servers overview |
+
+**Auth & Database:**
+
+| Document | Purpose |
+|----------|---------|
+| `auth-architecture.md` | Centralized BetterAuth, cross-subdomain SSO, roles |
+| `betterauth-convex-setup.md` | BetterAuth + Convex setup guide |
+| `convex-self-hosted.md` | Convex self-hosted setup, project isolation |
+
+**Integrations:**
+
+| Document | Purpose |
+|----------|---------|
+| `linear-setup.md` | Linear MCP setup, OAuth, troubleshooting |
+| `productive-integration.md` | Productive.io API, Delivery Units, Reporting |
+| `aidd-methodology.md` | AIDD: Adaptive AI Discovery & Delivery |
+| `minio-integration.md` | MinIO S3-compatible file storage |
+| `azure-openai-integration.md` | Azure OpenAI (GDPR-compliant, optional) |
+
+**Roadmap & Meta:**
+
+| Document | Purpose |
+|----------|---------|
+| `future-plans.md` | Feature roadmap with checkboxes |
+| `task-system.md` | Task tracking, custom subagents |
+| `time-tracking-concept.md` | Time tracking architecture |
+| `session-handoff.md` | Project switching without session restart |
 
 ## Upstream/Downstream Workflow
 

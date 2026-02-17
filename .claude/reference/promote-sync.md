@@ -316,6 +316,47 @@ downstream (projects/*/):
 
 ---
 
+## Downstream Project Rule (MANDATORY)
+
+When working in a downstream project (identified by `.claude/PROJECT-CONTEXT.md` with `type: downstream`):
+
+**ALL new files MUST be created in the CURRENT project, NEVER in the upstream repository.**
+
+| Action | Create In |
+|--------|-----------|
+| New workflows | `./n8n/workflows/` (current project) |
+| New skills | `./.claude/skills/` (current project) |
+| New components | `./frontend/components/` (current project) |
+| New tools | `./mastra/src/tools/` (current project) |
+| New reference docs | `./.claude/reference/` (current project) |
+
+**Check before creating:**
+1. Read `.claude/PROJECT-CONTEXT.md` to identify project type
+2. If `type: downstream` -> create files HERE
+3. If `type: upstream` or file doesn't exist -> you're in the template
+
+**Exception:** Use `/promote` skill to intentionally copy proven patterns TO upstream.
+
+### Upstream Interaction Rules (HARD BOUNDARY)
+
+From a downstream project, the ONLY permitted interactions with upstream are:
+
+| Permitted | How | Direct File Access? |
+|-----------|-----|---------------------|
+| Pull updates | `/sync` skill or `./scripts/sync-upstream.sh` | READ only (copies TO downstream) |
+| Push patterns | `/promote` skill or `./scripts/promote.sh` | Creates PR in upstream (never direct push) |
+| Spawn new project | `./scripts/create-agent-project.sh` | READ only (copies FROM upstream) |
+
+**FORBIDDEN from any downstream project session:**
+- `cd ../../lucidlabs-agent-kit && [any write operation]`
+- Writing, editing, or deleting ANY file under `../../lucidlabs-agent-kit/`
+- `git push` to ANY branch in the upstream repo (use scripts which handle branching)
+- Opening the upstream repo as a working directory
+
+**This is a hard boundary.** The upstream is a curated knowledge base, not a workspace. Treat it like a package registry: you consume from it (`/sync`) and contribute to it (`/promote`), but you never write to it directly.
+
+---
+
 ## Rules
 
 1. **Promotions ALWAYS go through PRs** - Never push directly to upstream main

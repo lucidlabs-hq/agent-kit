@@ -78,6 +78,45 @@
 - [ ] SLA tracking and reporting
 - [ ] Customer notification system
 
+## Quality & Code Standards
+
+- [x] Architecture Guard subagent
+- [x] Code Reviewer subagent
+- [x] Quality Gates in PIV-Loop (gate architecture documented)
+- [ ] Unit Test Coverage Enforcement (min 60% lines)
+- [ ] Strix Security Audit Integration (pre-deploy)
+- [ ] Security Guard subagent (lightweight pre-commit security check)
+
+## Deployment Automation
+
+- [x] deploy-hq.yml (SSH + Docker)
+- [ ] Zero-SSH Deployment (all via CI/CD)
+- [ ] Automated Caddyfile Provisioning via CI
+- [ ] Automated Convex Deploy via CI
+- [ ] Infrastructure-as-Code for new projects
+
+## Sync & Propagation
+
+- [x] /sync Skill
+- [x] /promote Skill
+- [ ] Auto-Sync Best Practices (downstream adapts new standards)
+- [ ] Sync-Diff Report (shows changes after /sync)
+- [ ] Breaking Change Detection
+
+## Compound Engineering
+
+- [ ] /compound Skill (document learnings after each feature)
+- [ ] Compound Log Template (.agents/compound-log.md)
+- [ ] Automatic promote-queue entry after Compound phase
+
+## LLM Gateway & Orchestration (Evaluation)
+
+- [ ] LiteLLM Evaluation (self-hosted alternative to Portkey)
+- [ ] LiteLLM vs Portkey Feature-Matrix documentation
+- [ ] Temporal.io Evaluation (durable workflow orchestration)
+- [ ] Temporal + Mastra Integration Pattern
+- [ ] Temporal Docker Setup for LUCIDLABS-HQ
+
 ---
 
 *Maintained in Git. Update via `/promote` to upstream.*

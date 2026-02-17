@@ -219,6 +219,133 @@ If any command fails:
 - Re-run the command
 - Continue only when it passes
 
+### 5.5 Architecture Guard (MANDATORY)
+
+Run quality gate subagents on all changed files:
+
+1. **architecture-guard** on all modified/created files
+2. **design-system-guard** if any UI files were changed (components/, app/)
+3. **ssr-safety-checker** if any React components were changed
+4. **mastra-validator** if any mastra/ files were changed
+
+```
+Gate Results:
+- CRITICAL → STOP. Fix before proceeding.
+- HIGH     → STOP. Fix before proceeding.
+- WARNING  → List warnings. User decides.
+- INFO     → Document and continue.
+```
+
+See `.claude/reference/quality-gates.md` for full gate architecture.
+
+### 5.6 Unit Test Gate (MANDATORY)
+
+Check that new code has tests:
+
+1. For every new function/utility: verify a corresponding test exists
+2. Run `pnpm run test` - must be green
+3. If tests are missing for new code: STOP and write tests before continuing
+
+### 5.7 Change Size Classification (MANDATORY)
+
+Classify the scope of changes to determine if Visual Verification is needed:
+
+```bash
+git diff --stat main..HEAD
+```
+
+| Level | Criteria | Visual Verification? |
+|-------|----------|---------------------|
+| **S** | 1-2 files, config/docs only | No |
+| **M** | 3-10 files, single component | No |
+| **L** | 10+ files, new feature with UI | **YES** |
+
+**Any change that touches UI files (components/, app/) AND is L-level triggers Visual Verification.**
+
+### 5.8 Smoke Test (MANDATORY for M and L)
+
+**Always runs proactively for M and L changes. No user confirmation needed.**
+
+Verify the basics work before anything else:
+
+```bash
+# 1. Is the dev server running? If not, start it.
+pnpm run dev
+
+# 2. Does the main page respond?
+curl -s -o /dev/null -w "%{http_code}" http://localhost:[PORT]/
+
+# 3. Are API endpoints reachable? (if API routes were changed)
+curl -s -o /dev/null -w "%{http_code}" http://localhost:[PORT]/api/health
+```
+
+Show a brief status:
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  SMOKE TEST                                                       │
+│  ──────────                                                       │
+│  Dev server: Running on :3000                                    │
+│  Main page:  200 OK                                              │
+│  API health: 200 OK                                              │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+If anything returns an error: try refreshing/restarting. If still broken, fix the code.
+
+### 5.9 Visual Verification Gate (L-Level with UI — ASK FIRST)
+
+**Skip this step if change level is S or M, or if no UI files were changed.**
+
+**ASK THE USER before starting browser verification:**
+
+```
+This was a large feature (L-level, [X] files changed).
+Shall I verify the UI in the browser with screenshots?
+```
+
+**If user confirms**, show status and proceed:
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  VISUAL VERIFICATION                                              │
+│  ────────────────────                                             │
+│                                                                   │
+│  Change Level: L (Large) — [X] files changed                    │
+│  Affected Pages: [list of routes]                                │
+│                                                                   │
+│  I'm now verifying the implementation in the browser.             │
+│  Opening pages, taking screenshots, checking layout.              │
+│  If something doesn't work, I'll fix it before moving on.        │
+│                                                                   │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Steps:**
+
+1. Ensure dev server is running (should be from smoke test)
+2. For each affected page:
+   ```bash
+   agent-browser open http://localhost:[PORT]/[path]
+   agent-browser snapshot -i
+   agent-browser screenshot ./screenshots/[page]-desktop.png
+   ```
+3. Check each page:
+   - Page loads without blank screen or errors
+   - Layout matches expected structure
+   - Key interactive elements are present
+4. Mobile check (for responsive pages):
+   ```bash
+   agent-browser viewport 375 812
+   agent-browser screenshot ./screenshots/[page]-mobile.png
+   ```
+5. If issues found: **fix the code, re-verify, loop until clean**
+6. Only proceed when all pages work correctly
+
+**If user declines**, skip browser verification but note it in the output report.
+
+See `.claude/reference/quality-gates.md` → "Visual Verification Gate" for full rules.
+
 ### 6. Manual Testing
 
 Follow the manual testing checklist from the plan:
@@ -238,6 +365,7 @@ Before completing:
 - All validation commands pass
 - Code follows project conventions
 - Mobile responsive verified
+- Visual verification passed (if L-level with UI)
 - Documentation added/updated as needed
 
 ## Output Report

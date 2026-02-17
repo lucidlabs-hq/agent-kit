@@ -160,7 +160,11 @@ Never combine phases. Never skip phases. See `.claude/reference/piv-workflow.md`
 | Document | Topic |
 |----------|-------|
 | `.claude/PRD.md` | Product requirements |
-| `.claude/reference/architecture.md` | System overview |
+| `.claude/reference/code-standards.md` | Language, naming, style, TypeScript, React, anti-patterns |
+| `.claude/reference/session-rules.md` | Auto-start rules, config backup, full-stack components |
+| `.claude/reference/project-rules.md` | Tech stack docs, README ports, init, skills, tasks, workflow |
+| `.claude/reference/quality-gates.md` | Gate architecture, subagents, test enforcement |
+| `.claude/reference/architecture.md` | Platform architecture, tech stack, project structure |
 | `.claude/reference/design-system.md` | UI/UX, Tailwind v4 |
 | `.claude/reference/piv-workflow.md` | PIV phases and rules |
 | `.claude/reference/testing-strategy.md` | Testing pyramid |
@@ -168,13 +172,20 @@ Never combine phases. Never skip phases. See `.claude/reference/piv-workflow.md`
 | `.claude/reference/error-handling.md` | Error patterns |
 | `.claude/reference/ssr-hydration.md` | SSR safety |
 | `.claude/reference/code-review-checklist.md` | Pre-commit checks |
+| `.claude/reference/git-workflow.md` | PR workflow, commit messages |
 | `.claude/reference/deployment-best-practices.md` | Docker, CI/CD |
+| `.claude/reference/ci-cd-security.md` | SHA-pinning, workflow architecture |
 | `.claude/reference/portkey-gateway.md` | LLM Gateway setup |
+| `.claude/reference/llm-configuration.md` | LLM model selection, pricing |
 | `.claude/reference/mastra-best-practices.md` | AI agents |
 | `.claude/reference/vercel-ai-sdk.md` | Prototyping |
 | `.claude/reference/shadcn-ui-setup.md` | Component library |
 | `.claude/reference/agent-browser-setup.md` | Visual testing |
-| `.claude/reference/promote-sync.md` | Upstream/downstream flow |
+| `.claude/reference/promote-sync.md` | Upstream/downstream flow, downstream rules |
+| `.claude/reference/auth-architecture.md` | BetterAuth, SSO, roles |
+| `.claude/reference/convex-self-hosted.md` | Convex setup, project isolation |
+| `.claude/reference/port-registry.md` | Port allocations, conflict checking |
+| `.claude/reference/future-plans.md` | Feature roadmap |
 
 ---
 

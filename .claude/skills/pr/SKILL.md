@@ -65,6 +65,27 @@ If `pnpm run validate` does not exist, run lint and type-check separately:
 cd frontend && pnpm run lint && pnpm run type-check
 ```
 
+## Step 2.5: Pre-PR Quality Gate (MANDATORY)
+
+Run quality gate checks before creating the PR:
+
+1. **code-reviewer** subagent on `git diff main..HEAD` (all branch changes)
+2. **error-handling-reviewer** subagent on API routes (if any changed)
+3. **architecture-guard** subagent for final compliance check
+
+Results are included in the PR description under a "Quality Gate Results" section:
+
+```markdown
+## Quality Gate Results
+
+- architecture-guard: PASS
+- code-reviewer: PASS (2 warnings)
+- error-handling-reviewer: PASS
+```
+
+If CRITICAL findings: STOP. Fix before creating PR.
+See `.claude/reference/quality-gates.md` for full gate architecture.
+
 ## Step 3: Analyze Changes
 
 ```bash

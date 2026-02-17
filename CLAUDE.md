@@ -281,102 +281,15 @@ Every project uses a PR-based workflow with two GitHub Actions workflows:
 
 ## shadcn/ui
 
-### Setup
+Pre-configured with New York style, RSC support, CSS variables.
+See `.claude/reference/shadcn-ui-setup.md` for setup, components, and rules.
 
-shadcn/ui ist bereits konfiguriert (`components.json`):
-
-```json
-{
-  "style": "new-york",
-  "rsc": true,
-  "tailwind": { "cssVariables": true },
-  "aliases": {
-    "ui": "@/components/ui",
-    "utils": "@/lib/utils"
-  }
-}
-```
-
-### Komponenten hinzufügen
-
-```bash
-# Einzelne Komponente
-npx shadcn@latest add button
-
-# Mehrere Komponenten
-npx shadcn@latest add card dialog tabs
-```
-
-### Vorhandene UI-Komponenten
-
-| Komponente | Pfad | Server/Client |
-|------------|------|---------------|
-| `Button` | `components/ui/button.tsx` | Server |
-| `Badge` | `components/ui/badge.tsx` | Server |
-| `Card` | `components/ui/card.tsx` | Server |
-| `Avatar` | `components/ui/avatar.tsx` | Server |
-| `Separator` | `components/ui/separator.tsx` | Server |
-
-### Wichtige Regeln
-
-- **Server Components bevorzugen** - shadcn mit `rsc: true` konfiguriert
-- **Radix UI nur wenn nötig** - Für komplexe Interaktion (Dialog, Dropdown)
-- **Anpassen erlaubt** - shadcn-Komponenten können modifiziert werden
-- **Flat Design** - Keine Shadows, nur Borders
 
 ---
 
 ## Vercel AI SDK
 
-### Für Prototypen & Chat-UIs
-
-Das Vercel AI SDK eignet sich für schnelle AI-Prototypen:
-
-```bash
-pnpm add ai @ai-sdk/anthropic
-```
-
-### Beispiel: Chat-Route
-
-```typescript
-// app/api/chat/route.ts
-import { anthropic } from "@ai-sdk/anthropic";
-import { streamText } from "ai";
-
-export async function POST(req: Request) {
-  const { messages } = await req.json();
-
-  const result = streamText({
-    model: anthropic("claude-sonnet-4-20250514"),
-    messages,
-  });
-
-  return result.toDataStreamResponse();
-}
-```
-
-### Beispiel: useChat Hook
-
-```typescript
-// components/Chat.tsx
-"use client";
-import { useChat } from "ai/react";
-
-export function Chat() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat();
-
-  return (
-    <form onSubmit={handleSubmit}>
-      {messages.map((m) => (
-        <div key={m.id}>{m.content}</div>
-      ))}
-      <input value={input} onChange={handleInputChange} />
-    </form>
-  );
-}
-```
-
-### Wann Vercel AI SDK vs Mastra?
+For prototypes and chat UIs. See `.claude/reference/vercel-ai-sdk.md` for examples and setup.
 
 | Use Case | Tool |
 |----------|------|
@@ -385,39 +298,6 @@ export function Chat() {
 | Quick Prototypes | Vercel AI SDK |
 | Production Workflows | Mastra |
 
----
-
-## Vercel Deployment
-
-### Für Prototypen
-
-```bash
-# Vercel CLI installieren
-pnpm add -g vercel
-
-# Deployment
-vercel
-
-# Production
-vercel --prod
-```
-
-### vercel.json (optional)
-
-```json
-{
-  "framework": "nextjs",
-  "buildCommand": "pnpm run build",
-  "installCommand": "pnpm install"
-}
-```
-
-### Environment Variables
-
-In Vercel Dashboard oder via CLI:
-```bash
-vercel env add ANTHROPIC_API_KEY
-```
 
 ---
 
@@ -792,23 +672,8 @@ This ensures branding and SEO are correct from the start.
 
 ## Review Checklist
 
-Before committing code:
+See `.claude/reference/code-review-checklist.md` for the full pre-commit checklist.
 
-- [ ] English-only code and comments?
-- [ ] TypeScript interfaces for all models?
-- [ ] No hardcoded values?
-- [ ] File header with summary?
-- [ ] File under 300 lines?
-- [ ] Named exports (not default)?
-- [ ] No barrel exports (direct imports)?
-- [ ] Server Components preferred?
-- [ ] URL-based state for filters?
-- [ ] Error handling implemented?
-- [ ] Structured logging `[Component] Message`?
-- [ ] Only Tailwind CSS (no inline styles)?
-- [ ] No `any` types?
-- [ ] No `Date.now()`/`Math.random()` in SSR code?
-- [ ] Clickable elements have `cursor-pointer`?
 
 ---
 
@@ -951,177 +816,25 @@ Co-Authored-By: AI Tool <noreply@example.com>
 
 ## Commands
 
-**Alle Befehle über `pnpm run` - einheitliches Interface.**
-
-### Dev Server Start Rule (MANDATORY)
-
-**ALWAYS** before starting a dev server:
-
-1. **Check what's running** on the target port:
-   ```bash
-   lsof -i:3000  # or :4000 for backend
-   ```
-
-2. **Show the user** what's currently running (if anything)
-
-3. **Kill existing process** if needed:
-   ```bash
-   lsof -ti:3000 | xargs kill -9
-   ```
-
-4. **Start server and show port**:
-   ```bash
-   pnpm run dev
-   # Output must show: "Local: http://localhost:PORT"
-   ```
-
-This ensures the user always knows:
-- What was running before
-- Which port the new server is on
-- No silent conflicts or port switches
-
-**ALWAYS show clickable links AND Convex credentials** in output:
-```
-┌──────────────────┬──────┬───────────────────────┐
-│     Service      │ Port │         Link          │
-├──────────────────┼──────┼───────────────────────┤
-│ Frontend         │ 8080 │ http://localhost:8080 │
-│ Mastra API       │ 8081 │ http://localhost:8081 │
-│ Convex Backend   │ 8082 │ http://localhost:8082 │
-│ Convex Dashboard │ 8083 │ http://localhost:8083 │
-│ Mastra Studio    │ 8085 │ http://localhost:8085 │
-└──────────────────┴──────┴───────────────────────┘
-
-Convex Login:
-  Dashboard:      http://localhost:8083
-  Deployment URL: http://localhost:8082
-  Admin Key:      [run: docker exec <container> ./generate_admin_key.sh]
-```
-
-### Frontend
+**All commands via `pnpm run`.** See `.claude/reference/quick-commands.md` for full reference.
 
 ```bash
-cd frontend
-pnpm install                     # Dependencies (einmalig)
-pnpm run dev                     # Dev Server (port 3000)
-pnpm run lint                    # ESLint
-pnpm run type-check              # TypeScript
-pnpm run validate                # Lint + Type-check
-pnpm run self-audit              # Full compliance check
-pnpm run build                   # Production Build
-pnpm run start                   # Production Server
+pnpm run dev          # Dev Server
+pnpm run build        # Production Build
+pnpm run lint         # ESLint
+pnpm run type-check   # TypeScript
+pnpm run validate     # Lint + Type-check
 ```
 
-### Backend
-
-```bash
-cd backend
-pnpm install                     # Dependencies (einmalig)
-pnpm run dev                     # Dev Server (port 4000)
-
-# Convex
-npx convex dev                   # Start Convex dev server
-npx convex deploy                # Deploy to cloud
-```
-
-### Testing
-
-```bash
-cd frontend
-pnpm run test                    # E2E tests (Playwright)
-pnpm run test:ui                 # E2E with UI
-pnpm run test:headed             # E2E with visible browser
-```
 
 ---
 
 ## Testing Strategy
 
-### Testing Pyramid
+60% Unit (Vitest) | 30% Integration (Vitest+Supertest) | 10% E2E (Playwright).
+Use `/visual-verify` for dev, E2E only for critical production flows.
+See `.claude/reference/testing-strategy.md` for full pyramid, patterns, and page objects.
 
-```
-        ┌───────────┐
-        │    E2E    │  10% - Critical flows only
-        │    (10)   │
-        ├───────────┤
-        │Integration│  30% - API, DB
-        │    (30)   │
-        ├───────────┤
-        │   Unit    │  60% - Logic, Utils
-        │   (60)    │
-        └───────────┘
-```
-
-### Rules
-
-| Type | When to Write | Tools |
-|------|---------------|-------|
-| **Unit** | Business logic, utilities | Vitest |
-| **Integration** | API endpoints, DB operations | Vitest + Supertest |
-| **E2E** | Critical user flows only | Playwright |
-
-### E2E Testing Guidelines
-
-**ONLY write E2E tests for:**
-- Critical user journeys (login, main workflows)
-- Features that touch multiple systems
-- High-risk functionality
-
-**DO NOT write E2E tests for:**
-- Simple CRUD operations
-- Individual components (use unit tests)
-- Edge cases (use integration tests)
-
-### Test Organization
-
-```
-frontend/
-├── e2e/
-│   ├── pages/              # Page Objects
-│   │   └── ControlboardPage.ts
-│   └── specs/              # Test files
-│       └── controlboard.spec.ts
-└── src/
-    └── lib/
-        └── __tests__/      # Unit tests
-```
-
-### Page Objects Pattern
-
-```typescript
-// e2e/pages/ExamplePage.ts
-export class ExamplePage {
-  readonly page: Page;
-  readonly header: Locator;
-
-  constructor(page: Page) {
-    this.page = page;
-    this.header = page.locator("h1");
-  }
-
-  async goto() {
-    await this.page.goto("/example");
-  }
-}
-```
-
-### When Implementing Features
-
-1. Write unit tests for business logic (60%)
-2. Write integration tests for API/DB (30%)
-3. **UI Changes:** Use `/visual-verify` for quick verification
-4. Write E2E tests only for critical production flows (10%)
-
-### Visual Verification vs E2E
-
-| Development (90%) | Production (10%) |
-|-------------------|------------------|
-| `/visual-verify` | E2E Tests |
-| agent-browser | Playwright |
-| Sekunden | Minuten |
-| Jede UI-Änderung | Login, Checkout, Payment |
-
-**Regel:** `/visual-verify` für Development, E2E nur für kritische Flows.
 
 ---
 
@@ -1362,63 +1075,10 @@ claude mcp add github -- npx @modelcontextprotocol/server-github
 
 ---
 
-## Agent Browser (Visual Testing Tool)
+## Agent Browser
 
-### Overview
+Visual testing via `agent-browser`. See `.claude/reference/agent-browser-setup.md` for installation and usage.
 
-The project uses `agent-browser` for automated visual testing and verification. This tool allows AI agents to interact with the browser, take screenshots, and verify UI implementations.
-
-**Repository:** https://github.com/vercel-labs/agent-browser
-
-### Installation Location
-
-- **Package:** `frontend/package.json` (devDependencies)
-- **Binary:** `frontend/node_modules/.bin/agent-browser`
-- **Chromium:** Downloaded via `pnpm exec agent-browser install`
-
-### Setup Commands
-
-```bash
-cd frontend
-
-# Install as dev dependency (already done)
-pnpm add -D agent-browser
-
-# Download Chromium browser (required once)
-pnpm exec agent-browser install
-```
-
-### Usage
-
-```bash
-cd frontend
-
-# Start agent-browser session
-pnpm exec agent-browser
-
-# Available commands in session:
-# - goto <url>         Navigate to URL
-# - screenshot         Take screenshot
-# - click <id>         Click element by accessibility ID
-# - type <id> <text>   Type text into element
-# - snapshot           Get accessibility tree snapshot
-```
-
-### Visual Verification Workflow
-
-After implementing visual features, use agent-browser to verify:
-
-1. Start dev server: `pnpm run dev`
-2. In another terminal: `pnpm exec agent-browser`
-3. Navigate: `goto http://localhost:3000/<page>`
-4. Take screenshot: `screenshot`
-5. Verify UI matches specification
-
-### Important Notes
-
-- **Dev dependency only** - Not included in production builds
-- **Requires Chromium** - Run `agent-browser install` after fresh clone
-- **Local only** - For development verification, not CI/CD
 
 ---
 
@@ -1482,135 +1142,18 @@ You are an **expert in modern web development**, specializing in:
 
 ## Mandatory Working Model: PIV Loop (Required)
 
-This project strictly follows the **PIV workflow model**:
+This project strictly follows the **PIV workflow model**: Planning -> Implementation -> Validation -> Iteration.
 
-1. Planning
-2. Implementation
-3. Validation
-4. Iteration
+The PIV Loop is **mandatory** and must **not be shortened, skipped, or mixed**. Claude MUST always operate in exactly **one** PIV phase at a time.
 
-The PIV Loop is **mandatory** and must **not be shortened, skipped, or mixed**.
+See `.claude/reference/piv-workflow.md` for complete phase rules, command mapping, and meta rules.
 
-Claude MUST always operate in exactly **one** PIV phase at a time and must be able to clearly state which phase it is currently in.
-
----
-
-## Mapping: PIV ↔ Project Commands (Binding)
-
-### 1. Planning
-Allowed commands:
-- `plan-feature`
-- `create-prd`
-- `init-project`
-- Analysis and audit tasks without execution
-
-Purpose:
-- Understand the problem
-- Structure the solution
-- Prepare decisions
-
-Rules:
-- NO code
-- NO implementation
-- NO technical assumptions
-- ONLY analysis, structure, plans, scope definitions, and constraints
-
----
-
-### 2. Implementation
-Allowed commands:
-- `execute`
-
-Purpose:
-- Implement **exactly** what was approved in the Planning phase
-
-Rules:
-- No scope expansion
-- No new ideas
-- No silent changes
-- Implementation must strictly follow the approved plan
-
----
-
-### 3. Validation
-Allowed commands:
-- `validate`
-- `self-audit`
-- `code-review`
-
-Purpose:
-- Verify against:
-  - PRD
-  - CLAUDE.md
-  - AGENTS.md
-  - Reference documents
-  - Approved plan
-
-Rules:
-- Explicitly surface deviations
-- Highlight risks and inconsistencies
-- NO fixes
-- NO new implementation
-
----
-
-### 4. Iteration
-Purpose:
-- Derive the next PIV cycle
-
-Rules:
-- Suggestions only
-- NO implementation
-- Every iteration MUST start again with **Planning**
-
----
-
-## Mandatory Meta Rules (Non-Negotiable)
-
+**Key rules:**
 - NEVER combine multiple PIV phases in one response
 - NEVER jump directly from Planning to Implementation
 - EVERY new task starts with Planning
-- If information is missing → STOP and ask
-- Technical decisions are ONLY allowed if explicitly defined in:
-  - `CLAUDE.md`
-  - `AGENTS.md`
-  - `.claude/reference/*`
+- If information is missing -> STOP and ask (Two-Strike Rule)
 
-### Two-Strike Rule (Roadblock Protocol)
-
-**If the same approach fails twice → STOP. No guesswork.**
-
-When you encounter an error or roadblock:
-
-1. **First attempt fails:** Adjust and try a different variation
-2. **Second attempt fails:** STOP immediately. Do NOT try a third time with guesswork
-3. **Research phase:** Perform targeted research (web search, docs, codebase analysis)
-4. **Report findings:** Present what you learned to the user before proceeding
-5. **Only continue** with a clear, evidence-based approach
-
-**This rule is absolute.** Blindly retrying with variations is not engineering — it's gambling. Every action must be intentional and informed. If you don't understand why something failed, you don't have enough information to fix it.
-
-**Examples of violations:**
-- Trying 3 different file paths hoping one works
-- Retrying a deploy command with slightly different flags
-- Guessing package names or config options
-
-**Correct behavior:**
-- First SSH path fails → try the alternative you know about
-- Second path fails → STOP, inspect the server (`docker inspect`, `find`, etc.) to discover the actual path
-- Only proceed when you have concrete evidence of the correct approach
-
----
-
-## Command Enforcement
-
-Claude MUST:
-- Use the existing project commands
-- Respect the defined project structure
-- Never invent new workflows
-- Never take shortcuts in the process
-
-Any deviation from the PIV model is considered an error.
 
 <!-- UPSTREAM-SYNC-END -->
 <!-- Everything ABOVE this marker is synced from upstream agent-kit. -->

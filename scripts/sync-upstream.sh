@@ -136,7 +136,6 @@ UPSTREAM_PATH=$(cd "$UPSTREAM_PATH" && pwd)
 
 # Get upstream commit info
 UPSTREAM_HEAD=$(cd "$UPSTREAM_PATH" && git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-UPSTREAM_HEAD_FULL=$(cd "$UPSTREAM_PATH" && git rev-parse HEAD 2>/dev/null || echo "unknown")
 
 # Get previous sync commit (if tracking file exists)
 PREV_SYNC_COMMIT="none"
@@ -191,10 +190,6 @@ sync_claude_md() {
         return 0
     fi
 
-    # Extract upstream content up to and including the marker
-    local upstream_content
-    upstream_content=$(sed -n "1,/$ZONE_MARKER/p" "$upstream_file")
-
     # Extract downstream content from the marker onward (including marker line)
     local downstream_tail
     downstream_tail=$(sed -n "/$ZONE_MARKER/,\$p" "$downstream_file")
@@ -207,8 +202,8 @@ sync_claude_md() {
 
     # Write combined file
     {
-        echo "$upstream_before_marker"
-        echo "$downstream_tail"
+        printf '%s\n' "$upstream_before_marker"
+        printf '%s\n' "$downstream_tail"
     } > "$downstream_file"
 
     return 0

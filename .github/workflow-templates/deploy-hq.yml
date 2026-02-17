@@ -130,17 +130,18 @@ jobs:
           echo "Server provisioning complete"
 
       # ─────────────────────────────────────────────────────────────────────
-      # Save previous image for rollback
+      # Backup current source for rollback
       # ─────────────────────────────────────────────────────────────────────
-      - name: Save previous image tag for rollback
+      - name: Backup current source for rollback
         if: steps.first-deploy.outputs.project_exists == 'yes'
-        id: rollback-info
         env:
           HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
         run: |
-          PREV_IMAGE=$(ssh -p 2222 nightwing@$HQ_HOST \
-            "sudo docker inspect --format='{{.Image}}' ${{ env.ABBREVIATION }}-frontend 2>/dev/null || echo none")
-          echo "previous_image=$PREV_IMAGE" >> $GITHUB_OUTPUT
+          ssh -p 2222 nightwing@$HQ_HOST << EOF
+            sudo rm -rf /opt/lucidlabs/projects/${{ env.PROJECT_NAME }}/.deploy-backup
+            sudo cp -a /opt/lucidlabs/projects/${{ env.PROJECT_NAME }} \
+              /opt/lucidlabs/projects/${{ env.PROJECT_NAME }}/.deploy-backup || true
+          EOF
 
       # ─────────────────────────────────────────────────────────────────────
       # Deploy Code
@@ -250,32 +251,30 @@ jobs:
         env:
           HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
         run: |
-          PREV_IMAGE="${{ steps.rollback-info.outputs.previous_image }}"
-
-          if [ "$PREV_IMAGE" != "none" ] && [ -n "$PREV_IMAGE" ]; then
-            echo "Rolling back to previous image: $PREV_IMAGE"
-            ssh -p 2222 nightwing@$HQ_HOST << EOF
-              sudo docker stop ${{ env.ABBREVIATION }}-frontend 2>/dev/null || true
-              sudo docker rm ${{ env.ABBREVIATION }}-frontend 2>/dev/null || true
-
+          BACKUP="/opt/lucidlabs/projects/${{ env.PROJECT_NAME }}/.deploy-backup"
+          ssh -p 2222 nightwing@$HQ_HOST << EOF
+            if [ -d "$BACKUP" ]; then
+              echo "Restoring from source backup..."
+              sudo rsync -a --delete \
+                $BACKUP/ /opt/lucidlabs/projects/${{ env.PROJECT_NAME }}/
               cd /opt/lucidlabs/projects/${{ env.PROJECT_NAME }}
-              # Revert to previous commit
-              sudo docker compose -p ${{ env.PROJECT_NAME }} up -d
-
-              echo "Rollback complete. Previous containers restored."
+              sudo docker compose -p ${{ env.PROJECT_NAME }} up -d --build
+              echo "Rollback complete."
+            else
+              echo "No backup available for rollback (first deploy or backup missing)"
+            fi
           EOF
-          else
-            echo "No previous image available for rollback (first deploy or image not found)"
-          fi
 
       # ─────────────────────────────────────────────────────────────────────
       # Slack Notification (optional)
       # ─────────────────────────────────────────────────────────────────────
       - name: Notify Slack
-        if: always() && secrets.SLACK_WEBHOOK_URL != ''
+        if: always()
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then echo "No webhook configured, skipping"; exit 0; fi
+
           if [ "${{ steps.health.outputs.healthy }}" = "true" ]; then
             STATUS_EMOJI=":white_check_mark:"
             STATUS_TEXT="deployed successfully"

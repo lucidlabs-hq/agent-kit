@@ -612,10 +612,8 @@ main() {
 
     pushd "$UPSTREAM_PATH" > /dev/null
     git fetch origin 2>/dev/null || true
-    LOCAL_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
-    REMOTE_HEAD=$(git rev-parse origin/main 2>/dev/null || git rev-parse origin/master 2>/dev/null || echo "unknown")
-
-    if [[ "$LOCAL_HEAD" != "$REMOTE_HEAD" && "$REMOTE_HEAD" != "unknown" ]]; then
+    BEHIND_COUNT=$(git rev-list --count HEAD..origin/main 2>/dev/null || echo "0")
+    if [[ "$BEHIND_COUNT" -gt 0 ]]; then
         echo ""
         echo -e "${YELLOW}╔════════════════════════════════════════════════════════════════╗${NC}"
         echo -e "${YELLOW}║  [BLOCKED] Upstream has new commits since last pull            ║${NC}"

@@ -214,6 +214,116 @@ e) **Dann:** Normaler /prime Flow für Downstream (ab 0.1)
 
 ---
 
+#### 0.0.1 Promote Queue Overview (NUR im UPSTREAM-Modus)
+
+**WANN:** Wenn im Upstream-Modus (Agent Kit Template). Zeige nach der Projekt-Liste.
+
+**Zweck:** Zeige alle pending promote-queue Items aus allen downstream Projekten.
+
+```bash
+PROJECTS_DIR="$(dirname "$(pwd)")/projects"
+echo ""
+echo "PROMOTE QUEUE (across all projects)"
+echo "────────────────────────────────────"
+echo ""
+
+for proj in "$PROJECTS_DIR"/*/; do
+  QUEUE="$proj/.agents/promote-queue.md"
+  if [ -f "$QUEUE" ]; then
+    PENDING=$(grep -c "^### " "$QUEUE" 2>/dev/null || echo "0")
+    if [ "$PENDING" -gt 0 ]; then
+      echo "$(basename "$proj"): $PENDING pending items"
+      grep -A1 "^### " "$QUEUE" | grep -v "^--$" | head -10
+      echo ""
+    fi
+  fi
+done
+```
+
+**Anzeige:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  PROMOTE QUEUE (across all projects)                                       │
+│  ───────────────────────────────────                                       │
+│                                                                             │
+│  client-service-reporting         3 pending items                          │
+│    → Prime Service Boot v0.1.3                                             │
+│    → Upstream Protection Rule                                              │
+│    → Credentials Block v0.1.4                                              │
+│                                                                             │
+│  cotinga-test-suite               1 pending item                           │
+│    → Cursor Patterns Reference Doc                                         │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  Total: 4 items pending promotion                                          │
+│  Use /promote to review and promote items                                  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Falls keine pending Items:** Block nicht anzeigen.
+
+**Rendering-Regeln:**
+- Nur Projekte mit pending Items zeigen
+- Zeige max 5 Items pro Projekt (+ "... and X more")
+- Zeige Total count
+- Verlinke auf /promote Skill
+
+---
+
+#### 0.0.2 Agent Kit Roadmap (NUR im UPSTREAM-Modus)
+
+**WANN:** Wenn im Upstream-Modus. Zeige nach Promote Queue.
+
+**Zweck:** Zeige die nächsten offenen Items aus der Agent Kit Roadmap.
+
+```bash
+# Show next open items from Agent Kit future-plans
+FUTURE=".claude/reference/future-plans.md"
+if [ -f "$FUTURE" ]; then
+  echo "AGENT KIT ROADMAP (next 5)"
+  echo "──────────────────────────"
+  grep -E "^- \[ \]" "$FUTURE" | head -5
+fi
+
+# Show existing plans
+echo ""
+echo "ACTIVE PLANS"
+echo "────────────"
+ls .agents/plans/*.md 2>/dev/null | while read plan; do
+  echo "  → $(basename "$plan" .md)"
+done
+```
+
+**Anzeige:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  AGENT KIT ROADMAP                                                         │
+│  ─────────────────                                                         │
+│                                                                             │
+│  Next open items:                                                          │
+│  [ ] PIV-Agent-Teams with hooks                                            │
+│  [ ] Model routing definition                                              │
+│  [ ] Compound engineering framework                                        │
+│  [ ] Marketplace integration (Avery, MCP Skills)                           │
+│  [ ] Portkey integration guide                                             │
+│                                                                             │
+│  Active plans:                                                             │
+│  → betterauth-org-plugin-and-roles                                         │
+│  → integrate-task-system-and-swarm                                         │
+│  → migrate-to-skills-standard                                              │
+│  → promotion-script                                                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ### 0. Session Intro & Begrüßung (ZUERST!)
 
 #### 0.1 Boot Sequence
@@ -372,6 +482,139 @@ fi
 ```
 
 **Falls keine Reminders fällig:** Block nicht anzeigen (stille Prüfung).
+
+---
+
+#### 0.1.0c Project Service Dashboard (DOWNSTREAM ONLY - AFTER Boot Screen)
+
+**WANN:** Nur bei Downstream-Projekten. Zeige IMMER nach dem Boot Screen.
+
+**Zweck:** Der Entwickler sieht sofort alle laufenden Services, Ports, Links und Credentials. Keine Suche nötig - sofort produktiv.
+
+**Daten sammeln:**
+
+```bash
+PROJECT_DIR="$(pwd)"
+PROJECT_NAME=$(basename "$PROJECT_DIR")
+
+# 1. Detect services from directory structure
+HAS_FRONTEND=$([ -d "frontend" ] && echo "yes" || echo "no")
+HAS_MASTRA=$([ -d "mastra" ] && echo "yes" || echo "no")
+HAS_CONVEX=$([ -d "convex" ] && echo "yes" || echo "no")
+HAS_N8N=$([ -d "n8n" ] && echo "yes" || echo "no")
+
+# 2. Read ports from package.json
+FRONTEND_PORT=$(grep -oE '"dev":\s*".*-p\s+([0-9]+)"' frontend/package.json 2>/dev/null | grep -oE '[0-9]{4}' | tail -1)
+MASTRA_PORT=$(grep -oE 'PORT=([0-9]+)' mastra/package.json 2>/dev/null | grep -oE '[0-9]+')
+
+# 3. Read docker-compose ports
+if [ -f "docker-compose.dev.yml" ]; then
+  CONVEX_PORT=$(grep -oE '"([0-9]+):3210"' docker-compose.dev.yml | grep -oE '[0-9]+' | head -1)
+  DASHBOARD_PORT=$(grep -oE '"([0-9]+):6791"' docker-compose.dev.yml | grep -oE '[0-9]+' | head -1)
+fi
+
+# 4. Read .env for credentials info
+ENV_FILE=""
+[ -f ".env" ] && ENV_FILE=".env"
+[ -f ".env.local" ] && ENV_FILE=".env.local"
+[ -f "frontend/.env.local" ] && ENV_FILE="frontend/.env.local"
+```
+
+**Service Table anzeigen:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  PROJECT SERVICES                                  [project-name]          │
+│  ────────────────                                                          │
+│                                                                             │
+│  Service            Port    Link                          Status           │
+│  ─────────────────  ──────  ────────────────────────────  ────────         │
+│  Frontend           8070    http://localhost:8070          ○ stopped        │
+│  Mastra API         8071    http://localhost:8071          ○ stopped        │
+│  Convex Backend     8072    http://localhost:8072          ○ stopped        │
+│  Convex Dashboard   8073    http://localhost:8073          ○ stopped        │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  CREDENTIALS                                                               │
+│  ───────────                                                               │
+│                                                                             │
+│  Convex Admin Key:  docker exec [project]-convex ./generate_admin_key.sh  │
+│  Convex Deploy URL: http://localhost:8072                                  │
+│  .env Location:     frontend/.env.local                                   │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  STACK MODULES                                                             │
+│  ─────────────                                                             │
+│                                                                             │
+│  [✓] Next.js 15       [✓] Convex          [✓] Mastra                      │
+│  [✓] Tailwind CSS 4   [✓] BetterAuth      [ ] n8n                         │
+│  [✓] shadcn/ui        [ ] Portkey          [ ] MinIO                       │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  ROADMAP (next 5 items from future-plans.md)                               │
+│  ──────                                                                    │
+│                                                                             │
+│  [ ] Feature A - description                                               │
+│  [ ] Feature B - description                                               │
+│  [ ] Feature C - description                                               │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Rendering-Logik:**
+
+1. **Service Table:**
+   - Zeige nur Services deren Verzeichnis existiert
+   - Ports aus `package.json` und `docker-compose.dev.yml` lesen
+   - Status prüfen via `lsof -i:PORT` (● running / ○ stopped)
+   - Links als klickbare URLs formatieren
+
+2. **Credentials:**
+   - Convex Admin Key Befehl nur wenn Convex vorhanden
+   - Zeige `.env` Location (welche Datei existiert)
+   - Falls `.env.example` existiert, zeige fehlende Variablen
+
+3. **Stack Modules:**
+   - Prüfe Verzeichnisse: `frontend/`, `mastra/`, `convex/`, `n8n/`
+   - Prüfe `package.json` Dependencies: `better-auth`, `@portkey-ai/*`, `minio`
+   - [✓] = vorhanden, [ ] = verfügbar aber nicht installiert
+
+4. **Roadmap:**
+   - Lese `.claude/reference/future-plans.md` (zeige nächste 5 offene Items)
+   - Falls nicht vorhanden, lese `.agents/plans/` und zeige aktive Pläne
+   - Falls nichts vorhanden: "No roadmap defined. Use /plan-feature to start."
+
+**Status-Check für Services:**
+
+```bash
+# Check if services are running
+check_port() {
+  lsof -i:$1 -sTCP:LISTEN >/dev/null 2>&1 && echo "running" || echo "stopped"
+}
+
+FRONTEND_STATUS=$(check_port $FRONTEND_PORT)
+MASTRA_STATUS=$(check_port $MASTRA_PORT)
+CONVEX_STATUS=$(check_port $CONVEX_PORT)
+```
+
+**Stack Module Detection:**
+
+```bash
+# Detect installed modules
+HAS_BETTERAUTH=$(grep -q "better-auth" frontend/package.json 2>/dev/null && echo "yes" || echo "no")
+HAS_PORTKEY=$(grep -q "portkey" frontend/package.json 2>/dev/null || grep -q "portkey" mastra/package.json 2>/dev/null && echo "yes" || echo "no")
+HAS_MINIO=$(grep -q "minio" frontend/package.json 2>/dev/null && echo "yes" || echo "no")
+HAS_SHADCN=$([ -f "frontend/components.json" ] && echo "yes" || echo "no")
+```
+
+**WICHTIG:**
+- Service Table wird IMMER gezeigt (auch wenn alles gestoppt)
+- Nach dem Dashboard: "Soll ich die Services starten?" anbieten
+- Falls Services schon laufen: Nicht nochmal starten, nur Status anzeigen
 
 ---
 

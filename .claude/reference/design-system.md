@@ -1,6 +1,6 @@
 # Neola AI Design System Reference
 
-Best Practices für UI-Entwicklung mit Tailwind CSS 4 und Next.js 15.
+Best Practices für UI-Entwicklung mit Tailwind CSS 4 und Next.js 16.
 
 ---
 
@@ -34,7 +34,7 @@ Best Practices für UI-Entwicklung mit Tailwind CSS 4 und Next.js 15.
    - [AI Attribution Pattern](#78-ai-attribution-pattern-verbindlich)
    - [Aktion-Container Pattern](#79-aktion-container-pattern-verbindlich)
 8. [Tailwind CSS 4 Setup](#8-tailwind-css-4-setup)
-9. [Next.js 15 Integration](#9-nextjs-15-integration)
+9. [Next.js 16 Integration](#9-nextjs-15-integration)
 10. [Do's and Don'ts](#10-dos-and-donts)
 
 ---
@@ -269,7 +269,7 @@ Status wird NICHT durch Rot/Grün/Orange kommuniziert, sondern durch:
 
 ### Font Setup (Geist)
 
-Geist ist in Next.js 15 der Standard-Font. Setup in `app/layout.tsx`:
+Geist ist in Next.js 16 der Standard-Font. Setup in `app/layout.tsx`:
 
 ```tsx
 import { GeistSans } from 'geist/font/sans';
@@ -1745,7 +1745,7 @@ Tailwind v4 scannt automatisch alle Dateien. Features:
 
 ---
 
-## 9. Next.js 15 Integration
+## 9. Next.js 16 Integration
 
 ### Font Setup (Geist lokal)
 

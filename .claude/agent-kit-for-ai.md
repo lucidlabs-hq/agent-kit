@@ -105,7 +105,7 @@ RED → GREEN → REFACTOR
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
-| Frontend | Next.js 15 | Web application framework |
+| Frontend | Next.js 16 | Web application framework |
 | Language | TypeScript | Type safety |
 | Styling | Tailwind CSS 4 | Utility-first styling |
 | Components | shadcn/ui | Accessible UI components |

@@ -98,7 +98,7 @@ Each project:
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Next.js 15 (App Router)                      │
+│                    Next.js 16 (App Router)                      │
 │              Dashboard, Realtime Updates, Streaming             │
 └─────────────────────────────────────────────────────────────────┘
                               │
@@ -127,7 +127,7 @@ Each project:
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| **Framework** | Next.js 15 (App Router) | Full-stack React framework |
+| **Framework** | Next.js 16 (App Router) | Full-stack React framework |
 | **Language** | TypeScript (strict) | Type safety |
 | **Styling** | Tailwind CSS 4 | Utility-first CSS |
 | **Components** | shadcn/ui + Radix | Accessible, composable UI |
@@ -448,5 +448,5 @@ This architecture is designed so that:
 ---
 
 **Version:** 2.0
-**Last Updated:** January 2026
+**Last Updated:** February 2026
 **Maintainer:** Lucid Labs GmbH

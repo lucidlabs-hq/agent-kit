@@ -126,7 +126,7 @@ Analysiere die Beschreibung und ordne sie einer Stufe zu:
 │                                                                          │
 │  EMPFOHLENER STACK:                                                      │
 │                                                                          │
-│  ✅ Next.js 15        (Frontend)           - Standard                    │
+│  ✅ Next.js 16        (Frontend)           - Standard                    │
 │  ✅ Mastra            (AI Layer)           - wegen Tools/Workflows       │
 │  ✅ Convex            (Database)           - Realtime für UI             │
 │  ⚪ n8n               (Automation)         - optional, für Integrationen │
@@ -148,7 +148,7 @@ Analysiere die Beschreibung und ordne sie einer Stufe zu:
 
 **Stufe 1: MVP/Prototype**
 ```
-✅ Next.js 15
+✅ Next.js 16
 ✅ Vercel AI SDK      ← Schnell, einfach
 ✅ Convex             ← Einfaches Setup
 ❌ Mastra, n8n, Portkey, Python, Terraform
@@ -156,7 +156,7 @@ Analysiere die Beschreibung und ordne sie einer Stufe zu:
 
 **Stufe 2: Standard Projekt**
 ```
-✅ Next.js 15
+✅ Next.js 16
 ✅ Mastra             ← Production-ready Agents
 ✅ Convex             ← Realtime, Type-safe
 ⚪ n8n                ← Optional für Integrationen
@@ -165,7 +165,7 @@ Analysiere die Beschreibung und ordne sie einer Stufe zu:
 
 **Stufe 3: Enterprise Projekt**
 ```
-✅ Next.js 15
+✅ Next.js 16
 ✅ Mastra             ← Volle Agent-Kapazität
 ✅ Convex oder Postgres
 ✅ Portkey            ← Cost Tracking, Multi-Model
@@ -176,7 +176,7 @@ Analysiere die Beschreibung und ordne sie einer Stufe zu:
 
 **Stufe 4: GDPR/Compliance**
 ```
-✅ Next.js 15
+✅ Next.js 16
 ✅ Mastra
 ✅ Postgres           ← EU-hosted möglich
 ✅ Azure OpenAI       ← GDPR-konform
@@ -207,7 +207,7 @@ Falls User "Anpassen" wählt, zeige die manuelle Konfiguration:
 │  └─ [2] Postgres (SQL Standard, Pinecone-kompatibel)             │
 │                                                                  │
 │  FRONTEND:                                                       │
-│  └─ [Y/n] Next.js 15 + shadcn/ui                                 │
+│  └─ [Y/n] Next.js 16 + shadcn/ui                                 │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -448,7 +448,7 @@ Erstelle `.claude/PRD.md` im neuen Projekt:
 |-----------|--------|--------|
 | AI Layer | [Mastra/Vercel AI SDK] | [Warum gewählt] |
 | Database | [Convex/Postgres] | [Warum gewählt] |
-| Frontend | Next.js 15 + shadcn/ui | Standard |
+| Frontend | Next.js 16 + shadcn/ui | Standard |
 | Optional | [n8n, Portkey, etc.] | [Warum gewählt] |
 
 ## LLM Konfiguration (gewählt in Init)

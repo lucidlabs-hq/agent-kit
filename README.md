@@ -181,7 +181,7 @@ Agent Kit provides a complete foundation for building AI agent applications:
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| **Frontend** | Next.js 15 + shadcn/ui | Dashboard, UI, streaming |
+| **Frontend** | Next.js 16 + shadcn/ui | Dashboard, UI, streaming |
 | **AI Agents** | Mastra | Agent definitions, tools, workflows |
 | **Database** | Convex | Realtime sync, vector search |
 | **File Storage** | MinIO | S3-compatible object storage |
@@ -249,7 +249,7 @@ pnpm run dev
 
 ```
 agent-kit/
-├── frontend/                 # Next.js 15 Application
+├── frontend/                 # Next.js 16 Application
 │   ├── app/                  # App Router pages
 │   ├── components/           # React components
 │   │   └── ui/               # shadcn/ui components
@@ -762,7 +762,7 @@ The `scripts/deploy-project.sh` script handles full deployment from developer ma
 Bei Projekt-Initialisierung (`./scripts/create-agent-project.sh --interactive`) wirst du durch alle Optionen geführt.
 
 ### Frontend
-- **Next.js 15** - App Router, Server Components
+- **Next.js 16** - App Router, Server Components
 - **React 19** - Latest React features
 - **TypeScript 5** - Strict mode
 - **Tailwind CSS 4** - Utility-first styling

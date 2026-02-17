@@ -19,7 +19,7 @@
 │  │                              CLIENTS                                       │  │
 │  │                                                                            │  │
 │  │   ┌─────────────────┐                                                      │  │
-│  │   │    NEXT.JS 15   │  ← STANDARD: Immer dabei                             │  │
+│  │   │    NEXT.JS 16   │  ← STANDARD: Immer dabei                             │  │
 │  │   │    (Frontend)   │    • App Router, Server Components                   │  │
 │  │   │                 │    • shadcn/ui, Tailwind CSS 4                       │  │
 │  │   │                 │    • TypeScript strict                               │  │
@@ -211,7 +211,7 @@
 
 | Komponente | Rolle | Was es macht |
 |------------|-------|--------------|
-| **Next.js 15** | Frontend | Web App mit App Router, Server Components, shadcn/ui |
+| **Next.js 16** | Frontend | Web App mit App Router, Server Components, shadcn/ui |
 | **Claude** | LLM | Primärer AI Provider - Opus (Qualität), Sonnet (Code), Haiku (Speed) |
 | **Linear** | Execution | Issue Tracking, AIDD Status Flow, Sprint Planning |
 | **Productive.io** | Customer Value | Delivery Units, Budgets, Kunden-Reporting |
@@ -288,7 +288,7 @@
 
 | Komponente | Status |
 |------------|--------|
-| Frontend | Next.js 15 |
+| Frontend | Next.js 16 |
 | AI Layer | Vercel AI SDK |
 | Database | Convex |
 | LLM | Claude direkt |
@@ -307,7 +307,7 @@
 
 | Komponente | Status |
 |------------|--------|
-| Frontend | Next.js 15 |
+| Frontend | Next.js 16 |
 | AI Layer | **Mastra** |
 | Database | Convex |
 | LLM | Claude direkt |
@@ -326,7 +326,7 @@
 
 | Komponente | Status |
 |------------|--------|
-| Frontend | Next.js 15 |
+| Frontend | Next.js 16 |
 | AI Layer | **Mastra** |
 | Database | Convex oder **Postgres** |
 | LLM | Claude via **Portkey** |
@@ -430,7 +430,7 @@ Bei `/init-project` wird nach Projektbeschreibung gefragt und eine Empfehlung ge
 │                                                                  │
 │  STUFE 2: Standard Projekt                                       │
 │                                                                  │
-│  ✅ Next.js 15 (Frontend)                                        │
+│  ✅ Next.js 16 (Frontend)                                        │
 │  ✅ Mastra (AI Layer) - wegen Tools                              │
 │  ✅ Convex (Database) - Realtime für UI                          │
 │  ⚪ n8n - für CRM-Integration                                    │

@@ -4,7 +4,7 @@
 
 ## Target Information
 
-- **Framework:** Next.js 15+ (App Router)
+- **Framework:** Next.js 16+ (App Router)
 - **Database:** Convex (Realtime reactive database)
 - **Auth:** Better Auth with Convex adapter
 - **AI:** Mastra agents with tool execution

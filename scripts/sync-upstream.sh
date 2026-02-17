@@ -44,6 +44,9 @@ SYNCABLE_PATHS=(
 # Zone marker for CLAUDE.md
 ZONE_MARKER="<!-- UPSTREAM-SYNC-END -->"
 
+# Key dependencies to track across projects
+TRACKED_DEPS=("next" "react" "react-dom" "tailwindcss" "convex" "zod")
+
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -207,6 +210,229 @@ sync_claude_md() {
     } > "$downstream_file"
 
     return 0
+}
+
+#-------------------------------------------------------------------------------
+# Dependency version check function
+#-------------------------------------------------------------------------------
+get_dep_version() {
+    local pkg_file="$1"
+    local dep_name="$2"
+    python3 -c "
+import json
+with open('$pkg_file') as f:
+    d = json.load(f)
+deps = d.get('dependencies', {})
+dev = d.get('devDependencies', {})
+v = deps.get('$dep_name', dev.get('$dep_name', ''))
+print(v)
+" 2>/dev/null || echo ""
+}
+
+strip_version_prefix() {
+    echo "$1" | sed 's/^[\^~]//'
+}
+
+check_dependency_versions() {
+    local upstream_pkg="$UPSTREAM_PATH/frontend/package.json"
+    local downstream_pkg="$DOWNSTREAM_PATH/frontend/package.json"
+
+    if [[ ! -f "$upstream_pkg" ]] || [[ ! -f "$downstream_pkg" ]]; then
+        return 0
+    fi
+
+    echo ""
+    echo -e "${CYAN}╔═══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║                  DEPENDENCY VERSION CHECK                         ║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+
+    local has_diff=false
+    local -a diff_deps=()
+    local -a diff_upstream=()
+    local -a diff_downstream=()
+
+    for dep in "${TRACKED_DEPS[@]}"; do
+        local up_ver
+        up_ver=$(get_dep_version "$upstream_pkg" "$dep")
+        local down_ver
+        down_ver=$(get_dep_version "$downstream_pkg" "$dep")
+
+        # Skip if neither has this dependency
+        [[ -z "$up_ver" && -z "$down_ver" ]] && continue
+
+        local up_clean
+        up_clean=$(strip_version_prefix "$up_ver")
+        local down_clean
+        down_clean=$(strip_version_prefix "$down_ver")
+
+        if [[ "$up_clean" != "$down_clean" && -n "$up_ver" && -n "$down_ver" ]]; then
+            has_diff=true
+            diff_deps+=("$dep")
+            diff_upstream+=("$up_ver")
+            diff_downstream+=("$down_ver")
+        fi
+    done
+
+    if [[ "$has_diff" == false ]]; then
+        echo -e "  ${GREEN}✓${NC} All tracked dependencies are in sync."
+        echo ""
+        return 0
+    fi
+
+    # Load existing version decisions
+    local sync_file="$DOWNSTREAM_PATH/.upstream-sync.json"
+    local decisions_json="{}"
+    if [[ -f "$sync_file" ]]; then
+        decisions_json=$(python3 -c "
+import json
+with open('$sync_file') as f:
+    d = json.load(f)
+print(json.dumps(d.get('version_decisions', {})))
+" 2>/dev/null || echo "{}")
+    fi
+
+    echo -e "  ${YELLOW}Version differences found:${NC}"
+    echo ""
+    printf "  %-20s %-16s %-16s %s\n" "DEPENDENCY" "UPSTREAM" "DOWNSTREAM" "STATUS"
+    printf "  %-20s %-16s %-16s %s\n" "──────────" "────────" "──────────" "──────"
+
+    for i in "${!diff_deps[@]}"; do
+        local dep="${diff_deps[$i]}"
+        local up="${diff_upstream[$i]}"
+        local down="${diff_downstream[$i]}"
+
+        # Check if there's a previous decision to skip
+        local prev_decision
+        prev_decision=$(python3 -c "
+import json
+d = json.loads('$decisions_json')
+entry = d.get('$dep', {})
+if entry.get('skipped_version') == '$up':
+    print(entry.get('reason', 'no reason given'))
+else:
+    print('')
+" 2>/dev/null || echo "")
+
+        local status="${YELLOW}UPDATE AVAILABLE${NC}"
+        if [[ -n "$prev_decision" ]]; then
+            status="${BLUE}SKIPPED: $prev_decision${NC}"
+        fi
+
+        printf "  %-20s %-16s %-16s " "$dep" "$up" "$down"
+        echo -e "$status"
+    done
+
+    echo ""
+
+    if [[ "$DRY_RUN" == true ]]; then
+        echo -e "  ${YELLOW}DRY RUN - No dependency changes will be made${NC}"
+        return 0
+    fi
+
+    # Ask about each dependency that hasn't been previously skipped
+    local updated_count=0
+    local skipped_count=0
+    local new_decisions=""
+
+    for i in "${!diff_deps[@]}"; do
+        local dep="${diff_deps[$i]}"
+        local up="${diff_upstream[$i]}"
+        local down="${diff_downstream[$i]}"
+
+        # Check previous decision
+        local prev_decision
+        prev_decision=$(python3 -c "
+import json
+d = json.loads('$(echo "$decisions_json" | sed "s/'/\\\\'/g")')
+entry = d.get('$dep', {})
+if entry.get('skipped_version') == '$up':
+    print('skip')
+else:
+    print('')
+" 2>/dev/null || echo "")
+
+        if [[ "$prev_decision" == "skip" ]]; then
+            continue
+        fi
+
+        echo -e "  ${BOLD}$dep${NC}: $down → $up"
+        echo -n "  Update? [y/N/s(kip with reason)] "
+        read -r answer
+
+        case "$answer" in
+            y|Y)
+                # Update the version in downstream package.json
+                python3 -c "
+import json
+with open('$downstream_pkg') as f:
+    d = json.load(f)
+if '$dep' in d.get('dependencies', {}):
+    d['dependencies']['$dep'] = '$up'
+elif '$dep' in d.get('devDependencies', {}):
+    d['devDependencies']['$dep'] = '$up'
+with open('$downstream_pkg', 'w') as f:
+    json.dump(d, f, indent=2)
+    f.write('\n')
+" 2>/dev/null
+                echo -e "  ${GREEN}✓${NC} Updated $dep to $up"
+                ((updated_count++))
+                ;;
+            s|S)
+                echo -n "  Reason for skipping: "
+                read -r reason
+                [[ -z "$reason" ]] && reason="no reason given"
+                new_decisions="$new_decisions|$dep|$up|$reason"
+                echo -e "  ${BLUE}⏭${NC} Skipped $dep (reason recorded)"
+                ((skipped_count++))
+                ;;
+            *)
+                echo -e "  ${YELLOW}─${NC} Skipped $dep (no record)"
+                ;;
+        esac
+    done
+
+    # Save skip decisions to .upstream-sync.json
+    if [[ -n "$new_decisions" && -f "$sync_file" ]]; then
+        python3 -c "
+import json
+
+with open('$sync_file') as f:
+    data = json.load(f)
+
+decisions = data.get('version_decisions', {})
+
+entries = '''$new_decisions'''.strip().split('|')
+# entries format: empty|dep|ver|reason|dep|ver|reason...
+i = 1
+while i < len(entries) - 2:
+    dep = entries[i]
+    ver = entries[i+1]
+    reason = entries[i+2]
+    decisions[dep] = {
+        'skipped_version': ver,
+        'reason': reason,
+        'current_downstream': '$(get_dep_version "$downstream_pkg" "placeholder")'
+    }
+    i += 3
+
+data['version_decisions'] = decisions
+
+with open('$sync_file', 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+" 2>/dev/null
+    fi
+
+    echo ""
+    if [[ $updated_count -gt 0 ]]; then
+        echo -e "  ${GREEN}Updated $updated_count dependency/dependencies.${NC}"
+        echo -e "  ${YELLOW}Run 'pnpm install' in frontend/ to apply changes.${NC}"
+    fi
+    if [[ $skipped_count -gt 0 ]]; then
+        echo -e "  ${BLUE}Skipped $skipped_count dependency/dependencies (decisions saved to .upstream-sync.json).${NC}"
+    fi
+    echo ""
 }
 
 # Find syncable changes
@@ -401,6 +627,11 @@ with open('$DOWNSTREAM_PATH/.upstream-sync.json', 'w') as f:
     f.write('\n')
 " 2>/dev/null && echo -e "${GREEN}✓${NC} Updated .upstream-sync.json (${PREV_SYNC_COMMIT} → ${UPSTREAM_HEAD})"
     fi
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Dependency Version Check
+    # ─────────────────────────────────────────────────────────────────────
+    check_dependency_versions
 
     # ─────────────────────────────────────────────────────────────────────
     # Sync-Diff Summary Report

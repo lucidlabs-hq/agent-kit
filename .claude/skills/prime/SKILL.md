@@ -485,6 +485,102 @@ fi
 
 ---
 
+#### 0.1.0d Stack Version Monitor (UPSTREAM + DOWNSTREAM)
+
+**WANN:** Bei jedem Session-Start (upstream und downstream). Zeige nach Security Reminders.
+
+**Zweck:** Proaktiv pruefen ob neue Versionen der Key-Dependencies verfuegbar sind, damit man nicht zu weit zurueckfaellt und bewusst entscheiden kann.
+
+**Ausfuehrung:**
+
+```bash
+# Determine package directory
+if [ -d "frontend" ]; then
+  PKG_DIR="frontend"
+elif [ -f "package.json" ]; then
+  PKG_DIR="."
+else
+  PKG_DIR=""
+fi
+
+# Run stack monitor (24h cache - won't hit npm on every prime)
+if [ -n "$PKG_DIR" ] && [ -f "scripts/stack-monitor.sh" ]; then
+  bash scripts/stack-monitor.sh --pkg-dir "$PKG_DIR"
+elif [ -n "$PKG_DIR" ]; then
+  # Try upstream script location
+  UPSTREAM_SCRIPT="$(dirname "$(pwd)")/../lucidlabs-agent-kit/scripts/stack-monitor.sh"
+  [ -f "$UPSTREAM_SCRIPT" ] && bash "$UPSTREAM_SCRIPT" --pkg-dir "$PKG_DIR"
+fi
+```
+
+**Anzeige (wenn Updates verfuegbar):**
+
+```
++--------------------------------------------------------------------+
+|                                                                      |
+|  STACK VERSION MONITOR                                               |
+|  -----                                                               |
+|                                                                      |
+|  1 major, 2 minor, 1 patch update(s) available                      |
+|  2 new (not yet reviewed)                                            |
+|                                                                      |
+|  DEPENDENCY                INSTALLED      LATEST         TYPE   STATUS
+|  ------------------------------------------------------------------- |
+|  next                      16.0.10        16.1.6         minor  NEW  |
+|  react                     19.0.0         19.2.1         minor  NEW  |
+|  convex                    1.28.0         1.31.7         minor  PARKED
+|  zod                       3.23.0         4.3.6          MAJOR  SKIPPED: uses v3 API
+|                                                                      |
+|  Review new updates? [y/N]                                           |
+|                                                                      |
++--------------------------------------------------------------------+
+```
+
+**Interaktiver Review (wenn User "y" waehlt):**
+
+Fuer jedes neue Update:
+```
+  next 16.0.10 -> 16.1.6 (minor)
+  Action? [u]pdate / [p]ark / [s]kip with reason / [enter] skip:
+```
+
+| Aktion | Bedeutung | Verhalten bei naechstem /prime |
+|--------|-----------|-------------------------------|
+| **update** | Will updaten | Erinnert: "Run pnpm update next in frontend/" |
+| **park** | Spaeter anschauen | Zeigt wieder als PARKED (bis Version sich aendert) |
+| **skip + reason** | Bewusst auslassen | Zeigt als SKIPPED mit Begruendung, fragt nicht nochmal |
+| **enter** | Erstmal ignorieren | Zeigt wieder als NEW beim naechsten /prime |
+
+**Entscheidungen werden gespeichert in `.stack-monitor.json`:**
+
+```json
+{
+  "decisions": {
+    "zod": {
+      "parked_version": "4.3.6",
+      "action": "skipped",
+      "reason": "uses v3 API throughout codebase, migration too large",
+      "decided_at": "2026-02-17T22:00:00"
+    }
+  },
+  "last_check": "2026-02-17T22:00:00"
+}
+```
+
+**Cache-Logik:**
+- npm Registry wird maximal 1x pro 24h abgefragt
+- Entscheidungen bleiben bestehen bis die upstream-Version sich aendert
+- `.stack-monitor.json` ist gitignored (projekt-lokal)
+
+**Rendering-Regeln:**
+- Falls KEINE Updates: "All tracked dependencies are up to date." (eine Zeile, kein Block)
+- Falls nur PARKED/SKIPPED und keine NEW: Zeige Tabelle aber kein interaktiver Review
+- Falls NEW vorhanden: Zeige Tabelle + biete Review an
+- MAJOR Updates immer rot hervorheben mit Link zu Release Notes
+- Block NICHT anzeigen wenn `--quiet` und keine neuen Updates
+
+---
+
 #### 0.1.0c Project Service Dashboard (DOWNSTREAM ONLY - AFTER Boot Screen)
 
 **WANN:** Nur bei Downstream-Projekten. Zeige IMMER nach dem Boot Screen.

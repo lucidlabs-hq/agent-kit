@@ -513,6 +513,46 @@ npx convex dev  # May connect to wrong backend!
 
 ---
 
+
+## Port Registry Rule (MANDATORY)
+
+**Every project MUST register its ports in `.claude/reference/port-registry.md` BEFORE first dev server start.**
+
+| Rule | Details |
+|------|---------|
+| **Register first** | Update port-registry.md before starting any service |
+| **10-port block** | Each project gets a contiguous 10-port range (e.g., 8070-8079) |
+| **Hardcode in package.json** | Ports MUST be explicit in package.json scripts, never rely on defaults |
+| **Conflict check** | Run `lsof -i:PORT` before starting any service |
+| **Dev = Prod mapping** | Development and production ports must be documented together |
+
+**Package.json Port Coding (MANDATORY):**
+
+```json
+{
+  "scripts": {
+    "dev": "next dev -p 8070",
+    "dev:mastra": "cd mastra && PORT=8071 bun run dev",
+    "dev:convex": "docker compose -f docker-compose.dev.yml up"
+  }
+}
+```
+
+**Port offsets within a block:**
+
+| Offset | Service |
+|--------|---------|
+| +0 | Frontend (Next.js) |
+| +1 | Mastra API |
+| +2 | Convex Backend |
+| +3 | Convex Dashboard |
+| +4 | HTTP Actions |
+| +5-9 | Reserved |
+
+See `.claude/reference/port-registry.md` for current allocations and conflict checking.
+
+---
+
 ## AI-Coding Principles
 
 **Siehe:** `.claude/reference/ai-coding-principles.md` für vollständige Dokumentation.
@@ -757,6 +797,51 @@ When implementing features that require UI components:
 **This is a hard boundary.** The upstream is a curated knowledge base, not a workspace. Treat it like a package registry: you consume from it (`/sync`) and contribute to it (`/promote`), but you never write to it directly.
 
 **Rationale:** Downstream projects are customer-specific. Creating files in upstream pollutes the shared template and causes sync conflicts.
+
+---
+
+
+## Promote Queue Standard (MANDATORY)
+
+**Every downstream project MUST maintain a promote queue at `.agents/promote-queue.md`.**
+
+| Rule | Details |
+|------|---------|
+| **Queue file** | `.agents/promote-queue.md` in every downstream project |
+| **Promote via skill** | ONLY via `/promote` skill - no manual file copying |
+| **Description required** | Every queue item MUST have a clear description of what changed and why |
+| **Review before merge** | All promoted items go through PR review in upstream |
+| **Dev practices only** | Only promote reusable patterns, skills, reference docs - NOT app-specific features |
+
+**Queue Item Format:**
+```markdown
+## [Feature Name]
+- **Source:** path/to/file
+- **Date:** YYYY-MM-DD
+- **Status:** pending | promoted | rejected
+- **Description:** What this pattern does and why it's reusable
+```
+
+See `.claude/reference/promote-sync.md` for complete promote/sync architecture.
+
+---
+
+## Skill Enforcement Rule (MANDATORY)
+
+**All standard operations MUST go through their designated skills. No bash workarounds.**
+
+| Operation | Required Skill | NOT Allowed |
+|-----------|---------------|-------------|
+| Commit code | `/commit` | Raw `git commit` |
+| Create PR | `/pr` | Raw `gh pr create` |
+| Promote to upstream | `/promote` | Manual file copy + push |
+| Sync from upstream | `/sync` | Manual `cp` from agent-kit |
+| Deploy | `/deploy` | Manual SSH + docker commands |
+| End session | `/session-end` | Just closing the terminal |
+
+**Why:** Skills encode best practices, enforce checklists, and ensure consistency. Bypassing them with raw commands skips validation steps and creates inconsistency across projects.
+
+**Exception:** During skill development itself, raw commands are permitted to test and debug the skill being built.
 
 ---
 

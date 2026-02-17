@@ -25,7 +25,54 @@ If no argument provided, list available plans:
 - Review the testing strategy
 - Check the patterns to follow
 
-### 2. Pre-Flight Checks
+### 2. Create Feature Branch (MANDATORY)
+
+**BEFORE any code changes, create a feature branch from latest `main`.**
+
+```bash
+# Derive branch name from plan file
+# Example: .agents/plans/2026-02-11-crash-safe-session-tracking.md
+#        → feature/crash-safe-session-tracking
+PLAN_FILE="$ARGUMENTS"
+BRANCH_NAME=$(basename "$PLAN_FILE" .md | sed 's/^[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}-//')
+BRANCH_NAME="feature/$BRANCH_NAME"
+
+# Ensure we branch from latest main
+git checkout main
+git pull origin main
+
+# Create and switch to feature branch
+git checkout -b "$BRANCH_NAME"
+```
+
+**Show confirmation:**
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  FEATURE BRANCH CREATED                                              │
+│  ──────────────────────                                              │
+│                                                                      │
+│  Branch:  feature/crash-safe-session-tracking                        │
+│  Base:    main (up to date)                                          │
+│  Plan:    .agents/plans/2026-02-11-crash-safe-session-tracking.md    │
+│                                                                      │
+│  All commits will land on this branch.                               │
+│  Use /pr when implementation is complete.                            │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+**Branch naming rules:**
+- Strip date prefix from plan filename (`YYYY-MM-DD-`)
+- Prefix with `feature/` (or `fix/` if plan is a bugfix)
+- Lowercase, kebab-case
+- If no plan file given, ask user for branch name
+
+**Safety checks:**
+- If already on a feature branch: Ask user if they want to continue on it or create a new one
+- If there are uncommitted changes: STOP and ask user to commit or stash first
+
+### 3. Pre-Flight Checks
 
 Before starting implementation:
 
@@ -160,8 +207,8 @@ Execute ALL validation commands from the plan in order:
 cd frontend && pnpm run lint
 cd frontend && pnpm run type-check
 
-# Level 2: Unit Tests (MANDATORY GATE)
-cd frontend && pnpm run test
+# Level 2: Unit Tests
+pnpm run test
 
 # Level 3: Build
 cd frontend && pnpm run build
@@ -172,43 +219,132 @@ If any command fails:
 - Re-run the command
 - Continue only when it passes
 
-### 5.5 Post-Implementation Test Gate (MANDATORY)
+### 5.5 Architecture Guard (MANDATORY)
 
-After ALL implementation tasks are complete, run the full test suite with coverage:
+Run quality gate subagents on all changed files:
+
+1. **architecture-guard** on all modified/created files
+2. **design-system-guard** if any UI files were changed (components/, app/)
+3. **ssr-safety-checker** if any React components were changed
+4. **mastra-validator** if any mastra/ files were changed
+
+```
+Gate Results:
+- CRITICAL → STOP. Fix before proceeding.
+- HIGH     → STOP. Fix before proceeding.
+- WARNING  → List warnings. User decides.
+- INFO     → Document and continue.
+```
+
+See `.claude/reference/quality-gates.md` for full gate architecture.
+
+### 5.6 Unit Test Gate (MANDATORY)
+
+Check that new code has tests:
+
+1. For every new function/utility: verify a corresponding test exists
+2. Run `pnpm run test` - must be green
+3. If tests are missing for new code: STOP and write tests before continuing
+
+### 5.7 Change Size Classification (MANDATORY)
+
+Classify the scope of changes to determine if Visual Verification is needed:
 
 ```bash
-cd frontend && pnpm run test
-cd frontend && pnpm run test:coverage
+git diff --stat main..HEAD
 ```
 
-**This is a hard gate:**
-1. ALL unit tests must pass - zero failures allowed
-2. Coverage must not have decreased from before implementation
-3. New/modified lib files SHOULD have corresponding test files
-4. Report any new files without tests as gaps
+| Level | Criteria | Visual Verification? |
+|-------|----------|---------------------|
+| **S** | 1-2 files, config/docs only | No |
+| **M** | 3-10 files, single component | No |
+| **L** | 10+ files, new feature with UI | **YES** |
 
-If tests fail:
-- DO NOT proceed to manual testing or commit
-- Fix the implementation until tests pass
-- Re-run until green
+**Any change that touches UI files (components/, app/) AND is L-level triggers Visual Verification.**
 
-Show results:
+### 5.8 Smoke Test (MANDATORY for M and L)
+
+**Always runs proactively for M and L changes. No user confirmation needed.**
+
+Verify the basics work before anything else:
+
+```bash
+# 1. Is the dev server running? If not, start it.
+pnpm run dev
+
+# 2. Does the main page respond?
+curl -s -o /dev/null -w "%{http_code}" http://localhost:[PORT]/
+
+# 3. Are API endpoints reachable? (if API routes were changed)
+curl -s -o /dev/null -w "%{http_code}" http://localhost:[PORT]/api/health
+```
+
+Show a brief status:
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  POST-IMPLEMENTATION TEST GATE                                  │
-│  ─────────────────────────────                                  │
-│                                                                 │
-│  Tests:      ALL PASSING (12/12)                                │
-│  Coverage:   64% lines | 58% branches | 70% functions           │
-│                                                                 │
-│  New files without tests:                                       │
-│    (none - all new files have tests)                            │
-│                                                                 │
-│  Result:     GATE PASSED - ready for manual testing             │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│  SMOKE TEST                                                       │
+│  ──────────                                                       │
+│  Dev server: Running on :3000                                    │
+│  Main page:  200 OK                                              │
+│  API health: 200 OK                                              │
+└──────────────────────────────────────────────────────────────────┘
 ```
+
+If anything returns an error: try refreshing/restarting. If still broken, fix the code.
+
+### 5.9 Visual Verification Gate (L-Level with UI — ASK FIRST)
+
+**Skip this step if change level is S or M, or if no UI files were changed.**
+
+**ASK THE USER before starting browser verification:**
+
+```
+This was a large feature (L-level, [X] files changed).
+Shall I verify the UI in the browser with screenshots?
+```
+
+**If user confirms**, show status and proceed:
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  VISUAL VERIFICATION                                              │
+│  ────────────────────                                             │
+│                                                                   │
+│  Change Level: L (Large) — [X] files changed                    │
+│  Affected Pages: [list of routes]                                │
+│                                                                   │
+│  I'm now verifying the implementation in the browser.             │
+│  Opening pages, taking screenshots, checking layout.              │
+│  If something doesn't work, I'll fix it before moving on.        │
+│                                                                   │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Steps:**
+
+1. Ensure dev server is running (should be from smoke test)
+2. For each affected page:
+   ```bash
+   agent-browser open http://localhost:[PORT]/[path]
+   agent-browser snapshot -i
+   agent-browser screenshot ./screenshots/[page]-desktop.png
+   ```
+3. Check each page:
+   - Page loads without blank screen or errors
+   - Layout matches expected structure
+   - Key interactive elements are present
+4. Mobile check (for responsive pages):
+   ```bash
+   agent-browser viewport 375 812
+   agent-browser screenshot ./screenshots/[page]-mobile.png
+   ```
+5. If issues found: **fix the code, re-verify, loop until clean**
+6. Only proceed when all pages work correctly
+
+**If user declines**, skip browser verification but note it in the output report.
+
+See `.claude/reference/quality-gates.md` → "Visual Verification Gate" for full rules.
 
 ### 6. Manual Testing
 
@@ -229,6 +365,7 @@ Before completing:
 - All validation commands pass
 - Code follows project conventions
 - Mobile responsive verified
+- Visual verification passed (if L-level with UI)
 - Documentation added/updated as needed
 
 ## Output Report

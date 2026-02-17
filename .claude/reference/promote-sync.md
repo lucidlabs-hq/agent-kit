@@ -47,6 +47,90 @@ Every project makes us smarter. The promote/sync system ensures learnings flow i
 
 ---
 
+
+## Promote Queue (MANDATORY for Downstream Projects)
+
+Every downstream project MUST maintain a promote queue file at `.agents/promote-queue.md`.
+
+### Purpose
+
+The promote queue is a living document that tracks patterns, skills, and reference docs that are candidates for upstream promotion. It serves as:
+
+1. **Discovery log** - Captures reusable patterns as they emerge during development
+2. **Review list** - Gives the maintainer a clear list of what to review and pull
+3. **Sync checkpoint** - When running `/prime` in upstream, the queue is scanned across all projects
+
+### Queue File Format
+
+**Location:** `.agents/promote-queue.md`
+
+```markdown
+# Promote Queue
+
+Items pending promotion to upstream agent-kit.
+
+## Pending
+
+### [Pattern/Skill Name]
+- **Source:** `.claude/reference/my-pattern.md`
+- **Date added:** 2026-02-17
+- **Category:** reference-doc | skill | component | script | hook
+- **Description:** Brief explanation of what this pattern does and why it belongs in upstream
+- **Status:** pending
+
+### [Another Pattern]
+- **Source:** `.claude/skills/my-skill/SKILL.md`
+- **Date added:** 2026-02-15
+- **Category:** skill
+- **Description:** Reusable skill for X that works across all projects
+- **Status:** pending
+
+## Promoted
+
+### [Already Promoted Pattern]
+- **Source:** `.claude/reference/old-pattern.md`
+- **Date promoted:** 2026-02-10
+- **PR:** #42
+- **Status:** promoted
+```
+
+### Queue Rules
+
+| Rule | Details |
+|------|---------|
+| **Add immediately** | When you discover a reusable pattern, add it to the queue right away |
+| **Description required** | Every item MUST explain what it does and why it's reusable |
+| **Category required** | Must specify: reference-doc, skill, component, script, or hook |
+| **No app-specific items** | Do NOT queue domain-specific features (meeting-import, invoice-parsing) |
+| **Promote via skill** | Only use `/promote` to execute promotion - never copy files manually |
+| **Track status** | Move items from Pending to Promoted after successful PR merge |
+
+### What Belongs in the Queue
+
+| Belongs | Does NOT Belong |
+|---------|-----------------|
+| Generic dev practices | App-specific workflows |
+| Reusable skills | Domain-specific agents |
+| Technology reference docs | Project-specific PRDs |
+| Utility scripts | Customer data schemas |
+| UI patterns (generic) | Business logic |
+| Error handling patterns | API integrations (app-specific) |
+
+### Scanning Queues from Upstream
+
+When `/prime` runs in upstream mode, it should scan all downstream promote queues:
+
+```bash
+for proj in ../projects/*; do
+  QUEUE="$proj/.agents/promote-queue.md"
+  if [ -f "$QUEUE" ]; then
+    echo "=== $(basename $proj) ==="
+    grep -A2 "^### " "$QUEUE" | grep -v "^--$"
+  fi
+done
+```
+
+---
 ## Promote Flow (Downstream → Upstream)
 
 ### Using `/promote` Skill
@@ -229,6 +313,47 @@ downstream (projects/*/):
 ├── .upstream-sync.json           # Version tracking
 └── CLAUDE.md                     # Has zone marker
 ```
+
+---
+
+## Downstream Project Rule (MANDATORY)
+
+When working in a downstream project (identified by `.claude/PROJECT-CONTEXT.md` with `type: downstream`):
+
+**ALL new files MUST be created in the CURRENT project, NEVER in the upstream repository.**
+
+| Action | Create In |
+|--------|-----------|
+| New workflows | `./n8n/workflows/` (current project) |
+| New skills | `./.claude/skills/` (current project) |
+| New components | `./frontend/components/` (current project) |
+| New tools | `./mastra/src/tools/` (current project) |
+| New reference docs | `./.claude/reference/` (current project) |
+
+**Check before creating:**
+1. Read `.claude/PROJECT-CONTEXT.md` to identify project type
+2. If `type: downstream` -> create files HERE
+3. If `type: upstream` or file doesn't exist -> you're in the template
+
+**Exception:** Use `/promote` skill to intentionally copy proven patterns TO upstream.
+
+### Upstream Interaction Rules (HARD BOUNDARY)
+
+From a downstream project, the ONLY permitted interactions with upstream are:
+
+| Permitted | How | Direct File Access? |
+|-----------|-----|---------------------|
+| Pull updates | `/sync` skill or `./scripts/sync-upstream.sh` | READ only (copies TO downstream) |
+| Push patterns | `/promote` skill or `./scripts/promote.sh` | Creates PR in upstream (never direct push) |
+| Spawn new project | `./scripts/create-agent-project.sh` | READ only (copies FROM upstream) |
+
+**FORBIDDEN from any downstream project session:**
+- `cd ../../lucidlabs-agent-kit && [any write operation]`
+- Writing, editing, or deleting ANY file under `../../lucidlabs-agent-kit/`
+- `git push` to ANY branch in the upstream repo (use scripts which handle branching)
+- Opening the upstream repo as a working directory
+
+**This is a hard boundary.** The upstream is a curated knowledge base, not a workspace. Treat it like a package registry: you consume from it (`/sync`) and contribute to it (`/promote`), but you never write to it directly.
 
 ---
 

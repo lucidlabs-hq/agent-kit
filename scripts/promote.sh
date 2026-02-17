@@ -169,33 +169,66 @@ EOF
 validate_environment() {
     # Check if we're in a project directory
     if [[ ! -f "CLAUDE.md" ]] && [[ ! -d ".claude" ]]; then
-        print_error "Not in a valid project directory (no CLAUDE.md or .claude/ found)"
-        print_info "Run this script from your downstream project root"
+        echo ""
+        print_error "[BLOCKED] Not in a valid project directory"
+        echo ""
+        echo "  Why:  No CLAUDE.md or .claude/ directory found in $(pwd)."
+        echo "        This script must be run from a downstream project root."
+        echo ""
+        echo "  Fix:  cd into your project directory first:"
+        echo "          cd ../projects/my-project"
+        echo "          ./scripts/promote.sh --upstream ../../lucidlabs-agent-kit"
+        echo ""
         exit 1
     fi
 
     # Check if upstream path is provided
     if [[ -z "$UPSTREAM_PATH" ]]; then
-        print_error "Upstream path is required"
-        print_info "Usage: ./scripts/promote.sh --upstream <path-to-agent-kit>"
+        echo ""
+        print_error "[BLOCKED] Upstream path is required"
+        echo ""
+        echo "  Why:  The --upstream flag was not provided."
+        echo ""
+        echo "  Fix:  Specify the path to the agent-kit repository:"
+        echo "          ./scripts/promote.sh --upstream ../../lucidlabs-agent-kit"
+        echo ""
         exit 1
     fi
 
     # Check if upstream path exists
     if [[ ! -d "$UPSTREAM_PATH" ]]; then
-        print_error "Upstream path does not exist: $UPSTREAM_PATH"
+        echo ""
+        print_error "[BLOCKED] Upstream path does not exist: $UPSTREAM_PATH"
+        echo ""
+        echo "  Why:  The specified directory does not exist."
+        echo ""
+        echo "  Fix:  Verify folder structure:"
+        echo "          lucidlabs/"
+        echo "          ├── lucidlabs-agent-kit/    <-- Upstream"
+        echo "          └── projects/"
+        echo "              └── [this-project]/     <-- You are here"
+        echo ""
         exit 1
     fi
 
     # Check if upstream is a valid agent-kit
     if [[ ! -f "$UPSTREAM_PATH/CLAUDE.md" ]]; then
-        print_error "Upstream does not appear to be an agent-kit (no CLAUDE.md)"
+        echo ""
+        print_error "[BLOCKED] Not a valid agent-kit: $UPSTREAM_PATH"
+        echo ""
+        echo "  Why:  The directory has no CLAUDE.md file."
+        echo "        This doesn't look like the agent-kit template."
+        echo ""
+        echo "  Fix:  Check the path is correct:"
+        echo "          ls $UPSTREAM_PATH/CLAUDE.md"
+        echo ""
         exit 1
     fi
 
     # Check if gh CLI is installed (for PR creation)
     if ! command -v gh &> /dev/null; then
         print_warning "GitHub CLI (gh) not installed - PR creation will be skipped"
+        print_info "Install with: brew install gh"
     fi
 }
 
@@ -252,8 +285,8 @@ check_domain_keywords() {
 detect_promotable_changes() {
     local changes=()
 
-    print_step "Scanning for promotable changes..."
-    echo ""
+    print_step "Scanning for promotable changes..." >&2
+    echo "" >&2
 
     # Find all files in whitelisted paths
     for pattern in "${WHITELIST_PATTERNS[@]}"; do
@@ -315,12 +348,12 @@ select_changes() {
     local -a selected=()
 
     if [[ ${#changes[@]} -eq 0 ]]; then
-        print_info "No promotable changes found."
+        print_info "No promotable changes found." >&2
         return
     fi
 
-    echo -e "${BOLD}Promotable changes found:${NC}"
-    echo ""
+    echo -e "${BOLD}Promotable changes found:${NC}" >&2
+    echo "" >&2
 
     local i=1
     for change in "${changes[@]}"; do
@@ -338,11 +371,11 @@ select_changes() {
             warning=" ${YELLOW}⚠ domain keywords: $keywords${NC}"
         fi
 
-        echo -e "  [${CYAN}$i${NC}] $path (${status_color}$status${NC})$warning"
+        echo -e "  [${CYAN}$i${NC}] $path (${status_color}$status${NC})$warning" >&2
         ((i++))
     done
 
-    echo ""
+    echo "" >&2
 
     if [[ "$PROMOTE_ALL" == true ]]; then
         selected=("${changes[@]}")
@@ -350,7 +383,7 @@ select_changes() {
         read -p "Enter numbers to promote (e.g., 1,3,5 or 'all' or 'q' to quit): " selection
 
         if [[ "$selection" == "q" ]] || [[ "$selection" == "quit" ]]; then
-            print_info "Cancelled."
+            print_info "Cancelled." >&2
             exit 0
         fi
 
@@ -367,7 +400,7 @@ select_changes() {
         fi
     fi
 
-    # Return selected
+    # Return selected (to stdout for capture)
     printf '%s\n' "${selected[@]}"
 }
 
@@ -572,16 +605,56 @@ main() {
     print_info "Upstream:   $UPSTREAM_PATH"
     echo ""
 
-    # Detect changes
-    mapfile -t all_changes < <(detect_promotable_changes)
+    # ─────────────────────────────────────────────────────────────────────
+    # Enforce upstream check: block if upstream has new commits
+    # ─────────────────────────────────────────────────────────────────────
+    print_step "Checking upstream is up-to-date..."
+
+    pushd "$UPSTREAM_PATH" > /dev/null
+    git fetch origin 2>/dev/null || true
+    BEHIND_COUNT=$(git rev-list --count HEAD..origin/main 2>/dev/null || echo "0")
+    if [[ "$BEHIND_COUNT" -gt 0 ]]; then
+        echo ""
+        echo -e "${YELLOW}╔════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${YELLOW}║  [BLOCKED] Upstream has new commits since last pull            ║${NC}"
+        echo -e "${YELLOW}╚════════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        echo "  Why:  The upstream agent-kit has commits that are not in your"
+        echo "        local copy. Promoting now could cause merge conflicts"
+        echo "        or overwrite recent upstream changes."
+        echo ""
+        echo "  New commits:"
+        git log HEAD..origin/main --oneline 2>/dev/null || git log HEAD..origin/master --oneline 2>/dev/null || true
+        echo ""
+        echo "  Fix:  1. Pull upstream first:"
+        echo "            cd $UPSTREAM_PATH && git pull origin main"
+        echo "        2. Run /sync in your downstream project"
+        echo "        3. Then retry /promote"
+        echo ""
+        popd > /dev/null
+        exit 1
+    fi
+
+    print_success "Upstream is up-to-date ($(git rev-parse --short HEAD 2>/dev/null))"
+    popd > /dev/null
+    echo ""
+
+    # Detect changes (bash 3 compatible - no mapfile)
+    all_changes=()
+    while IFS= read -r line; do
+        [[ -n "$line" ]] && all_changes+=("$line")
+    done < <(detect_promotable_changes)
 
     if [[ ${#all_changes[@]} -eq 0 ]]; then
         print_info "No promotable changes found."
         exit 0
     fi
 
-    # Select changes
-    mapfile -t selected_changes < <(select_changes "${all_changes[@]}")
+    # Select changes (bash 3 compatible - no mapfile)
+    selected_changes=()
+    while IFS= read -r line; do
+        [[ -n "$line" ]] && selected_changes+=("$line")
+    done < <(select_changes "${all_changes[@]}")
 
     if [[ ${#selected_changes[@]} -eq 0 ]]; then
         print_info "No changes selected."

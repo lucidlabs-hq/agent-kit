@@ -91,6 +91,69 @@ volumes:
 
 ---
 
+
+## Package.json Port Coding (MANDATORY)
+
+**Ports MUST be hardcoded in `package.json` scripts.** Never rely on framework defaults.
+
+### Why
+
+- Services start on the correct port immediately - no configuration guessing
+- Port conflicts are visible in code review
+- New developers can see all ports at a glance
+- CI/CD and Docker use the same source of truth
+
+### Frontend package.json
+
+```json
+{
+  "scripts": {
+    "dev": "next dev -p 8070",
+    "build": "next build",
+    "start": "next start -p 8070"
+  }
+}
+```
+
+### Mastra package.json
+
+```json
+{
+  "scripts": {
+    "dev": "PORT=8071 bun run --watch src/index.ts",
+    "start": "PORT=8071 node dist/index.js"
+  }
+}
+```
+
+### docker-compose.dev.yml
+
+```yaml
+services:
+  backend:
+    ports:
+      - "8072:3210"   # Convex Backend
+      - "8074:3211"   # HTTP Actions
+  dashboard:
+    ports:
+      - "8073:6791"   # Convex Dashboard
+```
+
+### Validation
+
+Before starting a dev server, ALWAYS:
+
+```bash
+# 1. Check port-registry.md for your assigned range
+# 2. Verify nothing is running on your ports
+lsof -i:8070 -i:8071 -i:8072 -i:8073
+
+# 3. Start services
+pnpm run dev
+```
+
+---
+
 ## Production Port Allocation (LUCIDLABS-HQ)
 
 **WICHTIG:** Production-Ports müssen AUCH registriert werden, um Caddy Reverse Proxy Konflikte zu vermeiden!

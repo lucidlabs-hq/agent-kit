@@ -330,82 +330,88 @@ export function validateEnv(): Env {
 
 ## 5. CI/CD with GitHub Actions
 
-### Build and Deploy Workflow
+### Workflow Templates
 
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy
+All workflow templates live in `.github/workflow-templates/` in the upstream agent-kit. When you create a new project with `create-agent-project.sh`, these are automatically copied and configured.
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+| Template | Purpose | Trigger |
+|----------|---------|---------|
+| `ci.yml` | Lint, type-check, build on PRs | `pull_request` |
+| `deploy-hq.yml` | Deploy to LUCIDLABS-HQ | `push` to main |
+| `deploy-provision.yml` | First-time server provisioning | Manual (`workflow_dispatch`) |
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+### Zero-SSH Deployment Flow
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+Developers **never need SSH access** to deploy. The entire flow runs through GitHub Actions:
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: |
-          cd frontend && pnpm install
-          cd ../mastra && pnpm install
-
-      - name: Lint
-        run: |
-          cd frontend && pnpm run lint
-          cd ../mastra && pnpm run lint
-
-      - name: Type check
-        run: |
-          cd frontend && pnpm run type-check
-          cd ../mastra && pnpm exec tsc --noEmit
-
-      - name: Test
-        run: |
-          cd frontend && pnpm run test
-
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy to Elestio
-        env:
-          ELESTIO_HOST: ${{ secrets.ELESTIO_HOST }}
-          ELESTIO_SSH_KEY: ${{ secrets.ELESTIO_SSH_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$ELESTIO_SSH_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H $ELESTIO_HOST >> ~/.ssh/known_hosts
-
-          ssh root@$ELESTIO_HOST << 'EOF'
-            cd /opt/app
-            git pull origin main
-            docker compose up -d --build
-          EOF
 ```
+Developer pushes to main
+        │
+        ▼
+GitHub Actions: deploy-hq.yml
+        │
+        ├─ First deploy? ──YES──▶ Upload + run add-project.sh
+        │                          (allocates ports, Caddyfile, registry)
+        │
+        ├─ Rsync code to server
+        │
+        ├─ docker compose up -d --build
+        │
+        ├─ Deploy Convex functions (if HAS_CONVEX=true)
+        │
+        ├─ Health check
+        │   │
+        │   ├─ Healthy ──▶ Done! Slack notification (optional)
+        │   │
+        │   └─ Unhealthy ──▶ Rollback to previous image
+        │
+        └─ Slack notification (optional)
+```
+
+### First-Deploy via CI
+
+Two options for first-time provisioning:
+
+**Option A: Automatic (recommended)**
+Just push to `main`. The `deploy-hq.yml` workflow detects that the project directory doesn't exist and automatically runs `add-project.sh` to provision it.
+
+**Option B: Manual via GitHub Actions UI**
+1. Go to Actions tab
+2. Select "Provision Project on Server"
+3. Fill in: project name, abbreviation, subdomain, convex/mastra flags
+4. Click "Run workflow"
+
+This is useful when you want to provision without deploying code yet.
+
+### Rollback
+
+If the health check fails after deployment, the workflow automatically:
+
+1. Stops the failed container
+2. Restarts the previous container image
+3. Reports the failure via Slack (if configured)
+
+Manual rollback:
+```bash
+# Via SSH (emergency only)
+ssh -p 2222 nightwing@lucidlabs-hq << 'EOF'
+  cd /opt/lucidlabs/projects/<project-name>
+  sudo docker compose -p <project-name> up -d
+EOF
+```
+
+### Required Secrets
+
+| Secret | Level | Description |
+|--------|-------|-------------|
+| `LUCIDLABS_HQ_HOST` | Org | Server IP address |
+| `LUCIDLABS_HQ_SSH_KEY` | Org | SSH private key for `nightwing` user |
+| `NEXT_PUBLIC_CONVEX_URL` | Repo | Convex URL (if using Convex) |
+| `SLACK_WEBHOOK_URL` | Repo (optional) | Slack incoming webhook |
+
+### Legacy: Direct SSH Deploy
+
+The `deploy-project.sh` script is still available for local orchestration but is **not the recommended approach**. Use CI/CD instead.
 
 ---
 

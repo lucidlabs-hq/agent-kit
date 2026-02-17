@@ -71,12 +71,7 @@ Existiert .claude/PROJECT-CONTEXT.md?
 │  Repository Type:   DOWNSTREAM                                              │
 │  Active Project:    invoice-accounting-assistant                            │
 │  PRD:               .claude/PRD.md                                          │
-│  Upstream:          ../../lucidlabs-agent-kit (READ-ONLY)                   │
-│                                                                             │
-│  Upstream Interaction:                                                      │
-│    /sync     Pull updates FROM upstream                                     │
-│    /promote  Push patterns TO upstream (via PR)                             │
-│    Direct file access to upstream: FORBIDDEN                                │
+│  Upstream:          ../../lucidlabs-agent-kit                               │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -90,23 +85,6 @@ Existiert .claude/PROJECT-CONTEXT.md?
 │                                                                             │
 │  Working Directory: /Users/.../lucidlabs-agent-kit                          │
 │  Repository Type:   UPSTREAM (Agent Kit Template)                           │
-│                                                                             │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
-│  UPSTREAM PROTECTION ACTIVE                                                 │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
-│                                                                             │
-│  This is the UPSTREAM template repository.                                  │
-│  Direct pushes to main are BLOCKED (GitHub Branch Protection).              │
-│                                                                             │
-│  Allowed actions:                                                           │
-│    - Browse/read code and documentation                                     │
-│    - Select a downstream project to work in                                 │
-│    - Template maintenance (via feature branch + PR only)                    │
-│                                                                             │
-│  NOT allowed:                                                               │
-│    - Feature development (use downstream projects)                          │
-│    - git push origin main (blocked by GitHub)                               │
-│    - Starting dev servers (no application runs here)                        │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -203,23 +181,15 @@ b) **Handoff-Bestätigung anzeigen:**
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                                                                             │
-│  SESSION HANDOFF COMPLETE                                                   │
+│  ✓ SESSION HANDOFF COMPLETE                                                 │
 │                                                                             │
 │  ───────────────────────────────────────────────────────────────────────    │
 │                                                                             │
 │  Neues Working Directory:                                                   │
 │  /Users/.../projects/invoice-accounting-assistant                           │
 │                                                                             │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
-│  UPSTREAM BOUNDARY ACTIVE                                                   │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
-│                                                                             │
-│  Ich arbeite ab jetzt AUSSCHLIESSLICH in diesem Projekt.                    │
-│  Das Upstream Repository (lucidlabs-agent-kit) ist READ-ONLY.               │
-│                                                                             │
-│  Upstream holen:  /sync (Updates aus dem Template ziehen)                   │
-│  Upstream geben:  /promote (Patterns ins Template befoerdern, via PR)       │
-│  Direkt anfassen: VERBOTEN                                                  │
+│  ⚠️  WICHTIG: Ich arbeite ab jetzt NUR in diesem Projekt.                   │
+│      Das Upstream Repository (lucidlabs-agent-kit) wird NICHT verändert.    │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -241,6 +211,116 @@ e) **Dann:** Normaler /prime Flow für Downstream (ab 0.1)
 | **Explizite Bestätigung** | Handoff wird visuell bestätigt |
 | **Upstream-Schutz** | Nach Handoff: KEINE Änderungen am Agent Kit mehr |
 | **Projekt-Fokus** | Alle weiteren Aktionen betreffen nur das gewählte Projekt |
+
+---
+
+#### 0.0.1 Promote Queue Overview (NUR im UPSTREAM-Modus)
+
+**WANN:** Wenn im Upstream-Modus (Agent Kit Template). Zeige nach der Projekt-Liste.
+
+**Zweck:** Zeige alle pending promote-queue Items aus allen downstream Projekten.
+
+```bash
+PROJECTS_DIR="$(dirname "$(pwd)")/projects"
+echo ""
+echo "PROMOTE QUEUE (across all projects)"
+echo "────────────────────────────────────"
+echo ""
+
+for proj in "$PROJECTS_DIR"/*/; do
+  QUEUE="$proj/.agents/promote-queue.md"
+  if [ -f "$QUEUE" ]; then
+    PENDING=$(grep -c "^### " "$QUEUE" 2>/dev/null || echo "0")
+    if [ "$PENDING" -gt 0 ]; then
+      echo "$(basename "$proj"): $PENDING pending items"
+      grep -A1 "^### " "$QUEUE" | grep -v "^--$" | head -10
+      echo ""
+    fi
+  fi
+done
+```
+
+**Anzeige:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  PROMOTE QUEUE (across all projects)                                       │
+│  ───────────────────────────────────                                       │
+│                                                                             │
+│  client-service-reporting         3 pending items                          │
+│    → Prime Service Boot v0.1.3                                             │
+│    → Upstream Protection Rule                                              │
+│    → Credentials Block v0.1.4                                              │
+│                                                                             │
+│  cotinga-test-suite               1 pending item                           │
+│    → Cursor Patterns Reference Doc                                         │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  Total: 4 items pending promotion                                          │
+│  Use /promote to review and promote items                                  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Falls keine pending Items:** Block nicht anzeigen.
+
+**Rendering-Regeln:**
+- Nur Projekte mit pending Items zeigen
+- Zeige max 5 Items pro Projekt (+ "... and X more")
+- Zeige Total count
+- Verlinke auf /promote Skill
+
+---
+
+#### 0.0.2 Agent Kit Roadmap (NUR im UPSTREAM-Modus)
+
+**WANN:** Wenn im Upstream-Modus. Zeige nach Promote Queue.
+
+**Zweck:** Zeige die nächsten offenen Items aus der Agent Kit Roadmap.
+
+```bash
+# Show next open items from Agent Kit future-plans
+FUTURE=".claude/reference/future-plans.md"
+if [ -f "$FUTURE" ]; then
+  echo "AGENT KIT ROADMAP (next 5)"
+  echo "──────────────────────────"
+  grep -E "^- \[ \]" "$FUTURE" | head -5
+fi
+
+# Show existing plans
+echo ""
+echo "ACTIVE PLANS"
+echo "────────────"
+ls .agents/plans/*.md 2>/dev/null | while read plan; do
+  echo "  → $(basename "$plan" .md)"
+done
+```
+
+**Anzeige:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  AGENT KIT ROADMAP                                                         │
+│  ─────────────────                                                         │
+│                                                                             │
+│  Next open items:                                                          │
+│  [ ] PIV-Agent-Teams with hooks                                            │
+│  [ ] Model routing definition                                              │
+│  [ ] Compound engineering framework                                        │
+│  [ ] Marketplace integration (Avery, MCP Skills)                           │
+│  [ ] Portkey integration guide                                             │
+│                                                                             │
+│  Active plans:                                                             │
+│  → betterauth-org-plugin-and-roles                                         │
+│  → integrate-task-system-and-swarm                                         │
+│  → migrate-to-skills-standard                                              │
+│  → promotion-script                                                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -405,95 +485,136 @@ fi
 
 ---
 
-#### 0.1.0c Test Health Audit (NACH Security Reminders)
+#### 0.1.0c Project Service Dashboard (DOWNSTREAM ONLY - AFTER Boot Screen)
 
-**IMMER anzeigen** nach Security Reminders. This is the upfront quality audit - shows whether the last session left things in good shape.
+**WANN:** Nur bei Downstream-Projekten. Zeige IMMER nach dem Boot Screen.
 
-**Logik:**
+**Zweck:** Der Entwickler sieht sofort alle laufenden Services, Ports, Links und Credentials. Keine Suche nötig - sofort produktiv.
+
+**Daten sammeln:**
 
 ```bash
-cd frontend
+PROJECT_DIR="$(pwd)"
+PROJECT_NAME=$(basename "$PROJECT_DIR")
 
-# Check if test infrastructure exists
-if grep -q '"test"' package.json 2>/dev/null; then
-  # Run tests silently and capture result
-  TEST_OUTPUT=$(pnpm run test 2>&1)
-  TEST_EXIT=$?
+# 1. Detect services from directory structure
+HAS_FRONTEND=$([ -d "frontend" ] && echo "yes" || echo "no")
+HAS_MASTRA=$([ -d "mastra" ] && echo "yes" || echo "no")
+HAS_CONVEX=$([ -d "convex" ] && echo "yes" || echo "no")
+HAS_N8N=$([ -d "n8n" ] && echo "yes" || echo "no")
 
-  # Run coverage if tests pass
-  if [ $TEST_EXIT -eq 0 ]; then
-    COVERAGE_OUTPUT=$(pnpm run test:coverage 2>&1)
-  fi
-else
-  echo "Tests not configured"
+# 2. Read ports from package.json
+FRONTEND_PORT=$(grep -oE '"dev":\s*".*-p\s+([0-9]+)"' frontend/package.json 2>/dev/null | grep -oE '[0-9]{4}' | tail -1)
+MASTRA_PORT=$(grep -oE 'PORT=([0-9]+)' mastra/package.json 2>/dev/null | grep -oE '[0-9]+')
+
+# 3. Read docker-compose ports
+if [ -f "docker-compose.dev.yml" ]; then
+  CONVEX_PORT=$(grep -oE '"([0-9]+):3210"' docker-compose.dev.yml | grep -oE '[0-9]+' | head -1)
+  DASHBOARD_PORT=$(grep -oE '"([0-9]+):6791"' docker-compose.dev.yml | grep -oE '[0-9]+' | head -1)
 fi
+
+# 4. Read .env for credentials info
+ENV_FILE=""
+[ -f ".env" ] && ENV_FILE=".env"
+[ -f ".env.local" ] && ENV_FILE=".env.local"
+[ -f "frontend/.env.local" ] && ENV_FILE="frontend/.env.local"
 ```
 
-**Parse test output for:**
-- Total tests, passed, failed
-- Coverage percentage (lines, branches, functions)
-- Files with/without test coverage
-
-**Anzeige (IMMER - auch wenn keine Tests konfiguriert):**
-
-If tests are configured and all pass:
+**Service Table anzeigen:**
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  TEST HEALTH                                                    │
-│  ───────────                                                    │
-│                                                                 │
-│  Status:       ALL PASSING                                      │
-│  Unit Tests:   12 passed, 0 failed           Coverage: 64%     │
-│  Test Files:   3/7 files covered                                │
-│                                                                 │
-│  Uncovered:    lib/notion-data.ts, lib/auth-client.ts           │
-│                lib/auth-server.ts, lib/convex.ts                │
-│                                                                 │
-│  Last session left tests in good shape.                         │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  PROJECT SERVICES                                  [project-name]          │
+│  ────────────────                                                          │
+│                                                                             │
+│  Service            Port    Link                          Status           │
+│  ─────────────────  ──────  ────────────────────────────  ────────         │
+│  Frontend           8070    http://localhost:8070          ○ stopped        │
+│  Mastra API         8071    http://localhost:8071          ○ stopped        │
+│  Convex Backend     8072    http://localhost:8072          ○ stopped        │
+│  Convex Dashboard   8073    http://localhost:8073          ○ stopped        │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  CREDENTIALS                                                               │
+│  ───────────                                                               │
+│                                                                             │
+│  Convex Admin Key:  docker exec [project]-convex ./generate_admin_key.sh  │
+│  Convex Deploy URL: http://localhost:8072                                  │
+│  .env Location:     frontend/.env.local                                   │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  STACK MODULES                                                             │
+│  ─────────────                                                             │
+│                                                                             │
+│  [✓] Next.js 15       [✓] Convex          [✓] Mastra                      │
+│  [✓] Tailwind CSS 4   [✓] BetterAuth      [ ] n8n                         │
+│  [✓] shadcn/ui        [ ] Portkey          [ ] MinIO                       │
+│                                                                             │
+│  ───────────────────────────────────────────────────────────────────────    │
+│                                                                             │
+│  ROADMAP (next 5 items from future-plans.md)                               │
+│  ──────                                                                    │
+│                                                                             │
+│  [ ] Feature A - description                                               │
+│  [ ] Feature B - description                                               │
+│  [ ] Feature C - description                                               │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-If tests fail (last session left broken state):
+**Rendering-Logik:**
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  TEST HEALTH                                                    │
-│  ───────────                                                    │
-│                                                                 │
-│  Status:       FAILING (action needed)                          │
-│  Unit Tests:   10 passed, 2 FAILED                              │
-│                                                                 │
-│  Failures:                                                      │
-│    lib/__tests__/utils.test.ts:15    "merges classes"           │
-│    lib/__tests__/auth.test.ts:42     "validates session"        │
-│                                                                 │
-│  Last session left failing tests. Fix before new work.          │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+1. **Service Table:**
+   - Zeige nur Services deren Verzeichnis existiert
+   - Ports aus `package.json` und `docker-compose.dev.yml` lesen
+   - Status prüfen via `lsof -i:PORT` (● running / ○ stopped)
+   - Links als klickbare URLs formatieren
+
+2. **Credentials:**
+   - Convex Admin Key Befehl nur wenn Convex vorhanden
+   - Zeige `.env` Location (welche Datei existiert)
+   - Falls `.env.example` existiert, zeige fehlende Variablen
+
+3. **Stack Modules:**
+   - Prüfe Verzeichnisse: `frontend/`, `mastra/`, `convex/`, `n8n/`
+   - Prüfe `package.json` Dependencies: `better-auth`, `@portkey-ai/*`, `minio`
+   - [✓] = vorhanden, [ ] = verfügbar aber nicht installiert
+
+4. **Roadmap:**
+   - Lese `.claude/reference/future-plans.md` (zeige nächste 5 offene Items)
+   - Falls nicht vorhanden, lese `.agents/plans/` und zeige aktive Pläne
+   - Falls nichts vorhanden: "No roadmap defined. Use /plan-feature to start."
+
+**Status-Check für Services:**
+
+```bash
+# Check if services are running
+check_port() {
+  lsof -i:$1 -sTCP:LISTEN >/dev/null 2>&1 && echo "running" || echo "stopped"
+}
+
+FRONTEND_STATUS=$(check_port $FRONTEND_PORT)
+MASTRA_STATUS=$(check_port $MASTRA_PORT)
+CONVEX_STATUS=$(check_port $CONVEX_PORT)
 ```
 
-If tests are not configured:
+**Stack Module Detection:**
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  TEST HEALTH                                                    │
-│  ───────────                                                    │
-│                                                                 │
-│  Status:       NOT CONFIGURED                                   │
-│                                                                 │
-│  No test infrastructure found.                                  │
-│  Run /test-setup to initialize Vitest + Playwright.             │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+```bash
+# Detect installed modules
+HAS_BETTERAUTH=$(grep -q "better-auth" frontend/package.json 2>/dev/null && echo "yes" || echo "no")
+HAS_PORTKEY=$(grep -q "portkey" frontend/package.json 2>/dev/null || grep -q "portkey" mastra/package.json 2>/dev/null && echo "yes" || echo "no")
+HAS_MINIO=$(grep -q "minio" frontend/package.json 2>/dev/null && echo "yes" || echo "no")
+HAS_SHADCN=$([ -f "frontend/components.json" ] && echo "yes" || echo "no")
 ```
 
-**Rules:**
-- ALWAYS show this block (even if tests not configured)
-- If tests fail, this is the FIRST thing the developer should address
-- Show uncovered files to guide test writing priorities
-- Coverage thresholds: 60% minimum, 80% target
+**WICHTIG:**
+- Service Table wird IMMER gezeigt (auch wenn alles gestoppt)
+- Nach dem Dashboard: "Soll ich die Services starten?" anbieten
+- Falls Services schon laufen: Nicht nochmal starten, nur Status anzeigen
 
 ---
 
@@ -697,6 +818,109 @@ Zeige die Boot Sequence aus 0.1 mit:
 
 Dann direkt weiter zu **0.3 Session-Optionen** (Tickets, etc.).
 
+#### 0.2.1 Stale Session Recovery (VOR Session-Start!)
+
+**KRITISCH:** Before starting a new session, check if a previous session crashed without `/session-end`.
+
+```bash
+TIME_DIR="$HOME/.claude-time"
+PROJECT_NAME=$(basename "$(pwd)")
+CURRENT_SESSION="$TIME_DIR/current-session.txt"
+HEARTBEAT_FILE="$TIME_DIR/heartbeat-${PROJECT_NAME}.txt"
+HEARTBEAT_PID_FILE="$TIME_DIR/heartbeat-${PROJECT_NAME}.pid"
+SESSION_FILE="$TIME_DIR/sessions/$PROJECT_NAME.json"
+STALE_THRESHOLD=600  # 10 minutes (2x heartbeat interval)
+MAX_SESSION_SECONDS=28800  # 8 hours cap
+```
+
+**Recovery-Logik:**
+
+```
+Existiert current-session.txt?
+├── NEIN → Alles sauber, weiter zu 0.3
+└── JA → Vorherige Session wurde nicht beendet!
+    │
+    ├── Existiert heartbeat-{project}.txt?
+    │   ├── JA → Lese letzten Heartbeat-Epoch als End-Time
+    │   └── NEIN → Verwende Start-Epoch + 30min als geschaetzte Dauer
+    │
+    ├── Berechne Dauer: END_EPOCH - START_EPOCH
+    │   └── Cap bei MAX_SESSION_SECONDS (8h)
+    │
+    ├── Speichere recovered Session in sessions/{project}.json:
+    │   {
+    │     "date": "2026-02-11",
+    │     "start": "14:00",
+    │     "end": "15:25",
+    │     "duration_minutes": 85,
+    │     "recovered": true,
+    │     "recovery_source": "heartbeat" | "estimated",
+    │     "linear_issue": null,
+    │     "commits": [],
+    │     "synced_to_productive": false
+    │   }
+    │
+    ├── Zeige Recovery-Banner:
+    │
+    │   ┌──────────────────────────────────────────────────────────────────────┐
+    │   │  SESSION RECOVERY                                                    │
+    │   │  ────────────────                                                    │
+    │   │                                                                      │
+    │   │  Previous session did not end cleanly.                               │
+    │   │  Recovered: ~85 min (via heartbeat)                                  │
+    │   │  Saved to: ~/.claude-time/sessions/{project}.json                    │
+    │   │                                                                      │
+    │   └──────────────────────────────────────────────────────────────────────┘
+    │
+    └── Aufraeumen:
+        rm -f "$CURRENT_SESSION"
+        rm -f "$HEARTBEAT_FILE"
+        kill $(cat "$HEARTBEAT_PID_FILE" 2>/dev/null) 2>/dev/null
+        rm -f "$HEARTBEAT_PID_FILE"
+```
+
+**Recovery-Schritte als Bash:**
+
+```bash
+if [ -f "$CURRENT_SESSION" ]; then
+  # Previous session was not ended cleanly
+  mkdir -p "$TIME_DIR/sessions"
+  START_EPOCH=$(grep "^Started:" "$CURRENT_SESSION" | awk '{print $2}')
+
+  if [ -f "$HEARTBEAT_FILE" ]; then
+    END_EPOCH=$(cat "$HEARTBEAT_FILE")
+    RECOVERY_SOURCE="heartbeat"
+  else
+    # No heartbeat found - estimate 30 min session
+    END_EPOCH=$((START_EPOCH + 1800))
+    RECOVERY_SOURCE="estimated"
+  fi
+
+  # Calculate duration with 8h cap
+  DURATION_SECONDS=$((END_EPOCH - START_EPOCH))
+  if [ "$DURATION_SECONDS" -gt "$MAX_SESSION_SECONDS" ]; then
+    DURATION_SECONDS=$MAX_SESSION_SECONDS
+  fi
+  DURATION_MINUTES=$((DURATION_SECONDS / 60))
+
+  # Extract time components for session record
+  START_TIME=$(date -r "$START_EPOCH" "+%H:%M" 2>/dev/null || date -d "@$START_EPOCH" "+%H:%M" 2>/dev/null)
+  END_TIME=$(date -r "$END_EPOCH" "+%H:%M" 2>/dev/null || date -d "@$END_EPOCH" "+%H:%M" 2>/dev/null)
+  SESSION_DATE=$(date -r "$START_EPOCH" "+%Y-%m-%d" 2>/dev/null || date -d "@$START_EPOCH" "+%Y-%m-%d" 2>/dev/null)
+
+  # Save recovered session to sessions/{project}.json
+  # (append to existing sessions array or create new file)
+
+  # Show recovery banner
+  # Clean up stale files
+  rm -f "$CURRENT_SESSION" "$HEARTBEAT_FILE"
+  kill "$(cat "$HEARTBEAT_PID_FILE" 2>/dev/null)" 2>/dev/null
+  rm -f "$HEARTBEAT_PID_FILE"
+fi
+```
+
+---
+
 #### 0.3 Session-Optionen anzeigen
 
 Nach der Begrüßung zeige die Arbeitsoptionen:
@@ -738,8 +962,8 @@ Linear MCP Query:
 
 **Future Plans laden:**
 ```bash
-# Prüfe ob Future Plans existieren
-cat .claude/reference/LOCAL-future-plans.md 2>/dev/null | grep "## Zu Implementieren" -A 20
+# Show next 10 open items from future-plans.md
+cat .claude/reference/future-plans.md 2>/dev/null | grep -E "^- \[ \]" | head -10
 ```
 
 **Lokale TODOs laden:**
@@ -834,10 +1058,23 @@ Zeige das Dashboard im folgenden Format:
 Nach dem Dashboard automatisch neue Session registrieren:
 
 ```bash
-# Session-Start Zeit speichern
-echo "Session gestartet: $(date -Iseconds)" >> "$TIME_DIR/current-session.txt"
-echo "Project: $PROJECT_NAME" >> "$TIME_DIR/current-session.txt"
+TIME_DIR="$HOME/.claude-time"
+PROJECT_NAME=$(basename "$(pwd)")
+
+# Write session file with epoch for crash-safe duration calculation
+cat > "$TIME_DIR/current-session.txt" << EOF
+Started: $(date +%s)
+StartISO: $(date -Iseconds)
+Project: $PROJECT_NAME
+EOF
+
+# Start heartbeat background process (writes epoch every 5 min)
+(while true; do date +%s > "$TIME_DIR/heartbeat-${PROJECT_NAME}.txt"; sleep 300; done) &
+HEARTBEAT_PID=$!
+echo "$HEARTBEAT_PID" > "$TIME_DIR/heartbeat-${PROJECT_NAME}.pid"
 ```
+
+**WICHTIG:** The heartbeat runs in background and writes the current epoch to `heartbeat-{project}.txt` every 300 seconds (5 minutes). If the session crashes, the next `/prime` can use this file to determine the approximate end time of the crashed session.
 
 **Falls keine Daten vorhanden (erstes Mal):**
 

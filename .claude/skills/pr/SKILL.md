@@ -15,18 +15,44 @@ The standard workflow for shipping changes. Creates a branch, commits, pushes, a
 ## Flow
 
 ```
-/pr "add dashboard filters"
+/pr
   |
   v
-1. Validate (lint + type-check)
-2. Create branch: feature/add-dashboard-filters
-3. Stage + commit changes
+1. Detect current branch (expect feature branch from /execute)
+2. Validate (lint + type-check)
+3. Analyze changes vs main
 4. Push branch
 5. Create PR with CI checks
 6. Report PR URL
 ```
 
-## Step 1: Validate Before Committing
+**Expected state:** You are on a feature branch created by `/execute`. Commits are already there from `/commit`.
+
+## Step 1: Detect Branch State
+
+```bash
+CURRENT_BRANCH=$(git branch --show-current)
+```
+
+**Decision tree:**
+
+```
+On which branch?
+├── feature/* or fix/* or refactor/* or docs/* or chore/*
+│   → Already on feature branch. Continue to Step 2.
+│
+├── main (with unpushed commits)
+│   → FALLBACK: Create branch, move commits off main.
+│   → git checkout -b feature/<name>
+│   → git checkout main && git reset --hard origin/main
+│   → git checkout feature/<name>
+│   → Warn: "Next time, use /execute to create the branch first."
+│
+└── main (no unpushed commits)
+    → ERROR: Nothing to PR. Run /execute first.
+```
+
+## Step 2: Validate Before Pushing
 
 ```bash
 cd frontend && pnpm run validate
@@ -39,69 +65,47 @@ If `pnpm run validate` does not exist, run lint and type-check separately:
 cd frontend && pnpm run lint && pnpm run type-check
 ```
 
-## Step 2: Analyze Changes
+## Step 2.5: Pre-PR Quality Gate (MANDATORY)
+
+Run quality gate checks before creating the PR:
+
+1. **code-reviewer** subagent on `git diff main..HEAD` (all branch changes)
+2. **error-handling-reviewer** subagent on API routes (if any changed)
+3. **architecture-guard** subagent for final compliance check
+
+Results are included in the PR description under a "Quality Gate Results" section:
+
+```markdown
+## Quality Gate Results
+
+- architecture-guard: PASS
+- code-reviewer: PASS (2 warnings)
+- error-handling-reviewer: PASS
+```
+
+If CRITICAL findings: STOP. Fix before creating PR.
+See `.claude/reference/quality-gates.md` for full gate architecture.
+
+## Step 3: Analyze Changes
 
 ```bash
 git status
-git diff --stat
+git log --oneline main..HEAD
+git diff --stat main..HEAD
 ```
 
-Understand what is being committed. Never commit files that:
+Understand what is being pushed. Review all commits on the branch. Never push files that:
 - Contain secrets (`.env`, credentials)
 - Are build artifacts (`.next/`, `node_modules/`)
 - Are unrelated to the current task
 
-## Step 3: Determine Branch Name
-
-From the argument or the changes, create a descriptive branch name:
-
-| Pattern | Example |
-|---------|---------|
-| `feature/<description>` | `feature/add-dashboard-filters` |
-| `fix/<description>` | `fix/auth-redirect-loop` |
-| `refactor/<description>` | `refactor/extract-api-client` |
-| `docs/<description>` | `docs/update-readme-ports` |
-| `chore/<description>` | `chore/update-dependencies` |
-
-Rules:
-- Lowercase, kebab-case
-- Short but descriptive (3-5 words max)
-- No ticket numbers unless specifically requested
-
-## Step 4: Create Branch and Commit
+## Step 4: Push Branch
 
 ```bash
-# Ensure we branch from latest main
-git checkout main
-git pull origin main
-
-# Create feature branch
-git checkout -b feature/<branch-name>
-
-# Stage relevant files (be specific, not git add -A)
-git add <specific files>
-
-# Commit with conventional message
-git commit -m "<type>(<scope>): <description>
-
-<optional body with details>"
+git push -u origin "$CURRENT_BRANCH"
 ```
 
-### Commit Message Rules
-
-- Conventional format: `feat(scope): description`
-- Under 72 characters for the first line
-- Imperative mood ("add" not "added")
-- NO `Co-Authored-By` or AI attribution
-- Body for details if needed
-
-## Step 5: Push Branch
-
-```bash
-git push -u origin feature/<branch-name>
-```
-
-## Step 6: Create Pull Request
+## Step 5: Create Pull Request
 
 ```bash
 gh pr create \

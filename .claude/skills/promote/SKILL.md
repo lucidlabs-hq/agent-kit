@@ -71,49 +71,38 @@ lucidlabs/
 10. MERGE    → Nach Approval mergen
 ```
 
-### Step 1-3: Upstream-Abgleich (PFLICHT vor jeder Promotion!)
+### Step 1-3: Upstream-Abgleich (AUTOMATISCH)
 
-```bash
-# Im Upstream Repo
-cd /path/to/lucidlabs-agent-kit
+**The promote script now automatically checks upstream before promoting.**
 
-# 1. FETCH - Aktuellen Stand holen
-git fetch origin
-
-# 2. DIFF - Prüfen ob Änderungen seit letztem Sync
-git log HEAD..origin/main --oneline
-
-# Wenn Ausgabe NICHT leer:
-# → Es gibt neue Commits im Upstream!
-# → ERST syncen, DANN promoten
-```
-
-**Wenn Upstream-Änderungen existieren:**
+It runs `git fetch origin` in the upstream repo and compares local HEAD with remote. If there are new commits, the script **blocks and exits** with a clear message:
 
 ```
 ╔════════════════════════════════════════════════════════════════╗
-║  ⚠️  UPSTREAM HAT NEUE ÄNDERUNGEN                              ║
-╠════════════════════════════════════════════════════════════════╣
-║                                                                 ║
-║  Seit deinem letzten Sync wurden 3 Commits gemacht:            ║
-║                                                                 ║
-║  abc1234 feat: add new skill                                   ║
-║  def5678 docs: update readme                                   ║
-║  ghi9012 fix: typo in reference                                ║
-║                                                                 ║
-║  AKTION ERFORDERLICH:                                          ║
-║  1. Führe /sync aus um Downstream zu aktualisieren             ║
-║  2. Teste ob alles funktioniert                                ║
-║  3. Dann erst /promote ausführen                               ║
-║                                                                 ║
+║  [BLOCKED] Upstream has new commits since last pull            ║
 ╚════════════════════════════════════════════════════════════════╝
+
+  Why:  The upstream agent-kit has commits that are not in your
+        local copy. Promoting now could cause merge conflicts
+        or overwrite recent upstream changes.
+
+  New commits:
+  abc1234 feat: add new skill
+  def5678 docs: update readme
+
+  Fix:  1. Pull upstream first:
+            cd /path/to/agent-kit && git pull origin main
+        2. Run /sync in your downstream project
+        3. Then retry /promote
 ```
 
-**Wenn keine Änderungen:**
+**If upstream is up-to-date:**
 
 ```
-✓ Upstream ist aktuell. Promotion kann fortfahren.
+✓ Upstream is up-to-date (abc1234)
 ```
+
+This check is **not optional** — it runs every time and cannot be bypassed.
 
 ### Warum kein direkter Push?
 

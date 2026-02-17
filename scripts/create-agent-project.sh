@@ -11,7 +11,7 @@
 #   ./scripts/create-agent-project.sh --interactive
 #
 # Components:
-#   - Frontend (Next.js 15)
+#   - Frontend (Next.js 16)
 #   - Mastra (AI Agents)
 #   - Convex (Realtime Database)
 #   - n8n (Workflows)
@@ -211,7 +211,7 @@ run_interactive() {
     # ─────────────────────────────────────────────────────────────────
     echo ""
     echo -e "${YELLOW}Frontend:${NC}"
-    if confirm "Include Frontend (Next.js 15 + shadcn/ui)?"; then
+    if confirm "Include Frontend (Next.js 16 + shadcn/ui)?"; then
         INCLUDE_FRONTEND=true
     else
         INCLUDE_FRONTEND=false
@@ -339,7 +339,7 @@ run_interactive() {
     echo -e "  ${YELLOW}Core Stack:${NC}"
     echo "  ├─ AI Layer:     $([ "$AI_LAYER" = "mastra" ] && echo "Mastra (Production)" || echo "Vercel AI SDK (Prototype)")"
     echo "  ├─ Database:     $([ "$INCLUDE_CONVEX" = true ] && echo "Convex (Realtime)" || echo "Postgres (SQL)")"
-    echo "  ├─ Frontend:     $([ "$INCLUDE_FRONTEND" = true ] && echo "Yes (Next.js 15)" || echo "No")"
+    echo "  ├─ Frontend:     $([ "$INCLUDE_FRONTEND" = true ] && echo "Yes (Next.js 16)" || echo "No")"
     echo "  └─ LLM Provider: $AI_MODEL"
     echo ""
     echo -e "  ${YELLOW}Optional:${NC}"

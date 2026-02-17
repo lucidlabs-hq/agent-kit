@@ -156,7 +156,7 @@ Erstelle `.strix/production-check.md` für konsistente Checks:
 # Production Security Check
 
 ## Target Information
-- Next.js 15 Application
+- Next.js 16 Application
 - Convex Database
 - Better Auth Authentication
 

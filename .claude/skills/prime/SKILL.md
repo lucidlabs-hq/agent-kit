@@ -549,7 +549,7 @@ ENV_FILE=""
 │  STACK MODULES                                                             │
 │  ─────────────                                                             │
 │                                                                             │
-│  [✓] Next.js 15       [✓] Convex          [✓] Mastra                      │
+│  [✓] Next.js 16       [✓] Convex          [✓] Mastra                      │
 │  [✓] Tailwind CSS 4   [✓] BetterAuth      [ ] n8n                         │
 │  [✓] shadcn/ui        [ ] Portkey          [ ] MinIO                       │
 │                                                                             │

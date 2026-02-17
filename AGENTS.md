@@ -41,7 +41,7 @@ When in doubt, `CLAUDE.md` takes precedence.
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 15+ (App Router), TypeScript 5+ (strict) |
+| Framework | Next.js 16+ (App Router), TypeScript 5+ (strict) |
 | Styling | Tailwind CSS 4 (ONLY Tailwind, no inline CSS) |
 | Components | shadcn/ui + Radix UI |
 | Package Manager | pnpm (NEVER npm/yarn/bun install) |

@@ -167,7 +167,7 @@ KEIN ZEITDRUCK          BEWUSSTE             VERBINDLICHE
 ├─────────────────────────────────────────────────────────────────┤
 │  STANDARD (immer dabei)                                          │
 │  ───────────────────────                                         │
-│  Next.js 15 │ Claude │ Linear │ Productive.io                   │
+│  Next.js 16 │ Claude │ Linear │ Productive.io                   │
 ├─────────────────────────────────────────────────────────────────┤
 │  WÄHLBAR (eins pro Kategorie)                                    │
 │  ─────────────────────────────                                   │
@@ -1368,7 +1368,7 @@ Import in n8n → Credentials setzen → Fertig!
 │  │                              CLIENTS                                       │  │
 │  │                                                                            │  │
 │  │   ┌─────────────────┐                                                      │  │
-│  │   │    NEXT.JS 15   │  ← STANDARD: Immer dabei                             │  │
+│  │   │    NEXT.JS 16   │  ← STANDARD: Immer dabei                             │  │
 │  │   │    (Frontend)   │    • App Router, Server Components                   │  │
 │  │   │                 │    • shadcn/ui, Tailwind CSS 4                       │  │
 │  │   │                 │    • TypeScript strict                               │  │
@@ -1530,7 +1530,7 @@ Import in n8n → Credentials setzen → Fertig!
 
 | Komponente | Rolle | Website |
 |------------|-------|---------|
-| **Next.js 15** | Frontend Framework | [nextjs.org](https://nextjs.org) |
+| **Next.js 16** | Frontend Framework | [nextjs.org](https://nextjs.org) |
 | **Claude** | LLM Provider | [anthropic.com](https://www.anthropic.com) |
 | **Linear** | Issue Tracking | [linear.app](https://linear.app) |
 | **Productive.io** | Customer Value | [productive.io](https://productive.io) |

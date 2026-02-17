@@ -34,7 +34,7 @@
 
 ### Lucid Labs Website
 - **Was:** Eigene Website von Framer portieren
-- **Stack:** Next.js 15, Tailwind, shadcn/ui
+- **Stack:** Next.js 16, Tailwind, shadcn/ui
 - **Domain:** lucidlabs.de
 - **Priorität:** Medium
 - **Notizen:**

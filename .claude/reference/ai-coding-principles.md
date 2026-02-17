@@ -766,7 +766,7 @@ describe('UserSchema edge cases', () => {
 
 | Context | Beispiel |
 |---------|----------|
-| **Tech Stack** | "Next.js 15, Convex, Tailwind 4, Better Auth" |
+| **Tech Stack** | "Next.js 16, Convex, Tailwind 4, Better Auth" |
 | **Constraints** | "No external state libs, max 300 lines/file" |
 | **Patterns** | "Use Zod schemas, sort imports alphabetically" |
 | **Anti-Patterns** | "No shadows, no inline styles, no barrel exports" |
@@ -838,7 +838,7 @@ Nach AI-generiertem Code:
 
 ## 12. Tech-Stack-spezifische Patterns
 
-### Next.js 15 + AI
+### Next.js 16 + AI
 
 ```typescript
 // Server Components für AI einfacher

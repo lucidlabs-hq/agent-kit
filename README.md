@@ -272,10 +272,16 @@ agent-kit/
 │   ├── main.tf               # Elestio deployment
 │   └── environments/         # Dev/prod configurations
 │
+├── .github/workflow-templates/   # CI/CD templates (auto-copied to new projects)
+│   ├── ci.yml                   # PR checks (lint, type-check, build)
+│   ├── deploy-hq.yml            # Deploy to LUCIDLABS-HQ (self-provisioning)
+│   └── deploy-provision.yml     # Manual first-time server provisioning
+│
 ├── scripts/
-│   ├── create-agent-project.sh  # Project scaffolding
-│   ├── promote.sh               # Promote patterns upstream
-│   └── sync-upstream.sh         # Sync updates downstream
+│   ├── create-agent-project.sh  # Project scaffolding (incl. CI/CD generation)
+│   ├── deploy-project.sh        # Local deploy orchestration (legacy)
+│   ├── promote.sh               # Promote patterns upstream (with upstream check)
+│   └── sync-upstream.sh         # Sync updates downstream (zone-aware)
 │
 ├── .claude/                  # Claude Code configuration
 │   ├── PRD.md                # Product Requirements
@@ -591,33 +597,94 @@ OPENAI_API_KEY=sk-...
 
 ## Deployment
 
-### Local Docker
+### Zero-SSH CI/CD (Recommended)
+
+New projects get fully configured CI/CD workflows automatically. **No SSH access from developer machines required.**
+
+```
+Developer pushes to main
+        │
+        ▼
+GitHub Actions: deploy-hq.yml
+        │
+        ├─ First deploy? ──YES──▶ Auto-provision (add-project.sh)
+        │                          Creates dirs, allocates ports, updates Caddyfile
+        │
+        ├─ Rsync code to server
+        ├─ docker compose up -d --build
+        ├─ Deploy Convex functions (if enabled)
+        │
+        ├─ Health check
+        │   ├─ Healthy ──▶ Done + Slack notification
+        │   └─ Unhealthy ──▶ Auto-rollback to previous image
+        │
+        └─ Slack notification (optional)
+```
+
+#### How It Works
+
+1. **`create-agent-project.sh`** generates three workflows in `.github/workflows/`:
+   - `ci.yml` — Lint, type-check, build on every PR
+   - `deploy-hq.yml` — Deploy to LUCIDLABS-HQ on push to main
+   - `deploy-provision.yml` — Manual first-time server provisioning
+
+2. **First deploy is automatic.** When `deploy-hq.yml` runs and the project directory doesn't exist on the server, it uploads and runs `add-project.sh` to allocate ports, create Caddyfile entries, and set up the project.
+
+3. **Rollback is automatic.** If the health check fails after deployment, the workflow reverts to the previous container image.
+
+4. **Slack notifications** are sent if the `SLACK_WEBHOOK_URL` secret is set (optional).
+
+#### Required GitHub Secrets
+
+| Secret | Level | Description |
+|--------|-------|-------------|
+| `LUCIDLABS_HQ_HOST` | Org | Server IP address |
+| `LUCIDLABS_HQ_SSH_KEY` | Org | SSH private key for `nightwing` user |
+| `NEXT_PUBLIC_CONVEX_URL` | Repo | Convex URL (if using Convex) |
+| `SLACK_WEBHOOK_URL` | Repo (optional) | Slack incoming webhook |
+
+#### Manual Provisioning (Alternative)
+
+If you want to provision the server before the first deploy:
+
+1. Go to **Actions** tab in GitHub
+2. Select **"Provision Project on Server"**
+3. Fill in: project name, abbreviation, subdomain, convex/mastra flags
+4. Click **"Run workflow"**
+
+#### Workflow Templates
+
+Templates live in `.github/workflow-templates/` in this repository. The `deploy-hq.yml` env block is auto-configured by `create-agent-project.sh`:
+
+```yaml
+env:
+  PROJECT_NAME: "my-project"           # Auto-filled from project name
+  ABBREVIATION: "mp"                   # Auto-derived (first letters)
+  SUBDOMAIN: "myproject"               # Auto-derived (no hyphens)
+  HAS_CONVEX: "true"                   # From interactive selection
+  HAS_MASTRA: "false"                  # From interactive selection
+```
+
+### Local Docker (Development)
 
 ```bash
 # Start all services
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
-### Elestio (Production)
+### Legacy: Local Deploy Script
+
+The `scripts/deploy-project.sh` script handles full deployment from developer machine. Use CI/CD instead for production.
 
 ```bash
-cd terraform
-terraform init
-terraform apply -var-file=environments/prod.tfvars
-```
-
-See [terraform/README.md](./terraform/README.md) for details.
-
-### Vercel (Quick Deploy)
-
-For quick prototypes, deploy frontend to Vercel:
-
-```bash
-cd frontend
-vercel
+./scripts/deploy-project.sh \
+  --name "my-project" \
+  --abbreviation "mp" \
+  --subdomain "myproject" \
+  --has-convex
 ```
 
 ## Tech Stack
@@ -871,9 +938,11 @@ cd ~/coding/repos/lucidlabs/lucidlabs-agent-kit
 
 **What happens:**
 1. Script copies boilerplate to `../projects/[name]/`
-2. Initializes fresh git repo
-3. Updates package.json, README with project name
-4. Project is ready for development
+2. Generates CI/CD workflows (`.github/workflows/ci.yml`, `deploy-hq.yml`, `deploy-provision.yml`) with correct project values
+3. Copies sync/promote scripts and creates `.upstream-sync.json` tracking
+4. Initializes fresh git repo
+5. Optionally creates GitHub repo and pushes
+6. Project is ready for development — **including deployment on first push to main**
 
 **Next steps in the new project:**
 ```bash
@@ -900,14 +969,22 @@ cd ~/coding/repos/lucidlabs/projects/customer-portal
 ./scripts/promote.sh --upstream ../../lucidlabs-agent-kit --dry-run
 ```
 
+**Safety features:**
+- **Automatic upstream freshness check** — Before promoting, the script runs `git fetch` and compares local vs remote. If the upstream has new commits you haven't pulled, promotion is blocked with instructions to sync first.
+- **Domain keyword detection** — Warns if files contain domain-specific keywords (e.g., "invoice", "customer") that suggest the code may not be generic enough.
+- **Always via PR** — Creates a feature branch and PR in the upstream repo. Never pushes to main.
+
 **Interactive session:**
 ```
-╔═══════════════════════════════════════════════════════════════════╗
-║                      PATTERN PROMOTION                            ║
-╚═══════════════════════════════════════════════════════════════════╝
+╔════════════════════════════════════════════════════════════════╗
+║              PATTERN PROMOTION                                 ║
+╚════════════════════════════════════════════════════════════════╝
 
 ℹ Downstream: ~/coding/repos/lucidlabs/projects/customer-portal
 ℹ Upstream:   ~/coding/repos/lucidlabs/lucidlabs-agent-kit
+
+▶ Checking upstream is up-to-date...
+✔ Upstream is up-to-date (abc1234)
 
 ▶ Scanning for promotable changes...
 
@@ -945,15 +1022,44 @@ Create GitHub PR? [Y/n] y
 
 **When:** The template got new skills/patterns you want in your project.
 
-**Option A: Cherry-pick specific commits**
+**Recommended: Sync script**
 ```bash
 # In your downstream project
 cd ~/coding/repos/lucidlabs/projects/customer-portal
 
+# Preview what can be synced (dry run)
+./scripts/sync-upstream.sh --dry-run
+
+# Run sync (interactive selection)
+./scripts/sync-upstream.sh
+
+# Sync everything without prompts
+./scripts/sync-upstream.sh --all
+```
+
+**Features:**
+- **Zone-aware CLAUDE.md sync** — Only replaces content before the `<!-- UPSTREAM-SYNC-END -->` marker. Project-specific content below the marker is preserved.
+- **Auto-tracking** — Updates `.upstream-sync.json` with the latest upstream commit after sync.
+- **Sync-diff report** — Shows a summary of what was synced (new files, updated files, upstream commit range).
+
+**Example output:**
+```
+SYNC SUMMARY
+  Synced:   5 files
+  New:      2
+  Updated:  3
+
+  Upstream: abc1234 → def5678
+
+Suggested commit:
+  git add .
+  git commit -m "chore: sync upstream agent-kit (def5678)"
+```
+
+**Alternative: Manual cherry-pick**
+```bash
 # Add upstream remote (one-time)
 git remote add template ../../lucidlabs-agent-kit
-
-# Fetch latest from template
 git fetch template
 
 # See what changed
@@ -961,29 +1067,6 @@ git log template/main --oneline -10
 
 # Cherry-pick specific commits
 git cherry-pick <commit-hash>
-```
-
-**Option B: Manual sync of specific files**
-```bash
-# Compare what's different
-git diff template/main -- .claude/skills/
-
-# Copy specific files
-cp ../../lucidlabs-agent-kit/.claude/skills/new-skill/SKILL.md \
-   .claude/skills/new-skill/SKILL.md
-
-# Commit the sync
-git add .claude/skills/new-skill/
-git commit -m "chore: sync new-skill from upstream template"
-```
-
-**Option C: Sync script (recommended)**
-```bash
-# Run sync script
-./scripts/sync-upstream.sh
-
-# Interactive selection of what to sync
-# Syncs: skills, reference docs, UI components, scripts
 ```
 
 ---
@@ -1098,6 +1181,144 @@ Before deploying to production, run security and quality checks:
 | **Low** | Add to backlog | No |
 
 See `.claude/skills/pre-production/SKILL.md` for detailed checklists.
+
+---
+
+## Command Reference (Cheat Sheet)
+
+### "Ich will ein neues Projekt anlegen"
+
+```bash
+# Im agent-kit Verzeichnis
+cd lucidlabs-agent-kit
+
+# Interaktiv (empfohlen) — fuehrt durch alle Optionen
+./scripts/create-agent-project.sh --interactive
+
+# Oder direkt mit Name
+./scripts/create-agent-project.sh my-project
+
+# Mit spezifischen Flags
+./scripts/create-agent-project.sh my-project --no-mastra --no-convex
+```
+
+**Was passiert:**
+1. Neues Projekt unter `../projects/my-project/` erstellt
+2. CI/CD Workflows generiert (ci.yml, deploy-hq.yml, deploy-provision.yml)
+3. Sync/Promote Scripts kopiert
+4. Git Repo initialisiert
+5. Optional: GitHub Repo erstellt und gepusht
+
+**Ergebnis:** Projekt ist sofort deploybar — erster Push auf `main` provisioniert den Server automatisch.
+
+---
+
+### "Ich will deployen"
+
+**Option A: Automatisch (empfohlen)**
+```bash
+# Einfach auf main pushen — CI/CD macht den Rest
+git push origin main
+```
+
+**Option B: Erster Deploy manuell provisionieren**
+1. GitHub → Actions Tab → "Provision Project on Server"
+2. Felder ausfuellen (Name, Abbreviation, Subdomain)
+3. "Run workflow" klicken
+4. Danach: `git push origin main` fuer Code-Deploy
+
+**Option C: Lokales Deploy-Script (Legacy)**
+```bash
+./scripts/deploy-project.sh \
+  --name "my-project" \
+  --abbreviation "mp" \
+  --subdomain "myproject" \
+  --has-convex
+```
+
+---
+
+### "Ich will Updates vom Template holen"
+
+```bash
+# Im Downstream-Projekt
+cd projects/my-project
+
+# Vorschau (was wuerde sich aendern?)
+./scripts/sync-upstream.sh --dry-run
+
+# Interaktiv syncen (einzelne Dateien auswaehlen)
+./scripts/sync-upstream.sh
+
+# Alles syncen ohne Rueckfrage
+./scripts/sync-upstream.sh --all
+```
+
+**Wichtig:** CLAUDE.md wird zone-aware gesynct — dein projekt-spezifischer Content (unter `<!-- UPSTREAM-SYNC-END -->`) wird nie ueberschrieben.
+
+---
+
+### "Ich will ein Pattern ins Template promoten"
+
+```bash
+# Im Downstream-Projekt
+cd projects/my-project
+
+# Vorschau
+./scripts/promote.sh --upstream ../../lucidlabs-agent-kit --dry-run
+
+# Interaktiv promoten
+./scripts/promote.sh --upstream ../../lucidlabs-agent-kit
+```
+
+**Was passiert:**
+1. Script prueft ob Upstream aktuell ist (blockt wenn nicht)
+2. Zeigt promotable Dateien an
+3. Du waehlst aus
+4. Erstellt Branch + PR im Upstream
+5. PR wird reviewed und gemergt
+
+---
+
+### "Ich brauche Hilfe in einer Claude Session"
+
+In einer Claude Session im Downstream-Projekt:
+
+| Was du sagst | Was passiert |
+|-------------|-------------|
+| `/sync` | Sync-Script wird ausgefuehrt |
+| `/sync --dry-run` | Vorschau ohne Aenderungen |
+| `/promote` | Promote-Script wird ausgefuehrt |
+| `/promote --dry-run` | Vorschau ohne Aenderungen |
+| `/deploy` | Deploy-Skill wird ausgefuehrt |
+| `/prime` | Projekt-Kontext laden, Status anzeigen |
+| `/commit` | Aenderungen committen mit Quality Gates |
+| `/pr` | Pull Request erstellen |
+
+**Fuer Hilfe zu einem Script:**
+```bash
+./scripts/sync-upstream.sh --help
+./scripts/promote.sh --help
+./scripts/create-agent-project.sh --help
+./scripts/deploy-project.sh --help  # (ohne Argumente zeigt Usage)
+```
+
+---
+
+### Workflow-Uebersicht: Vom Projekt bis zum Deploy
+
+```
+1. ERSTELLEN          2. ENTWICKELN         3. DEPLOYEN
+   create-agent-         /plan-feature         git push origin main
+   project.sh            /execute              → CI/CD automatisch
+                         /commit
+                         /pr
+
+4. SYNC               5. PROMOTE
+   ./scripts/            ./scripts/
+   sync-upstream.sh      promote.sh
+   (Template→Projekt)    (Projekt→Template)
+```
 
 ---
 

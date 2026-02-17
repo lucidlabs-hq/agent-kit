@@ -1,102 +1,88 @@
-# Session Handover — 2026-02-17
+# Session Handover — 2026-02-17 (Session 2)
 
 > **Branch:** `feat/agent-kit-cleanup`
-> **Status:** Parts A, B, C implemented + validated. Part D (test project) pending.
-> **Plan file:** `/Users/adamkassama/.claude/projects/-Users-adamkassama-Documents-coding-repos-lucidlabs-lucidlabs-agent-kit/5c21ecc2-ce80-4c9d-8219-43b8a2848a2f.jsonl`
+> **PR:** https://github.com/lucidlabs-hq/agent-kit/pull/7
+> **Status:** All implementation + E2E testing complete. README updated. Ready for merge.
 
 ---
 
-## What Was Done
+## What Was Done (Complete)
 
-### Part A: Deployment Automation (COMPLETE)
+### Part A: Deployment Automation
+- `deploy-hq.yml` rewritten: self-provisioning first deploy, auto-rollback, Slack notifications
+- `deploy-provision.yml` NEW: manual workflow_dispatch for server provisioning
+- `create-agent-project.sh` generates all 3 CI/CD workflows with project values filled in
+- Outdated `github-workflow-hq.yml` deleted
+- `deployment-best-practices.md` updated with Zero-SSH, rollback sections
+- `future-plans.md` updated (checked off 8 items)
 
-| Task | Status | File |
-|------|--------|------|
-| A1: Delete outdated template | DONE | `infrastructure/lucidlabs-hq/templates/github-workflow-hq.yml` deleted |
-| A2: Rewrite deploy-hq.yml | DONE | `.github/workflow-templates/deploy-hq.yml` — self-provisioning, rollback, Slack |
-| A3: Auto-generate workflows in create-agent-project.sh | DONE | `scripts/create-agent-project.sh` — generates ci.yml, deploy-hq.yml, deploy-provision.yml |
-| A4: Create deploy-provision.yml | DONE | `.github/workflow-templates/deploy-provision.yml` — workflow_dispatch |
-| A5: Update deployment docs | DONE | `.claude/reference/deployment-best-practices.md` — Zero-SSH, rollback sections |
-| A6: Update future-plans.md | DONE | `.claude/reference/future-plans.md` — checked off completed items |
+### Part B: Promote/Sync
+- `sync-upstream.sh` rewritten: zone-aware CLAUDE.md, auto-tracking, diff report
+- `promote.sh` enhanced: mandatory upstream freshness check before promoting
+- `.claude/settings.json` added to syncable paths
+- Both SKILL.md docs updated
 
-### Part B: Promote/Sync Improvements (COMPLETE)
+### Part C: Error Messages
+- All scripts use What/Why/Fix format for every error exit
 
-| Task | Status | File |
-|------|--------|------|
-| B1: Zone-aware CLAUDE.md sync | DONE | `scripts/sync-upstream.sh` — preserves content after UPSTREAM-SYNC-END marker |
-| B2: Add .claude/settings.json to SYNCABLE_PATHS | DONE | `scripts/sync-upstream.sh` |
-| B3: Auto-update .upstream-sync.json | DONE | `scripts/sync-upstream.sh` — updates tracking after sync |
-| B4: Sync-diff summary report | DONE | `scripts/sync-upstream.sh` — shows file counts, new/updated, suggested commit |
-| B5: Enforce upstream check in promote.sh | DONE | `scripts/promote.sh` — blocks if upstream has uncommitted remote changes |
-| B6: Update SKILL docs | DONE | `.claude/skills/sync/SKILL.md` + `.claude/skills/promote/SKILL.md` |
+### Part D: E2E Testing (All Passed)
 
-### Part C: Error Messages (COMPLETE)
+| Test | Result |
+|------|--------|
+| Project with Convex (14 checks) | 14/14 PASS |
+| Project without Convex (additional checks) | All PASS |
+| Zone-aware CLAUDE.md sync | PASS — project content survives |
+| Promote upstream check | PASS — blocks when upstream has new commits |
+| YAML lint (6 files) | All PASS |
+| Shell syntax (4 files) | All PASS |
 
-All error exits in modified scripts now use What/Why/Fix format:
-- `deploy-hq.yml` — SSH secrets, Convex admin key, health check
-- `deploy-provision.yml` — SSH secrets, SSH connection, missing script
-- `sync-upstream.sh` — unknown option, missing upstream, invalid repo, missing zone marker
-- `promote.sh` — not in project, missing upstream, invalid repo, upstream out of date
+### README Updated
+- Deployment section: Zero-SSH CI/CD flow documented
+- Project structure: new files listed
+- Sync section: zone-aware features documented
+- Promote section: upstream check documented
+- Create project section: CI/CD generation documented
 
-### Part D: Validation (PARTIAL)
+---
 
-- [x] All shell scripts pass `bash -n` syntax check
-- [x] Both YAML files pass yaml-lint
-- [x] Deleted file confirmed gone
-- [x] New file confirmed created
-- [ ] End-to-end test with spawned project (not done yet)
+## Commits on Branch
+
+```
+7ae25ee feat: deploy automation + promote/sync improvements
+3340cdd refactor: slim CLAUDE.md to 253-line router with quality gates
+633fd18 feat(prime): add service dashboard, promote queue, and roadmap views
+72a5323 feat: add promote queue, port registry, and skill enforcement rules
+60843bb refactor: extract 7 sections from CLAUDE.md to reference docs
+```
+
+**NOTE:** README update + this handover file need to be committed still.
 
 ---
 
 ## What Remains
 
-### Must Do (Next Session)
+### Immediate (this branch)
+1. **Commit** README update + handover file
+2. **Update PR** (push to remote)
+3. **Review + Merge** PR #7
 
-1. **Commit** all changes on `feat/agent-kit-cleanup`
-2. **Part D: Test project** — spawn a real downstream project with `create-agent-project.sh` to validate:
-   - CI/CD workflows generated correctly
-   - sync-upstream.sh zone-aware sync works
-   - promote.sh upstream check works
-3. **Create PR** from `feat/agent-kit-cleanup` to `main`
+### Next Topic: Pattern Registry
+User wants a registry of reusable patterns with use-case labels. When reviewing promotions, also record what use cases they serve. Enables pattern lookup when a new PRD comes in. ("Haben wir schon ein Pattern fuer X?")
 
-### Nice to Have
-
-- **Pattern Registry** idea (user's new request) — a registry/index of reusable patterns with use case labels, so when reviewing promotions we also record what use cases they serve. This enables pattern lookup when a new PRD comes in. (See user message in conversation.)
-
----
-
-## Files Changed (10 files: 1 new, 1 deleted, 8 modified)
-
-| File | Action |
-|------|--------|
-| `.github/workflow-templates/deploy-hq.yml` | Rewritten (self-provisioning, rollback, Slack) |
-| `.github/workflow-templates/deploy-provision.yml` | **NEW** (workflow_dispatch provisioning) |
-| `infrastructure/lucidlabs-hq/templates/github-workflow-hq.yml` | **DELETED** (outdated, conflicts) |
-| `scripts/create-agent-project.sh` | Modified (generates CI/CD workflows) |
-| `scripts/sync-upstream.sh` | Rewritten (zone-aware, tracking, diff report) |
-| `scripts/promote.sh` | Modified (upstream check, better errors) |
-| `.claude/skills/sync/SKILL.md` | Updated (zone-aware docs, tracking docs) |
-| `.claude/skills/promote/SKILL.md` | Updated (auto upstream check docs) |
-| `.claude/reference/deployment-best-practices.md` | Updated (Zero-SSH, rollback sections) |
-| `.claude/reference/future-plans.md` | Updated (checked off completed items) |
-
-## Backups
-
-All original files backed up to: `.backups/2026-02-17/`
+Concept:
+- `PATTERN-REGISTRY.md` or JSON-based index in agent-kit
+- Each entry: pattern name, files, use cases, source project
+- Searchable by use case when starting new projects
+- Updated during `/promote` flow
 
 ---
 
 ## How to Continue
 
 ```bash
-# 1. Open Claude in this repo
 cd /Users/adamkassama/Documents/coding/repos/lucidlabs/lucidlabs-agent-kit
 claude
 
-# 2. Tell Claude:
-"Continue from SESSION-HANDOVER.md. We need to:
-1. Commit the changes on feat/agent-kit-cleanup
-2. Run Part D validation (spawn test project, test sync/promote)
-3. Create PR to main
-4. Discuss the Pattern Registry idea"
+# Tell Claude:
+"Continue from SESSION-HANDOVER.md. Commit README + handover, push to PR, then discuss Pattern Registry."
 ```

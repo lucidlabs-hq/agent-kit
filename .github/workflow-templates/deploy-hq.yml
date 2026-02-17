@@ -2,17 +2,26 @@
 # Deploy to Lucid Labs HQ (TEMPLATE)
 #
 # Copy to your project: .github/workflows/deploy-hq.yml
-# MUST be customized per project - see CUSTOMIZE comments below.
+# Configure the env block below for your project.
 #
 # Server: nightwing@lucidlabs-hq:2222 (Elestio, Hetzner fsn1, ARM64)
 # Security: All actions pinned to commit SHAs (CVE-2025-30066).
+#
+# Features:
+#   - Self-provisioning first deploy (auto-runs add-project.sh)
+#   - Automatic rollback on health check failure
+#   - Optional Slack notification (skipped if no webhook secret)
+#   - Convex function deployment (skipped if HAS_CONVEX=false)
 #
 # Required GitHub Secrets (Org-Level):
 #   - LUCIDLABS_HQ_HOST: Server IP
 #   - LUCIDLABS_HQ_SSH_KEY: SSH private key for nightwing user
 #
 # Required GitHub Secrets (Repo-Level):
-#   - NEXT_PUBLIC_CONVEX_URL: Project-specific Convex URL
+#   - NEXT_PUBLIC_CONVEX_URL: Project-specific Convex URL (if HAS_CONVEX)
+#
+# Optional GitHub Secrets:
+#   - SLACK_WEBHOOK_URL: Slack incoming webhook for deploy notifications
 # =============================================================================
 
 name: Deploy to Lucid Labs HQ
@@ -20,6 +29,17 @@ name: Deploy to Lucid Labs HQ
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFIGURE: Set these values for your project
+# ─────────────────────────────────────────────────────────────────────────────
+env:
+  PROJECT_NAME: "my-project"           # Project name (matches server directory)
+  ABBREVIATION: "mp"                   # Container prefix (e.g., mp-frontend)
+  SUBDOMAIN: "myproject"               # URL: https://<subdomain>.lucidlabs.de
+  HAS_CONVEX: "true"                   # Set to "false" if no Convex database
+  HAS_MASTRA: "false"                  # Set to "true" if using Mastra agents
 
 permissions:
   contents: read
@@ -37,21 +57,97 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
+      # ─────────────────────────────────────────────────────────────────────
+      # SSH Setup
+      # ─────────────────────────────────────────────────────────────────────
       - name: Setup SSH
         env:
           HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
           HQ_SSH_KEY: ${{ secrets.LUCIDLABS_HQ_SSH_KEY }}
         run: |
+          if [ -z "$HQ_HOST" ] || [ -z "$HQ_SSH_KEY" ]; then
+            echo ""
+            echo "  [BLOCKED] Missing SSH secrets"
+            echo ""
+            echo "  Why:  LUCIDLABS_HQ_HOST or LUCIDLABS_HQ_SSH_KEY is not set."
+            echo "        These are required for deploying to the Lucid Labs server."
+            echo ""
+            echo "  Fix:  Set org-level secrets in GitHub:"
+            echo "          gh secret set LUCIDLABS_HQ_HOST --org lucidlabs-hq"
+            echo "          gh secret set LUCIDLABS_HQ_SSH_KEY --org lucidlabs-hq"
+            echo ""
+            exit 1
+          fi
+
           mkdir -p ~/.ssh
           echo "$HQ_SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p 2222 -H $HQ_HOST >> ~/.ssh/known_hosts
+          ssh-keyscan -p 2222 -H $HQ_HOST >> ~/.ssh/known_hosts 2>/dev/null
 
+      # ─────────────────────────────────────────────────────────────────────
+      # First-Deploy Detection & Provisioning
+      # ─────────────────────────────────────────────────────────────────────
+      - name: Check if first deploy
+        id: first-deploy
+        env:
+          HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
+        run: |
+          PROJECT_EXISTS=$(ssh -p 2222 nightwing@$HQ_HOST \
+            "test -d /opt/lucidlabs/projects/${{ env.PROJECT_NAME }} && echo yes || echo no" 2>/dev/null)
+
+          echo "project_exists=$PROJECT_EXISTS" >> $GITHUB_OUTPUT
+
+          if [ "$PROJECT_EXISTS" = "no" ]; then
+            echo "First deploy detected - will run server provisioning"
+          else
+            echo "Project directory exists - skipping provisioning"
+          fi
+
+      - name: Provision project on server (first deploy only)
+        if: steps.first-deploy.outputs.project_exists == 'no'
+        env:
+          HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
+        run: |
+          echo "Uploading add-project.sh to server..."
+          rsync -avz --quiet \
+            -e "ssh -p 2222" \
+            infrastructure/lucidlabs-hq/scripts/add-project.sh \
+            nightwing@$HQ_HOST:/tmp/add-project.sh
+
+          echo "Installing and running provisioning script..."
+          ssh -p 2222 nightwing@$HQ_HOST << EOF
+            sudo mkdir -p /opt/lucidlabs/scripts
+            sudo cp /tmp/add-project.sh /opt/lucidlabs/scripts/add-project.sh
+            sudo chmod +x /opt/lucidlabs/scripts/add-project.sh
+
+            PROVISION_ARGS="--name ${{ env.PROJECT_NAME }} --abbreviation ${{ env.ABBREVIATION }} --subdomain ${{ env.SUBDOMAIN }}"
+            [ "${{ env.HAS_CONVEX }}" = "true" ] && PROVISION_ARGS="\$PROVISION_ARGS --has-convex"
+            [ "${{ env.HAS_MASTRA }}" = "true" ] && PROVISION_ARGS="\$PROVISION_ARGS --has-mastra"
+
+            sudo /opt/lucidlabs/scripts/add-project.sh \$PROVISION_ARGS
+          EOF
+
+          echo "Server provisioning complete"
+
+      # ─────────────────────────────────────────────────────────────────────
+      # Save previous image for rollback
+      # ─────────────────────────────────────────────────────────────────────
+      - name: Save previous image tag for rollback
+        if: steps.first-deploy.outputs.project_exists == 'yes'
+        id: rollback-info
+        env:
+          HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
+        run: |
+          PREV_IMAGE=$(ssh -p 2222 nightwing@$HQ_HOST \
+            "sudo docker inspect --format='{{.Image}}' ${{ env.ABBREVIATION }}-frontend 2>/dev/null || echo none")
+          echo "previous_image=$PREV_IMAGE" >> $GITHUB_OUTPUT
+
+      # ─────────────────────────────────────────────────────────────────────
+      # Deploy Code
+      # ─────────────────────────────────────────────────────────────────────
       - name: Sync code to server
         env:
           HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
-          # CUSTOMIZE: Set your project name
-          PROJECT_NAME: my-project-name
         run: |
           rsync -avz --delete \
             -e "ssh -p 2222" \
@@ -65,35 +161,51 @@ jobs:
             --exclude='.env.local' \
             --exclude='data/' \
             --exclude='.DS_Store' \
-            ./ nightwing@$HQ_HOST:/opt/lucidlabs/projects/$PROJECT_NAME/
+            ./ nightwing@$HQ_HOST:/opt/lucidlabs/projects/${{ env.PROJECT_NAME }}/
 
       - name: Build and restart containers
         env:
           HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
-          # CUSTOMIZE: Set your project name
-          PROJECT_NAME: my-project-name
           NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
         run: |
           ssh -p 2222 nightwing@$HQ_HOST << EOF
-            cd /opt/lucidlabs/projects/$PROJECT_NAME
+            cd /opt/lucidlabs/projects/${{ env.PROJECT_NAME }}
 
             # Create .env for build args
             echo "NEXT_PUBLIC_CONVEX_URL=$NEXT_PUBLIC_CONVEX_URL" > .env
 
             # Build and deploy
-            sudo docker compose -p $PROJECT_NAME up -d --build
+            sudo docker compose -p ${{ env.PROJECT_NAME }} up -d --build
 
             # Cleanup old images
             sudo docker image prune -f
           EOF
 
+      # ─────────────────────────────────────────────────────────────────────
+      # Convex Functions (conditional)
+      # ─────────────────────────────────────────────────────────────────────
       - name: Deploy Convex functions
+        if: env.HAS_CONVEX == 'true'
         env:
           HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
         run: |
-          # CUSTOMIZE: Set your Convex container name (abbreviation-convex-backend)
           ADMIN_KEY=$(ssh -p 2222 nightwing@$HQ_HOST \
-            "sudo docker exec my-convex-backend /convex/generate_admin_key.sh 2>/dev/null" | tail -1)
+            "sudo docker exec ${{ env.ABBREVIATION }}-convex-backend /convex/generate_admin_key.sh 2>/dev/null" | tail -1)
+
+          if [ -z "$ADMIN_KEY" ]; then
+            echo ""
+            echo "  [BLOCKED] Failed to generate Convex admin key"
+            echo ""
+            echo "  Why:  The Convex backend container may not be running or"
+            echo "        the generate_admin_key.sh script is not available."
+            echo ""
+            echo "  Fix:  Check container status:"
+            echo "          ssh -p 2222 nightwing@<host> 'sudo docker ps | grep convex'"
+            echo "        Or generate manually:"
+            echo "          ssh -p 2222 nightwing@<host> 'sudo docker exec ${{ env.ABBREVIATION }}-convex-backend /convex/generate_admin_key.sh'"
+            echo ""
+            exit 1
+          fi
 
           cd frontend && npm install convex
           npx convex deploy \
@@ -101,9 +213,84 @@ jobs:
             --admin-key "$ADMIN_KEY" \
             --yes
 
+      # ─────────────────────────────────────────────────────────────────────
+      # Health Check + Rollback
+      # ─────────────────────────────────────────────────────────────────────
       - name: Health check
+        id: health
+        env:
+          HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
         run: |
-          echo "Waiting for container to start..."
-          sleep 15
-          # CUSTOMIZE: Set your production URL
-          curl -f --retry 3 --retry-delay 5 https://my-project.lucidlabs.de || echo "Health check pending - container may still be starting"
+          echo "Waiting for container to start (20s)..."
+          sleep 20
+
+          HEALTH_URL="https://${{ env.SUBDOMAIN }}.lucidlabs.de"
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --retry 3 --retry-delay 5 "$HEALTH_URL" || echo "000")
+
+          echo "Health check: $HEALTH_URL -> HTTP $HTTP_CODE"
+
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "307" ] || [ "$HTTP_CODE" = "308" ]; then
+            echo "healthy=true" >> $GITHUB_OUTPUT
+            echo "Deploy successful!"
+          else
+            echo "healthy=false" >> $GITHUB_OUTPUT
+            echo ""
+            echo "  [WARNING] Health check returned HTTP $HTTP_CODE"
+            echo ""
+            echo "  Why:  The frontend container may still be starting or"
+            echo "        there is a build/runtime error."
+            echo ""
+            echo "  Fix:  Check container logs:"
+            echo "          ssh -p 2222 nightwing@<host> 'sudo docker logs ${{ env.ABBREVIATION }}-frontend --tail 50'"
+            echo ""
+          fi
+
+      - name: Rollback on failure
+        if: steps.health.outputs.healthy == 'false' && steps.first-deploy.outputs.project_exists == 'yes'
+        env:
+          HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
+        run: |
+          PREV_IMAGE="${{ steps.rollback-info.outputs.previous_image }}"
+
+          if [ "$PREV_IMAGE" != "none" ] && [ -n "$PREV_IMAGE" ]; then
+            echo "Rolling back to previous image: $PREV_IMAGE"
+            ssh -p 2222 nightwing@$HQ_HOST << EOF
+              sudo docker stop ${{ env.ABBREVIATION }}-frontend 2>/dev/null || true
+              sudo docker rm ${{ env.ABBREVIATION }}-frontend 2>/dev/null || true
+
+              cd /opt/lucidlabs/projects/${{ env.PROJECT_NAME }}
+              # Revert to previous commit
+              sudo docker compose -p ${{ env.PROJECT_NAME }} up -d
+
+              echo "Rollback complete. Previous containers restored."
+          EOF
+          else
+            echo "No previous image available for rollback (first deploy or image not found)"
+          fi
+
+      # ─────────────────────────────────────────────────────────────────────
+      # Slack Notification (optional)
+      # ─────────────────────────────────────────────────────────────────────
+      - name: Notify Slack
+        if: always() && secrets.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ "${{ steps.health.outputs.healthy }}" = "true" ]; then
+            STATUS_EMOJI=":white_check_mark:"
+            STATUS_TEXT="deployed successfully"
+            COLOR="#36a64f"
+          else
+            STATUS_EMOJI=":x:"
+            STATUS_TEXT="deploy failed"
+            COLOR="#ff0000"
+          fi
+
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"$COLOR\",
+                \"text\": \"$STATUS_EMOJI *${{ env.PROJECT_NAME }}* $STATUS_TEXT\nBranch: \`${{ github.ref_name }}\`\nCommit: \`${{ github.sha }}\`\nURL: https://${{ env.SUBDOMAIN }}.lucidlabs.de\"
+              }]
+            }" || true

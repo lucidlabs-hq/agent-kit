@@ -1,0 +1,191 @@
+# =============================================================================
+# First-Time Server Provisioning (TEMPLATE)
+#
+# Copy to your project: .github/workflows/deploy-provision.yml
+# Manual workflow_dispatch for provisioning a new project on LUCIDLABS-HQ
+# without needing SSH access from developer machine.
+#
+# Usage: Run from GitHub Actions UI (Actions tab > Provision Project > Run workflow)
+#
+# What it does:
+#   1. Uploads add-project.sh to server
+#   2. Runs provisioning (creates dirs, allocates ports, updates Caddyfile)
+#   3. Reports allocated ports and URLs
+#
+# Required GitHub Secrets (Org-Level):
+#   - LUCIDLABS_HQ_HOST: Server IP
+#   - LUCIDLABS_HQ_SSH_KEY: SSH private key for nightwing user
+#
+# Security: All actions pinned to commit SHAs (CVE-2025-30066).
+# =============================================================================
+
+name: Provision Project on Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      project-name:
+        description: "Project name (e.g., my-project)"
+        required: true
+        type: string
+      abbreviation:
+        description: "Container prefix (e.g., mp)"
+        required: true
+        type: string
+      subdomain:
+        description: "URL subdomain (e.g., myproject -> myproject.lucidlabs.de)"
+        required: true
+        type: string
+      has-convex:
+        description: "Include Convex database?"
+        required: false
+        type: boolean
+        default: true
+      has-mastra:
+        description: "Include Mastra AI agent layer?"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  provision:
+    name: Provision
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup SSH
+        env:
+          HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
+          HQ_SSH_KEY: ${{ secrets.LUCIDLABS_HQ_SSH_KEY }}
+        run: |
+          if [ -z "$HQ_HOST" ] || [ -z "$HQ_SSH_KEY" ]; then
+            echo ""
+            echo "  [BLOCKED] Missing SSH secrets"
+            echo ""
+            echo "  Why:  LUCIDLABS_HQ_HOST or LUCIDLABS_HQ_SSH_KEY is not set."
+            echo "        These are required for server provisioning."
+            echo ""
+            echo "  Fix:  Set org-level secrets in GitHub:"
+            echo "          gh secret set LUCIDLABS_HQ_HOST --org lucidlabs-hq"
+            echo "          gh secret set LUCIDLABS_HQ_SSH_KEY --org lucidlabs-hq"
+            echo ""
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          echo "$HQ_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p 2222 -H $HQ_HOST >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Verify SSH connection
+        env:
+          HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
+        run: |
+          if ! ssh -p 2222 nightwing@$HQ_HOST "echo ok" 2>/dev/null | grep -q "ok"; then
+            echo ""
+            echo "  [BLOCKED] SSH connection to server failed"
+            echo ""
+            echo "  Why:  Cannot reach the deployment server. The server may be"
+            echo "        down or the SSH key may be incorrect."
+            echo ""
+            echo "  Fix:  Verify the server is running and the SSH key secret is correct."
+            echo "        Test manually: ssh -p 2222 nightwing@<host> 'echo ok'"
+            echo ""
+            exit 1
+          fi
+          echo "SSH connection verified"
+
+      - name: Check if already provisioned
+        id: check
+        env:
+          HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
+        run: |
+          EXISTS=$(ssh -p 2222 nightwing@$HQ_HOST \
+            "test -d /opt/lucidlabs/projects/${{ inputs.project-name }} && echo yes || echo no" 2>/dev/null)
+          echo "exists=$EXISTS" >> $GITHUB_OUTPUT
+
+          if [ "$EXISTS" = "yes" ]; then
+            echo "Project already provisioned. Re-running to update configuration."
+          fi
+
+      - name: Upload provisioning script
+        env:
+          HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
+        run: |
+          if [ ! -f infrastructure/lucidlabs-hq/scripts/add-project.sh ]; then
+            echo ""
+            echo "  [BLOCKED] add-project.sh not found"
+            echo ""
+            echo "  Why:  The provisioning script is missing from the repository."
+            echo "        Expected at: infrastructure/lucidlabs-hq/scripts/add-project.sh"
+            echo ""
+            echo "  Fix:  Ensure the file exists in the repository."
+            echo "        It should come from the upstream agent-kit template."
+            echo ""
+            exit 1
+          fi
+
+          rsync -avz --quiet \
+            -e "ssh -p 2222" \
+            infrastructure/lucidlabs-hq/scripts/add-project.sh \
+            nightwing@$HQ_HOST:/tmp/add-project.sh
+
+          ssh -p 2222 nightwing@$HQ_HOST << 'EOF'
+            sudo mkdir -p /opt/lucidlabs/scripts
+            sudo cp /tmp/add-project.sh /opt/lucidlabs/scripts/add-project.sh
+            sudo chmod +x /opt/lucidlabs/scripts/add-project.sh
+          EOF
+
+          echo "Provisioning script uploaded"
+
+      - name: Run provisioning
+        env:
+          HQ_HOST: ${{ secrets.LUCIDLABS_HQ_HOST }}
+        run: |
+          PROVISION_ARGS="--name ${{ inputs.project-name }} --abbreviation ${{ inputs.abbreviation }} --subdomain ${{ inputs.subdomain }}"
+
+          if [ "${{ inputs.has-convex }}" = "true" ]; then
+            PROVISION_ARGS="$PROVISION_ARGS --has-convex"
+          fi
+
+          if [ "${{ inputs.has-mastra }}" = "true" ]; then
+            PROVISION_ARGS="$PROVISION_ARGS --has-mastra"
+          fi
+
+          echo "Running: sudo /opt/lucidlabs/scripts/add-project.sh $PROVISION_ARGS"
+          echo ""
+
+          ssh -p 2222 nightwing@$HQ_HOST "sudo /opt/lucidlabs/scripts/add-project.sh $PROVISION_ARGS"
+
+      - name: Print summary
+        run: |
+          echo ""
+          echo "============================================================================="
+          echo "  PROVISIONING COMPLETE"
+          echo "============================================================================="
+          echo ""
+          echo "  Project:     ${{ inputs.project-name }}"
+          echo "  Abbreviation: ${{ inputs.abbreviation }}"
+          echo "  URL:         https://${{ inputs.subdomain }}.lucidlabs.de"
+
+          if [ "${{ inputs.has-convex }}" = "true" ]; then
+            echo "  Convex:      https://${{ inputs.abbreviation }}-convex.lucidlabs.de"
+          fi
+
+          echo ""
+          echo "  Next steps:"
+          echo "    1. Set repo-level secrets (if not already done):"
+          echo "       gh secret set NEXT_PUBLIC_CONVEX_URL -R lucidlabs-hq/${{ inputs.project-name }}"
+          echo ""
+          echo "    2. Push code to main to trigger deploy:"
+          echo "       git push origin main"
+          echo ""
+          echo "    3. Or run the Deploy workflow manually from Actions tab"
+          echo ""
+          echo "============================================================================="

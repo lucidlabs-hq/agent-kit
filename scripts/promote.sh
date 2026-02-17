@@ -169,33 +169,66 @@ EOF
 validate_environment() {
     # Check if we're in a project directory
     if [[ ! -f "CLAUDE.md" ]] && [[ ! -d ".claude" ]]; then
-        print_error "Not in a valid project directory (no CLAUDE.md or .claude/ found)"
-        print_info "Run this script from your downstream project root"
+        echo ""
+        print_error "[BLOCKED] Not in a valid project directory"
+        echo ""
+        echo "  Why:  No CLAUDE.md or .claude/ directory found in $(pwd)."
+        echo "        This script must be run from a downstream project root."
+        echo ""
+        echo "  Fix:  cd into your project directory first:"
+        echo "          cd ../projects/my-project"
+        echo "          ./scripts/promote.sh --upstream ../../lucidlabs-agent-kit"
+        echo ""
         exit 1
     fi
 
     # Check if upstream path is provided
     if [[ -z "$UPSTREAM_PATH" ]]; then
-        print_error "Upstream path is required"
-        print_info "Usage: ./scripts/promote.sh --upstream <path-to-agent-kit>"
+        echo ""
+        print_error "[BLOCKED] Upstream path is required"
+        echo ""
+        echo "  Why:  The --upstream flag was not provided."
+        echo ""
+        echo "  Fix:  Specify the path to the agent-kit repository:"
+        echo "          ./scripts/promote.sh --upstream ../../lucidlabs-agent-kit"
+        echo ""
         exit 1
     fi
 
     # Check if upstream path exists
     if [[ ! -d "$UPSTREAM_PATH" ]]; then
-        print_error "Upstream path does not exist: $UPSTREAM_PATH"
+        echo ""
+        print_error "[BLOCKED] Upstream path does not exist: $UPSTREAM_PATH"
+        echo ""
+        echo "  Why:  The specified directory does not exist."
+        echo ""
+        echo "  Fix:  Verify folder structure:"
+        echo "          lucidlabs/"
+        echo "          ├── lucidlabs-agent-kit/    <-- Upstream"
+        echo "          └── projects/"
+        echo "              └── [this-project]/     <-- You are here"
+        echo ""
         exit 1
     fi
 
     # Check if upstream is a valid agent-kit
     if [[ ! -f "$UPSTREAM_PATH/CLAUDE.md" ]]; then
-        print_error "Upstream does not appear to be an agent-kit (no CLAUDE.md)"
+        echo ""
+        print_error "[BLOCKED] Not a valid agent-kit: $UPSTREAM_PATH"
+        echo ""
+        echo "  Why:  The directory has no CLAUDE.md file."
+        echo "        This doesn't look like the agent-kit template."
+        echo ""
+        echo "  Fix:  Check the path is correct:"
+        echo "          ls $UPSTREAM_PATH/CLAUDE.md"
+        echo ""
         exit 1
     fi
 
     # Check if gh CLI is installed (for PR creation)
     if ! command -v gh &> /dev/null; then
         print_warning "GitHub CLI (gh) not installed - PR creation will be skipped"
+        print_info "Install with: brew install gh"
     fi
 }
 
@@ -570,6 +603,42 @@ main() {
 
     print_info "Downstream: $DOWNSTREAM_PATH"
     print_info "Upstream:   $UPSTREAM_PATH"
+    echo ""
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Enforce upstream check: block if upstream has new commits
+    # ─────────────────────────────────────────────────────────────────────
+    print_step "Checking upstream is up-to-date..."
+
+    pushd "$UPSTREAM_PATH" > /dev/null
+    git fetch origin 2>/dev/null || true
+    LOCAL_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+    REMOTE_HEAD=$(git rev-parse origin/main 2>/dev/null || git rev-parse origin/master 2>/dev/null || echo "unknown")
+
+    if [[ "$LOCAL_HEAD" != "$REMOTE_HEAD" && "$REMOTE_HEAD" != "unknown" ]]; then
+        echo ""
+        echo -e "${YELLOW}╔════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${YELLOW}║  [BLOCKED] Upstream has new commits since last pull            ║${NC}"
+        echo -e "${YELLOW}╚════════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        echo "  Why:  The upstream agent-kit has commits that are not in your"
+        echo "        local copy. Promoting now could cause merge conflicts"
+        echo "        or overwrite recent upstream changes."
+        echo ""
+        echo "  New commits:"
+        git log HEAD..origin/main --oneline 2>/dev/null || git log HEAD..origin/master --oneline 2>/dev/null || true
+        echo ""
+        echo "  Fix:  1. Pull upstream first:"
+        echo "            cd $UPSTREAM_PATH && git pull origin main"
+        echo "        2. Run /sync in your downstream project"
+        echo "        3. Then retry /promote"
+        echo ""
+        popd > /dev/null
+        exit 1
+    fi
+
+    print_success "Upstream is up-to-date ($(git rev-parse --short HEAD 2>/dev/null))"
+    popd > /dev/null
     echo ""
 
     # Detect changes (bash 3 compatible - no mapfile)

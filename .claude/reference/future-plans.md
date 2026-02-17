@@ -25,9 +25,9 @@
 - [x] SHA-pinned GitHub Actions
 - [x] Branch protection on `main`
 - [x] Greptile PR review integration (documented in CLAUDE.md, install GitHub App)
+- [x] Rollback automation (auto-rollback on health check failure in deploy-hq.yml)
+- [x] Deploy notifications (optional Slack webhook in deploy-hq.yml)
 - [ ] Staging environment (preview deploys)
-- [ ] Rollback automation (one-click revert)
-- [ ] Deploy notifications (Slack/email)
 
 ## AI & Agent Framework
 
@@ -90,17 +90,21 @@
 ## Deployment Automation
 
 - [x] deploy-hq.yml (SSH + Docker)
-- [ ] Zero-SSH Deployment (all via CI/CD)
-- [ ] Automated Caddyfile Provisioning via CI
-- [ ] Automated Convex Deploy via CI
+- [x] Zero-SSH Deployment (all via CI/CD, self-provisioning first deploy)
+- [x] Automated Caddyfile Provisioning via CI (add-project.sh runs in deploy-hq.yml)
+- [x] Automated Convex Deploy via CI (conditional step in deploy-hq.yml)
+- [x] Rollback Automation (auto-rollback on health check failure)
+- [x] deploy-provision.yml (manual workflow_dispatch for first-time provisioning)
 - [ ] Infrastructure-as-Code for new projects
 
 ## Sync & Propagation
 
 - [x] /sync Skill
 - [x] /promote Skill
+- [x] Zone-aware CLAUDE.md Sync (preserves project-specific content below marker)
+- [x] Sync-Diff Report (shows summary after /sync with file counts and suggested commit)
+- [x] Auto upstream check in /promote (blocks if upstream has new commits)
 - [ ] Auto-Sync Best Practices (downstream adapts new standards)
-- [ ] Sync-Diff Report (shows changes after /sync)
 - [ ] Breaking Change Detection
 
 ## Compound Engineering

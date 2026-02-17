@@ -704,6 +704,49 @@ EOF
 EOF
     print_success "Created .upstream-sync.json"
 
+    # Generate CI/CD Workflows
+    print_step "Generating CI/CD workflows..."
+    mkdir -p .github/workflows
+
+    # Copy CI workflow (no changes needed)
+    if [[ -f "$template_dir/.github/workflow-templates/ci.yml" ]]; then
+        cp "$template_dir/.github/workflow-templates/ci.yml" .github/workflows/ci.yml
+        print_success "Generated .github/workflows/ci.yml"
+    fi
+
+    # Generate deploy-hq.yml with project values filled in
+    if [[ -f "$template_dir/.github/workflow-templates/deploy-hq.yml" ]]; then
+        # Derive abbreviation from project name (first letters of each word)
+        local abbr
+        abbr=$(echo "$PROJECT_NAME" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) printf substr($i,1,1)}')
+
+        # Derive subdomain (project name without hyphens)
+        local subdomain
+        subdomain=$(echo "$PROJECT_NAME" | tr -d '-')
+
+        local has_convex_val="true"
+        [[ "$INCLUDE_CONVEX" != true ]] && has_convex_val="false"
+
+        local has_mastra_val="false"
+        [[ "$INCLUDE_MASTRA" = true ]] && has_mastra_val="true"
+
+        sed \
+            -e "s/PROJECT_NAME: \"my-project\"/PROJECT_NAME: \"$PROJECT_NAME\"/" \
+            -e "s/ABBREVIATION: \"mp\"/ABBREVIATION: \"$abbr\"/" \
+            -e "s/SUBDOMAIN: \"myproject\"/SUBDOMAIN: \"$subdomain\"/" \
+            -e "s/HAS_CONVEX: \"true\"/HAS_CONVEX: \"$has_convex_val\"/" \
+            -e "s/HAS_MASTRA: \"false\"/HAS_MASTRA: \"$has_mastra_val\"/" \
+            "$template_dir/.github/workflow-templates/deploy-hq.yml" > .github/workflows/deploy-hq.yml
+
+        print_success "Generated .github/workflows/deploy-hq.yml (values filled in)"
+    fi
+
+    # Copy provisioning workflow
+    if [[ -f "$template_dir/.github/workflow-templates/deploy-provision.yml" ]]; then
+        cp "$template_dir/.github/workflow-templates/deploy-provision.yml" .github/workflows/deploy-provision.yml
+        print_success "Generated .github/workflows/deploy-provision.yml"
+    fi
+
     # Initialize Git
     print_step "Initializing Git repository..."
     git init -q

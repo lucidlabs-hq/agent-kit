@@ -97,7 +97,7 @@ lucidlabs/
 | `mastra/src/agents/*` | Domain-specific agents |
 | `convex/*` | Project-specific database |
 
-## CLAUDE.md Zone Marker
+## CLAUDE.md Zone-Aware Sync
 
 CLAUDE.md has a zone marker that divides upstream content from project-specific content:
 
@@ -105,17 +105,43 @@ CLAUDE.md has a zone marker that divides upstream content from project-specific 
 <!-- UPSTREAM-SYNC-END -->
 ```
 
-- Content BEFORE the marker can be synced from upstream
-- Content AFTER the marker is project-specific and never overwritten
-- If the marker is missing, sync will WARN and skip CLAUDE.md
+- Content **BEFORE** the marker is replaced with the upstream version
+- Content **AFTER** the marker is preserved (project-specific, never overwritten)
+- If the marker is **missing** in the downstream file, sync will **WARN and skip** CLAUDE.md
+- This is handled automatically by the sync script (no manual intervention needed)
 
-## Version Tracking
+## Version Tracking (Automatic)
 
-After syncing, update `.upstream-sync.json` with the current upstream HEAD:
+After syncing, the script **automatically updates** `.upstream-sync.json` with:
+- Current upstream HEAD commit
+- Sync date
 
-```bash
-UPSTREAM_HEAD=$(cd ../../lucidlabs-agent-kit && git rev-parse --short HEAD)
-# Update last_sync_commit and last_sync_date in .upstream-sync.json
+No manual update needed.
+
+## Sync-Diff Summary Report
+
+After sync completes, a summary report is shown:
+
+```
+SYNC SUMMARY
+  Synced:   5 files
+  New:      2
+  Updated:  3
+
+  New files:
+    + .claude/skills/new-skill/SKILL.md
+    + .claude/reference/new-doc.md
+
+  Updated files:
+    ~ CLAUDE.md
+    ~ scripts/promote.sh
+    ~ .claude/settings.json
+
+  Upstream: abc1234 → def5678
+
+Suggested commit:
+  git add .
+  git commit -m "chore: sync upstream agent-kit (def5678)"
 ```
 
 ## Options

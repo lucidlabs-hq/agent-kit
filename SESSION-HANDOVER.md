@@ -1,79 +1,94 @@
-# Session Handover — 2026-02-17 (Session 2)
+# Session Handover — 2026-02-17 (Session 3)
 
 > **Branch:** `feat/agent-kit-cleanup`
-> **PR:** https://github.com/lucidlabs-hq/agent-kit/pull/7
-> **Status:** All implementation + E2E testing complete. README updated. Ready for merge.
+> **PR:** https://github.com/lucidlabs-hq/agent-kit/pull/7 (approved, not yet merged)
+> **Context:** 5% remaining — handover for next session
 
 ---
 
-## What Was Done (Complete)
+## Current State
 
-### Part A: Deployment Automation
-- `deploy-hq.yml` rewritten: self-provisioning first deploy, auto-rollback, Slack notifications
-- `deploy-provision.yml` NEW: manual workflow_dispatch for server provisioning
-- `create-agent-project.sh` generates all 3 CI/CD workflows with project values filled in
-- Outdated `github-workflow-hq.yml` deleted
-- `deployment-best-practices.md` updated with Zero-SSH, rollback sections
-- `future-plans.md` updated (checked off 8 items)
-
-### Part B: Promote/Sync
-- `sync-upstream.sh` rewritten: zone-aware CLAUDE.md, auto-tracking, diff report
-- `promote.sh` enhanced: mandatory upstream freshness check before promoting
-- `.claude/settings.json` added to syncable paths
-- Both SKILL.md docs updated
-
-### Part C: Error Messages
-- All scripts use What/Why/Fix format for every error exit
-
-### Part D: E2E Testing (All Passed)
-
-| Test | Result |
-|------|--------|
-| Project with Convex (14 checks) | 14/14 PASS |
-| Project without Convex (additional checks) | All PASS |
-| Zone-aware CLAUDE.md sync | PASS — project content survives |
-| Promote upstream check | PASS — blocks when upstream has new commits |
-| YAML lint (6 files) | All PASS |
-| Shell syntax (4 files) | All PASS |
-
-### README Updated
-- Deployment section: Zero-SSH CI/CD flow documented
-- Project structure: new files listed
-- Sync section: zone-aware features documented
-- Promote section: upstream check documented
-- Create project section: CI/CD generation documented
+PR #7 is approved but has **5 Greptile review findings** that should be fixed before merge.
 
 ---
 
-## Commits on Branch
+## TODO: Fix Greptile Findings (Priority Order)
 
-```
-7ae25ee feat: deploy automation + promote/sync improvements
-3340cdd refactor: slim CLAUDE.md to 253-line router with quality gates
-633fd18 feat(prime): add service dashboard, promote queue, and roadmap views
-72a5323 feat: add promote queue, port registry, and skill enforcement rules
-60843bb refactor: extract 7 sections from CLAUDE.md to reference docs
+### Fix 1: Rollback in deploy-hq.yml is non-functional (HIGH)
+**File:** `.github/workflow-templates/deploy-hq.yml` ~line 269
+**Problem:** Rollback step captures `PREV_IMAGE` but never uses it. `rsync --delete` already replaced source files, and `docker image prune` removed old images. Running `docker compose up -d` just rebuilds the same broken code.
+**Fix:** Before rsync, back up current source to a versioned directory. On rollback, restore from backup and rebuild. Example:
+```bash
+# Before rsync: backup current
+ssh nightwing@host "cp -a /opt/lucidlabs/projects/$PROJECT/.deploy-backup || true"
+# On rollback: restore backup
+ssh nightwing@host "cp -a /opt/lucidlabs/projects/$PROJECT/.deploy-backup/. /opt/lucidlabs/projects/$PROJECT/ && docker compose up -d --build"
 ```
 
-**NOTE:** README update + this handover file need to be committed still.
+### Fix 2: `echo` can corrupt file content in sync (MEDIUM)
+**File:** `scripts/sync-upstream.sh` ~line 212
+**Problem:** `echo "$var"` interprets `-e`/`-n` as flags and adds extra newlines.
+**Fix:** Replace with `printf '%s\n'`:
+```bash
+{
+    printf '%s\n' "$upstream_before_marker"
+    printf '%s\n' "$downstream_tail"
+} > "$downstream_file"
+```
+
+### Fix 3: Upstream check blocks when local is ahead (MEDIUM)
+**File:** `scripts/promote.sh` ~line 638
+**Problem:** `LOCAL_HEAD != REMOTE_HEAD` blocks in both directions. Should only block when remote is ahead.
+**Fix:** Use directional check:
+```bash
+BEHIND_COUNT=$(git rev-list --count HEAD..origin/main 2>/dev/null || echo "0")
+if [[ "$BEHIND_COUNT" -gt 0 ]]; then
+```
+
+### Fix 4: Dead variables in sync-upstream.sh (LOW)
+**File:** `scripts/sync-upstream.sh` lines 139, 196
+**Problem:** `upstream_content` and `UPSTREAM_HEAD_FULL` assigned but never used.
+**Fix:** Remove both dead variables.
+
+### Fix 5: secrets not accessible in GitHub Actions `if` (MEDIUM)
+**File:** `.github/workflow-templates/deploy-hq.yml` ~line 275
+**Problem:** `secrets` context not reliably available in step `if` conditions.
+**Fix:** Change to `if: always()` and check inside the `run` block:
+```bash
+if [ -z "$SLACK_WEBHOOK_URL" ]; then echo "No webhook, skipping"; exit 0; fi
+```
 
 ---
 
-## What Remains
+## TODO: After Greptile Fixes
 
-### Immediate (this branch)
-1. **Commit** README update + handover file
-2. **Update PR** (push to remote)
-3. **Review + Merge** PR #7
+1. **Push fixes** to `feat/agent-kit-cleanup`
+2. **Merge PR #7** (squash and merge)
+3. **Pattern Registry** — planen und implementieren
+   - Use-Case Labels bei Promotions
+   - Suchbar bei neuem PRD
+   - Integration in `/promote` Flow
 
-### Next Topic: Pattern Registry
-User wants a registry of reusable patterns with use-case labels. When reviewing promotions, also record what use cases they serve. Enables pattern lookup when a new PRD comes in. ("Haben wir schon ein Pattern fuer X?")
+---
 
-Concept:
-- `PATTERN-REGISTRY.md` or JSON-based index in agent-kit
-- Each entry: pattern name, files, use cases, source project
-- Searchable by use case when starting new projects
-- Updated during `/promote` flow
+## NEW RULE for Promote Queue
+
+**Context Window Management Rule:**
+> Bei 5% verbleibendem Kontextfenster MUSS eine SESSION-HANDOVER.md erstellt werden.
+> Kein weiterer Code wird geschrieben. Stattdessen: aktuellen Stand dokumentieren,
+> offene TODOs auflisten, und die naechste Session vorbereiten.
+
+This should be added to `.claude/reference/session-rules.md` as a mandatory rule.
+
+---
+
+## Files That Need Changes
+
+| File | Fixes |
+|------|-------|
+| `.github/workflow-templates/deploy-hq.yml` | #1 (rollback), #5 (slack if) |
+| `scripts/sync-upstream.sh` | #2 (printf), #4 (dead vars) |
+| `scripts/promote.sh` | #3 (directional check) |
 
 ---
 
@@ -84,5 +99,6 @@ cd /Users/adamkassama/Documents/coding/repos/lucidlabs/lucidlabs-agent-kit
 claude
 
 # Tell Claude:
-"Continue from SESSION-HANDOVER.md. Commit README + handover, push to PR, then discuss Pattern Registry."
+"Lies SESSION-HANDOVER.md. Fixe die 5 Greptile Findings auf feat/agent-kit-cleanup,
+push, dann merge PR #7. Danach Pattern Registry."
 ```

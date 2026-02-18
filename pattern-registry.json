@@ -1,15 +1,15 @@
 {
   "$schema_version": "1.0.0",
-  "generated_at": "2026-02-18T00:12:10Z",
-  "generated_from_commit": "8b71059",
-  "pattern_count": 118,
+  "generated_at": "2026-02-18T00:30:16Z",
+  "generated_from_commit": "746cdd6",
+  "pattern_count": 119,
   "categories": {
     "skill": {
       "count": 35,
       "base_path": ".claude/skills"
     },
     "reference": {
-      "count": 49,
+      "count": 50,
       "base_path": ".claude/reference"
     },
     "component": {
@@ -256,7 +256,7 @@
       "category": "reference",
       "path": ".claude/reference/LOCAL-architecture-recommendation.md",
       "description": "Nur f\u00fcr interne Planung - nicht committen!",
-      "version": "8b71059",
+      "version": "746cdd6",
       "added_date": "",
       "last_modified": "",
       "size_bytes": 13931
@@ -267,7 +267,7 @@
       "category": "reference",
       "path": ".claude/reference/LOCAL-future-plans.md",
       "description": "Nicht committen!",
-      "version": "8b71059",
+      "version": "746cdd6",
       "added_date": "",
       "last_modified": "",
       "size_bytes": 20746
@@ -559,6 +559,17 @@
       "size_bytes": 10790
     },
     {
+      "id": "reference/pattern-registry",
+      "name": "pattern-registry",
+      "category": "reference",
+      "path": ".claude/reference/pattern-registry.md",
+      "description": "Central catalog of all upstream patterns. Use when discovering patterns, checking staleness, or working with promote/sync.",
+      "version": "746cdd6",
+      "added_date": "",
+      "last_modified": "",
+      "size_bytes": 5246
+    },
+    {
       "id": "reference/piv-workflow",
       "name": "piv-workflow",
       "category": "reference",
@@ -630,9 +641,9 @@
       "category": "reference",
       "path": ".claude/reference/promote-sync.md",
       "description": "How patterns flow between upstream (agent-kit) and downstream (projects)",
-      "version": "226397f",
+      "version": "746cdd6",
       "added_date": "2026-02-11",
-      "last_modified": "2026-02-17",
+      "last_modified": "2026-02-18",
       "size_bytes": 16488
     },
     {
@@ -850,9 +861,9 @@
       "category": "script",
       "path": "scripts/pattern-list.sh",
       "description": "pattern-list script",
-      "version": "8b71059",
-      "added_date": "",
-      "last_modified": "",
+      "version": "746cdd6",
+      "added_date": "2026-02-18",
+      "last_modified": "2026-02-18",
       "size_bytes": 12494
     },
     {
@@ -861,10 +872,10 @@
       "category": "script",
       "path": "scripts/pattern-registry.sh",
       "description": "pattern-registry script",
-      "version": "8b71059",
-      "added_date": "",
-      "last_modified": "",
-      "size_bytes": 10439
+      "version": "746cdd6",
+      "added_date": "2026-02-18",
+      "last_modified": "2026-02-18",
+      "size_bytes": 10460
     },
     {
       "id": "script/promote",
@@ -872,9 +883,9 @@
       "category": "script",
       "path": "scripts/promote.sh",
       "description": "promote script",
-      "version": "226397f",
+      "version": "746cdd6",
       "added_date": "2026-01-27",
-      "last_modified": "2026-02-17",
+      "last_modified": "2026-02-18",
       "size_bytes": 21671
     },
     {
@@ -894,9 +905,9 @@
       "category": "script",
       "path": "scripts/sync-upstream.sh",
       "description": "sync-upstream script",
-      "version": "fdf9ec9",
+      "version": "746cdd6",
       "added_date": "2026-01-27",
-      "last_modified": "2026-02-17",
+      "last_modified": "2026-02-18",
       "size_bytes": 26989
     },
     {

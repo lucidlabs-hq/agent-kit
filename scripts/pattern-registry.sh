@@ -49,7 +49,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 log() {
-    [[ "$QUIET" == false ]] && echo "$@" >&2
+    if [[ "$QUIET" == false ]]; then
+        echo "$@" >&2
+    fi
 }
 
 OUTPUT_FILE="$REPO_ROOT/pattern-registry.json"

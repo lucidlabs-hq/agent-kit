@@ -20,6 +20,7 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 BOLD='\033[1m'
+DIM='\033[2m'
 
 # Default values
 UPSTREAM_PATH="../../lucidlabs-agent-kit"
@@ -39,6 +40,7 @@ SYNCABLE_PATHS=(
     "CLAUDE.md"
     "AGENTS.md"
     "WORKFLOW.md"
+    "pattern-registry.json"
 )
 
 # Zone marker for CLAUDE.md
@@ -435,6 +437,28 @@ with open('$sync_file', 'w') as f:
     echo ""
 }
 
+# Load pattern registry for enriched display (if available)
+REGISTRY_FILE="$UPSTREAM_PATH/pattern-registry.json"
+REGISTRY_LOOKUP=""
+if [[ -f "$REGISTRY_FILE" ]]; then
+    REGISTRY_LOOKUP=$(python3 -c "
+import json
+with open('$REGISTRY_FILE') as f:
+    reg = json.load(f)
+for p in reg.get('patterns', []):
+    # TSV: path \t name \t description (first 60 chars)
+    desc = p.get('description', '')[:60]
+    print(f\"{p['path']}\t{p['name']}\t{desc}\")
+" 2>/dev/null || echo "")
+fi
+
+get_pattern_info() {
+    local path="$1"
+    if [[ -n "$REGISTRY_LOOKUP" ]]; then
+        echo "$REGISTRY_LOOKUP" | grep "^${path}	" 2>/dev/null | head -1 || echo ""
+    fi
+}
+
 # Find syncable changes
 echo -e "${BLUE}▶${NC} Scanning for syncable updates..."
 echo ""
@@ -442,6 +466,25 @@ echo ""
 declare -a SYNC_ITEMS
 declare -a SYNC_TYPES
 INDEX=1
+
+print_sync_entry() {
+    local idx="$1"
+    local rel_path="$2"
+    local status="$3"
+    local color="${GREEN}"
+    [[ "$status" == "MODIFIED" ]] && color="${YELLOW}"
+
+    local info
+    info=$(get_pattern_info "$rel_path")
+    local suffix=""
+    if [[ -n "$info" ]]; then
+        local desc
+        desc=$(echo "$info" | cut -f3)
+        [[ -n "$desc" ]] && suffix=" ${DIM}— ${desc}${NC}"
+    fi
+
+    echo -e "  ${color}[$idx]${NC} $rel_path ${color}($status)${NC}${suffix}"
+}
 
 for path in "${SYNCABLE_PATHS[@]}"; do
     UPSTREAM_FILE="$UPSTREAM_PATH/$path"
@@ -453,14 +496,14 @@ for path in "${SYNCABLE_PATHS[@]}"; do
             if [[ -f "$UPSTREAM_FILE" ]]; then
                 SYNC_ITEMS+=("$path")
                 SYNC_TYPES+=("NEW")
-                echo -e "  ${GREEN}[$INDEX]${NC} $path ${GREEN}(NEW)${NC}"
+                print_sync_entry "$INDEX" "$path" "NEW"
                 ((INDEX++))
             elif [[ -d "$UPSTREAM_FILE" ]]; then
                 while IFS= read -r -d '' file; do
                     rel_path="${file#$UPSTREAM_PATH/}"
                     SYNC_ITEMS+=("$rel_path")
                     SYNC_TYPES+=("NEW")
-                    echo -e "  ${GREEN}[$INDEX]${NC} $rel_path ${GREEN}(NEW)${NC}"
+                    print_sync_entry "$INDEX" "$rel_path" "NEW"
                     ((INDEX++))
                 done < <(find "$UPSTREAM_FILE" -type f -print0 2>/dev/null)
             fi
@@ -469,7 +512,7 @@ for path in "${SYNCABLE_PATHS[@]}"; do
             if ! diff -q "$UPSTREAM_FILE" "$DOWNSTREAM_FILE" > /dev/null 2>&1; then
                 SYNC_ITEMS+=("$path")
                 SYNC_TYPES+=("MODIFIED")
-                echo -e "  ${YELLOW}[$INDEX]${NC} $path ${YELLOW}(MODIFIED)${NC}"
+                print_sync_entry "$INDEX" "$path" "MODIFIED"
                 ((INDEX++))
             fi
         elif [[ -d "$UPSTREAM_FILE" ]]; then
@@ -481,12 +524,12 @@ for path in "${SYNCABLE_PATHS[@]}"; do
                 if [[ ! -e "$downstream_file" ]]; then
                     SYNC_ITEMS+=("$rel_path")
                     SYNC_TYPES+=("NEW")
-                    echo -e "  ${GREEN}[$INDEX]${NC} $rel_path ${GREEN}(NEW)${NC}"
+                    print_sync_entry "$INDEX" "$rel_path" "NEW"
                     ((INDEX++))
                 elif ! diff -q "$file" "$downstream_file" > /dev/null 2>&1; then
                     SYNC_ITEMS+=("$rel_path")
                     SYNC_TYPES+=("MODIFIED")
-                    echo -e "  ${YELLOW}[$INDEX]${NC} $rel_path ${YELLOW}(MODIFIED)${NC}"
+                    print_sync_entry "$INDEX" "$rel_path" "MODIFIED"
                     ((INDEX++))
                 fi
             done < <(find "$UPSTREAM_FILE" -type f -print0 2>/dev/null)
@@ -612,6 +655,12 @@ if [[ "$DRY_RUN" == false ]]; then
     # Auto-update .upstream-sync.json
     # ─────────────────────────────────────────────────────────────────────
     if [[ -f "$DOWNSTREAM_PATH/.upstream-sync.json" ]]; then
+        # Build list of synced file paths for synced_files population
+        SYNCED_PATHS_LIST=""
+        for f in "${SYNCED_FILES_NEW[@]}" "${SYNCED_FILES_UPDATED[@]}"; do
+            SYNCED_PATHS_LIST="${SYNCED_PATHS_LIST}${f}"$'\n'
+        done
+
         python3 -c "
 import json
 from datetime import date
@@ -622,10 +671,20 @@ with open('$DOWNSTREAM_PATH/.upstream-sync.json') as f:
 data['last_sync_commit'] = '$UPSTREAM_HEAD'
 data['last_sync_date'] = str(date.today())
 
+# Populate synced_files for per-file tracking
+synced = data.get('synced_files', {})
+paths_text = '''$SYNCED_PATHS_LIST'''.strip()
+if paths_text:
+    for path in paths_text.split('\n'):
+        path = path.strip()
+        if path:
+            synced[path] = '$UPSTREAM_HEAD'
+data['synced_files'] = synced
+
 with open('$DOWNSTREAM_PATH/.upstream-sync.json', 'w') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
-" 2>/dev/null && echo -e "${GREEN}✓${NC} Updated .upstream-sync.json (${PREV_SYNC_COMMIT} → ${UPSTREAM_HEAD})"
+" 2>/dev/null && echo -e "${GREEN}✓${NC} Updated .upstream-sync.json (${PREV_SYNC_COMMIT} → ${UPSTREAM_HEAD}, ${SYNCED_COUNT} files tracked)"
     fi
 
     # ─────────────────────────────────────────────────────────────────────
@@ -664,6 +723,37 @@ with open('$DOWNSTREAM_PATH/.upstream-sync.json', 'w') as f:
 
     echo -e "  Upstream: ${BOLD}${PREV_SYNC_COMMIT}${NC} → ${BOLD}${UPSTREAM_HEAD}${NC}"
     echo ""
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Pattern Coverage Summary (if registry available)
+    # ─────────────────────────────────────────────────────────────────────
+    if [[ -f "$REGISTRY_FILE" && -f "$DOWNSTREAM_PATH/.upstream-sync.json" ]]; then
+        python3 -c "
+import json
+import sys
+
+with open('$REGISTRY_FILE') as f:
+    reg = json.load(f)
+with open('$DOWNSTREAM_PATH/.upstream-sync.json') as f:
+    sync = json.load(f)
+
+synced = sync.get('synced_files', {})
+total = reg.get('pattern_count', 0)
+if total == 0:
+    sys.exit(0)
+
+up = sum(1 for p in reg['patterns'] if synced.get(p['path']) == p['version'])
+stale = sum(1 for p in reg['patterns'] if p['path'] in synced and synced[p['path']] != p['version'])
+missing = total - up - stale
+
+print(f'  \033[2mPattern coverage: \033[0;32m{up} synced\033[0m\033[2m / \033[1;33m{stale} stale\033[0m\033[2m / \033[0;31m{missing} missing\033[0m\033[2m of {total} total\033[0m')
+if stale > 0 or missing > 20:
+    proj = '$DOWNSTREAM_PATH'.rstrip('/').split('/')[-1]
+    print(f'  \033[2mRun: ./scripts/pattern-list.sh --project {proj}  for details\033[0m')
+" 2>/dev/null || true
+        echo ""
+    fi
+
     echo -e "${BLUE}Suggested commit:${NC}"
     echo ""
     echo "  git add ."

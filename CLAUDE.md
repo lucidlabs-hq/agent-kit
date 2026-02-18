@@ -110,6 +110,7 @@ pnpm run build                   # Production Build (Node.js)
 | Managing ports | `port-registry.md` |
 | Setting up auth | `auth-architecture.md` + `betterauth-convex-setup.md` |
 | Promoting/syncing upstream | `promote-sync.md` |
+| Discovering patterns / staleness | `pattern-registry.md` |
 | Managing Linear issues | `linear-setup.md` |
 | Handling errors | `error-handling.md` |
 | Reviewing code | `code-review-checklist.md` |
@@ -166,6 +167,7 @@ Every code change passes through quality gates. See `quality-gates.md` for full 
 | `convex-self-hosted.md` | Convex self-hosted setup, project isolation |
 | `port-registry.md` | Port allocations, conflict checking |
 | `promote-sync.md` | Promote & sync architecture, downstream rules |
+| `pattern-registry.md` | Pattern catalog, discovery CLI, staleness detection |
 | `deployment-best-practices.md` | Docker, Caddy, Elestio, CI/CD |
 | `deployment-targets.md` | LUCIDLABS-HQ vs DEDICATED deployment |
 | `ci-cd-security.md` | SHA-pinning, workflow architecture, branch protection |

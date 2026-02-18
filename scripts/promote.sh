@@ -449,6 +449,22 @@ review_changes() {
 }
 
 #-------------------------------------------------------------------------------
+# Pattern Registry Update
+#-------------------------------------------------------------------------------
+
+update_pattern_registry() {
+    local registry_script="$UPSTREAM_PATH/scripts/pattern-registry.sh"
+    if [[ -f "$registry_script" ]]; then
+        print_step "Updating pattern registry..."
+        bash "$registry_script" --quiet 2>/dev/null
+        if [[ -f "$UPSTREAM_PATH/pattern-registry.json" ]]; then
+            git add "pattern-registry.json"
+            print_success "Pattern registry updated"
+        fi
+    fi
+}
+
+#-------------------------------------------------------------------------------
 # Promotion Execution
 #-------------------------------------------------------------------------------
 
@@ -501,6 +517,9 @@ execute_promotion() {
         ((copied++))
     done
 
+    # Update pattern registry (auto-regenerate after new files copied)
+    update_pattern_registry
+
     # Stage changes
     git add .
 
@@ -533,6 +552,9 @@ Promoted from downstream project: \`$PROJECT_NAME\`
 
 ### Files:
 $(printf '- %s\n' "${changes[@]}" | sed 's/|/ (/' | sed 's/$/)/')
+
+### Pattern Registry
+- [x] Auto-updated \`pattern-registry.json\`
 
 ### Checklist:
 - [ ] Reviewed for domain-specific content

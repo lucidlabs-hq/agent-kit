@@ -216,6 +216,94 @@ Every downstream project has a tracking file at the project root:
 - `git log <last_sync_commit>..HEAD` shows what changed since last sync
 - Per-file tracking enables selective sync
 - Sync script updates this file automatically after each sync
+- `synced_files` is populated automatically during sync — each synced path is recorded with the upstream commit SHA
+
+---
+
+## Pattern Registry
+
+The Pattern Registry is a central catalog of all available patterns in the upstream agent-kit. It enables discovery, staleness checking, and enriched sync/promote displays.
+
+### Registry File: `pattern-registry.json`
+
+Located at the upstream root. Auto-generated — never edit manually.
+
+```json
+{
+  "$schema_version": "1.0.0",
+  "generated_at": "2026-02-18T14:30:00Z",
+  "generated_from_commit": "8b71059",
+  "pattern_count": 117,
+  "categories": {
+    "skill":     { "count": 35, "base_path": ".claude/skills" },
+    "reference": { "count": 49, "base_path": ".claude/reference" },
+    "component": { "count": 20, "base_path": "frontend/components/ui" },
+    "utility":   { "count": 3,  "base_path": "frontend/lib" },
+    "hook":      { "count": 0,  "base_path": "frontend/lib/hooks" },
+    "script":    { "count": 10, "base_path": "scripts" }
+  },
+  "patterns": [
+    {
+      "id": "skill/commit",
+      "name": "commit",
+      "category": "skill",
+      "path": ".claude/skills/commit/SKILL.md",
+      "description": "Commit conventions and pre-commit workflow",
+      "version": "226397f",
+      "added_date": "2026-01-27",
+      "last_modified": "2026-02-17",
+      "size_bytes": 4805
+    }
+  ]
+}
+```
+
+### Pattern ID Convention
+
+`{category}/{name}` — e.g. `skill/commit`, `reference/code-standards`, `script/promote`
+
+| Category | Source | Name Derivation |
+|----------|--------|-----------------|
+| skill | `.claude/skills/*/SKILL.md` | Directory name |
+| reference | `.claude/reference/*.md` | Filename sans `.md` |
+| component | `frontend/components/ui/*.tsx` | Filename sans `.tsx` |
+| utility | `frontend/lib/*.ts` | Filename sans `.ts` |
+| hook | `frontend/hooks/*.ts` | Filename sans extension |
+| script | `scripts/*.sh` | Filename sans `.sh` |
+
+### Scripts
+
+**Generator:** `scripts/pattern-registry.sh`
+
+```bash
+./scripts/pattern-registry.sh              # Generate registry
+./scripts/pattern-registry.sh --dry-run    # Preview without writing
+./scripts/pattern-registry.sh --quiet      # Suppress progress output
+./scripts/pattern-registry.sh --json       # Write file + print JSON
+```
+
+Scans the filesystem and git history. Extracts descriptions from YAML frontmatter (skills), blockquotes (reference docs), or uses `"{name} {category}"` as fallback.
+
+**Discovery CLI:** `scripts/pattern-list.sh`
+
+```bash
+./scripts/pattern-list.sh                           # List all patterns
+./scripts/pattern-list.sh --category skill           # Filter by category
+./scripts/pattern-list.sh --search "auth"            # Search name/description
+./scripts/pattern-list.sh --project neola            # Staleness report
+./scripts/pattern-list.sh --new-since abc1234        # Changes since commit
+./scripts/pattern-list.sh --json                     # JSON output
+```
+
+The staleness report (`--project`) compares the registry against the project's `synced_files` in `.upstream-sync.json` and shows up-to-date, stale, and missing counts.
+
+### Integration
+
+| System | Behavior |
+|--------|----------|
+| **Promote** (`promote.sh`) | Auto-regenerates `pattern-registry.json` after copying files, includes it in the PR commit |
+| **Sync** (`sync-upstream.sh`) | Registry included in `SYNCABLE_PATHS`, scan display enriched with pattern descriptions, `synced_files` populated per-file, staleness summary shown after sync |
+| **Pattern List** | Auto-regenerates registry if missing or stale (>1 hour) |
 
 ---
 
@@ -293,25 +381,29 @@ This makes the bootstrapping problem self-healing.
 
 ```
 upstream (lucidlabs-agent-kit)/
+├── pattern-registry.json          # Auto-generated pattern catalog
 ├── scripts/
-│   ├── promote.sh               # Promotion script
-│   ├── sync-upstream.sh          # Sync script
-│   ├── bootstrap-sync.sh         # One-time bootstrap for existing projects
-│   └── create-agent-project.sh   # Includes sync infra in new projects
+│   ├── promote.sh                 # Promotion script (updates registry)
+│   ├── sync-upstream.sh           # Sync script (populates synced_files)
+│   ├── pattern-registry.sh        # Registry generator
+│   ├── pattern-list.sh            # Discovery CLI
+│   ├── bootstrap-sync.sh          # One-time bootstrap for existing projects
+│   └── create-agent-project.sh    # Includes sync infra in new projects
 ├── .claude/
 │   ├── skills/
-│   │   ├── promote/SKILL.md      # Promotion instructions
-│   │   └── sync/SKILL.md         # Sync instructions (with self-bootstrap)
+│   │   ├── promote/SKILL.md       # Promotion instructions
+│   │   └── sync/SKILL.md          # Sync instructions (with self-bootstrap)
 │   └── reference/
-│       └── promote-sync.md       # This document
-└── CLAUDE.md                     # Has <!-- UPSTREAM-SYNC-END --> marker
+│       └── promote-sync.md        # This document
+└── CLAUDE.md                      # Has <!-- UPSTREAM-SYNC-END --> marker
 
 downstream (projects/*/):
+├── pattern-registry.json          # Synced from upstream (read-only reference)
 ├── scripts/
-│   ├── promote.sh               # Copied from upstream
-│   └── sync-upstream.sh          # Copied from upstream
-├── .upstream-sync.json           # Version tracking
-└── CLAUDE.md                     # Has zone marker
+│   ├── promote.sh                 # Copied from upstream
+│   └── sync-upstream.sh           # Copied from upstream
+├── .upstream-sync.json            # Version tracking (synced_files populated)
+└── CLAUDE.md                      # Has zone marker
 ```
 
 ---
@@ -371,6 +463,9 @@ From a downstream project, the ONLY permitted interactions with upstream are:
 
 - `.claude/skills/promote/SKILL.md` - Promotion skill instructions
 - `.claude/skills/sync/SKILL.md` - Sync skill instructions
-- `scripts/promote.sh` - Promotion script
-- `scripts/sync-upstream.sh` - Sync script
+- `scripts/promote.sh` - Promotion script (auto-updates registry)
+- `scripts/sync-upstream.sh` - Sync script (populates `synced_files`)
+- `scripts/pattern-registry.sh` - Pattern registry generator
+- `scripts/pattern-list.sh` - Pattern discovery CLI
 - `scripts/bootstrap-sync.sh` - Bootstrap script for existing projects
+- `pattern-registry.json` - Central pattern catalog (auto-generated)

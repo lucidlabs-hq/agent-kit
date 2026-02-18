@@ -155,6 +155,7 @@ log "Found $PATTERN_COUNT patterns. Enriching with git history..."
 # 3. Extract descriptions from file content
 # 4. Assemble and write JSON
 
+set +e
 REGISTRY_JSON=$(PATTERN_TSV="$PATTERN_TSV" COMMIT_SHA="$COMMIT_SHA" REPO_ROOT="$REPO_ROOT" python3 << 'PYEOF'
 import json
 import subprocess
@@ -319,8 +320,10 @@ registry = {
 print(json.dumps(registry, indent=2))
 PYEOF
 )
+PYTHON_EXIT=$?
+set -e
 
-if [[ $? -ne 0 ]]; then
+if [[ $PYTHON_EXIT -ne 0 ]]; then
     echo "ERROR: Failed to generate registry JSON" >&2
     exit 1
 fi

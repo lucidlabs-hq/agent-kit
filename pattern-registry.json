@@ -1,7 +1,7 @@
 {
   "$schema_version": "1.0.0",
-  "generated_at": "2026-02-18T00:30:16Z",
-  "generated_from_commit": "746cdd6",
+  "generated_at": "2026-02-18T05:07:13Z",
+  "generated_from_commit": "9f7ab52",
   "pattern_count": 119,
   "categories": {
     "skill": {
@@ -256,7 +256,7 @@
       "category": "reference",
       "path": ".claude/reference/LOCAL-architecture-recommendation.md",
       "description": "Nur f\u00fcr interne Planung - nicht committen!",
-      "version": "746cdd6",
+      "version": "9f7ab52",
       "added_date": "",
       "last_modified": "",
       "size_bytes": 13931
@@ -267,7 +267,7 @@
       "category": "reference",
       "path": ".claude/reference/LOCAL-future-plans.md",
       "description": "Nicht committen!",
-      "version": "746cdd6",
+      "version": "9f7ab52",
       "added_date": "",
       "last_modified": "",
       "size_bytes": 20746
@@ -564,9 +564,9 @@
       "category": "reference",
       "path": ".claude/reference/pattern-registry.md",
       "description": "Central catalog of all upstream patterns. Use when discovering patterns, checking staleness, or working with promote/sync.",
-      "version": "746cdd6",
-      "added_date": "",
-      "last_modified": "",
+      "version": "9f7ab52",
+      "added_date": "2026-02-18",
+      "last_modified": "2026-02-18",
       "size_bytes": 5246
     },
     {
@@ -864,7 +864,7 @@
       "version": "746cdd6",
       "added_date": "2026-02-18",
       "last_modified": "2026-02-18",
-      "size_bytes": 12494
+      "size_bytes": 13634
     },
     {
       "id": "script/pattern-registry",
@@ -872,10 +872,10 @@
       "category": "script",
       "path": "scripts/pattern-registry.sh",
       "description": "pattern-registry script",
-      "version": "746cdd6",
+      "version": "9f7ab52",
       "added_date": "2026-02-18",
       "last_modified": "2026-02-18",
-      "size_bytes": 10460
+      "size_bytes": 10499
     },
     {
       "id": "script/promote",

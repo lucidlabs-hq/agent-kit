@@ -90,6 +90,14 @@ if [[ ! -f "$REGISTRY" ]]; then
 fi
 
 #-------------------------------------------------------------------------------
+# Resolve JSON_OUTPUT to Python boolean string
+#-------------------------------------------------------------------------------
+JSON_FLAG="False"
+if [[ "$JSON_OUTPUT" == true ]]; then
+    JSON_FLAG="True"
+fi
+
+#-------------------------------------------------------------------------------
 # Project staleness report
 #-------------------------------------------------------------------------------
 if [[ -n "$PROJECT" ]]; then
@@ -118,21 +126,31 @@ if [[ -n "$PROJECT" ]]; then
 
     SYNC_FILE="$PROJECT_PATH/.upstream-sync.json"
 
-    python3 << PYEOF
+    REGISTRY_PATH="$REGISTRY" \
+    SYNC_FILE_PATH="$SYNC_FILE" \
+    PROJECT_NAME="$PROJECT" \
+    PROJECT_DIR="$PROJECT_PATH" \
+    JSON_OUTPUT_FLAG="$JSON_FLAG" \
+    python3 << 'PYEOF'
 import json
 import sys
+import os
 
-with open("$REGISTRY") as f:
+registry_path = os.environ["REGISTRY_PATH"]
+sync_file_path = os.environ["SYNC_FILE_PATH"]
+project = os.environ["PROJECT_NAME"]
+project_path = os.environ["PROJECT_DIR"]
+json_output = os.environ.get("JSON_OUTPUT_FLAG", "False") == "True"
+
+with open(registry_path) as f:
     registry = json.load(f)
 
-with open("$SYNC_FILE") as f:
+with open(sync_file_path) as f:
     sync_data = json.load(f)
 
 synced_files = sync_data.get("synced_files", {})
 last_sync_commit = sync_data.get("last_sync_commit", "none")
 last_sync_date = sync_data.get("last_sync_date", "unknown")
-
-json_output = $( [[ "$JSON_OUTPUT" == true ]] && echo "True" || echo "False" )
 
 up_to_date = []
 stale = []
@@ -151,8 +169,8 @@ for pattern in registry["patterns"]:
 
 if json_output:
     result = {
-        "project": "$PROJECT",
-        "project_path": "$PROJECT_PATH",
+        "project": project,
+        "project_path": project_path,
         "last_sync_commit": last_sync_commit,
         "last_sync_date": last_sync_date,
         "registry_commit": registry["generated_from_commit"],
@@ -173,7 +191,7 @@ else:
     print(f"\033[0;36m║              PATTERN STALENESS REPORT                             ║\033[0m")
     print(f"\033[0;36m╚═══════════════════════════════════════════════════════════════════╝\033[0m")
     print()
-    print(f"  Project:     \033[1m$PROJECT\033[0m")
+    print(f"  Project:     \033[1m{project}\033[0m")
     print(f"  Last sync:   \033[1m{last_sync_commit}\033[0m ({last_sync_date})")
     print(f"  Registry:    \033[1m{registry['generated_from_commit']}\033[0m ({registry['pattern_count']} patterns)")
     print()
@@ -230,15 +248,24 @@ if [[ -n "$NEW_SINCE" ]]; then
         exit 0
     fi
 
-    python3 << PYEOF
+    REGISTRY_PATH="$REGISTRY" \
+    CHANGED_FILES_LIST="$CHANGED_FILES" \
+    SINCE_COMMIT="$NEW_SINCE" \
+    JSON_OUTPUT_FLAG="$JSON_FLAG" \
+    python3 << 'PYEOF'
 import json
 import sys
+import os
 
-with open("$REGISTRY") as f:
+registry_path = os.environ["REGISTRY_PATH"]
+changed_text = os.environ.get("CHANGED_FILES_LIST", "")
+since = os.environ["SINCE_COMMIT"]
+json_output = os.environ.get("JSON_OUTPUT_FLAG", "False") == "True"
+
+with open(registry_path) as f:
     registry = json.load(f)
 
-changed_files = set("""$CHANGED_FILES""".strip().split("\n"))
-json_output = $( [[ "$JSON_OUTPUT" == true ]] && echo "True" || echo "False" )
+changed_files = set(line.strip() for line in changed_text.strip().split("\n") if line.strip())
 
 matched = []
 for pattern in registry["patterns"]:
@@ -246,13 +273,13 @@ for pattern in registry["patterns"]:
         matched.append(pattern)
 
 if json_output:
-    print(json.dumps({"since": "$NEW_SINCE", "count": len(matched), "patterns": matched}, indent=2))
+    print(json.dumps({"since": since, "count": len(matched), "patterns": matched}, indent=2))
 else:
     if not matched:
-        print(f"  No registry patterns changed since $NEW_SINCE")
+        print(f"  No registry patterns changed since {since}")
     else:
         print()
-        print(f"\033[1mPatterns changed since $NEW_SINCE:\033[0m ({len(matched)} patterns)")
+        print(f"\033[1mPatterns changed since {since}:\033[0m ({len(matched)} patterns)")
         print()
         for p in matched:
             print(f"  {p['id']:<40} {p['version']}  {p['last_modified']}")
@@ -264,16 +291,22 @@ fi
 #-------------------------------------------------------------------------------
 # General listing (with optional --category and --search filters)
 #-------------------------------------------------------------------------------
-python3 << PYEOF
+REGISTRY_PATH="$REGISTRY" \
+CATEGORY_FILTER="$CATEGORY" \
+SEARCH_FILTER="$SEARCH" \
+JSON_OUTPUT_FLAG="$JSON_FLAG" \
+python3 << 'PYEOF'
 import json
 import sys
+import os
 
-with open("$REGISTRY") as f:
+registry_path = os.environ["REGISTRY_PATH"]
+category_filter = os.environ.get("CATEGORY_FILTER", "").lower().strip()
+search_filter = os.environ.get("SEARCH_FILTER", "").lower().strip()
+json_output = os.environ.get("JSON_OUTPUT_FLAG", "False") == "True"
+
+with open(registry_path) as f:
     registry = json.load(f)
-
-category_filter = "$CATEGORY".lower().strip()
-search_filter = "$SEARCH".lower().strip()
-json_output = $( [[ "$JSON_OUTPUT" == true ]] && echo "True" || echo "False" )
 
 patterns = registry["patterns"]
 

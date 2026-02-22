@@ -385,8 +385,12 @@ with open('$BACKUP_DIR/manifest.json', 'w') as f:
 
 total_size = sum(p['backup_size_mb'] for p in manifest['projects'])
 print(f'Manifest written. Total backup size: {total_size:.1f} MB')
-" 2>/dev/null && print_success "Manifest written to $BACKUP_DIR/manifest.json" || \
-        print_warning "Manifest generation failed (backups still safe)"
+" 2>"$BACKUP_DIR/.manifest-errors.log" && print_success "Manifest written to $BACKUP_DIR/manifest.json" || {
+            print_warning "Manifest generation failed (backups still safe)"
+            if [[ -s "$BACKUP_DIR/.manifest-errors.log" ]]; then
+                print_warning "  Error: $(head -1 "$BACKUP_DIR/.manifest-errors.log")"
+            fi
+        }
 
     echo ""
     echo -e "  ${GREEN}✓${NC} Backed up $BACKED_UP/$TOTAL_PROJECTS projects to $BACKUP_DIR"
@@ -608,7 +612,7 @@ except:
 
         # Run sync
         print_info "Syncing from $current_sync → $UPSTREAM_HEAD"
-        if (cd "$path" && printf "all\ny\n" | bash scripts/sync-upstream.sh --upstream "$UPSTREAM_ROOT" 2>/dev/null); then
+        if (cd "$path" && printf "y\n" | bash scripts/sync-upstream.sh --all --upstream "$UPSTREAM_ROOT" 2>/dev/null); then
             # Commit sync result
             if (cd "$path" && git rev-parse --is-inside-work-tree &>/dev/null); then
                 (cd "$path" && git add -A && \

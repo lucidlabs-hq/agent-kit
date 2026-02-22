@@ -209,7 +209,7 @@ except:
     if [[ "$last_sync_date" != "unknown" ]] && [[ "$last_sync_date" != "" ]]; then
         local sync_epoch
         local now_epoch
-        sync_epoch=$(date -j -f "%Y-%m-%d" "$last_sync_date" "+%s" 2>/dev/null || date -d "$last_sync_date" "+%s" 2>/dev/null || echo "0")
+        sync_epoch=$(date -d "$last_sync_date" "+%s" 2>/dev/null || date -j -f "%Y-%m-%d" "$last_sync_date" "+%s" 2>/dev/null || echo "0")
         now_epoch=$(date "+%s")
         if [[ "$sync_epoch" -gt 0 ]]; then
             local days=$(( (now_epoch - sync_epoch) / 86400 ))

@@ -1,0 +1,3 @@
+# .agents/audits/
+# Audit files are stored here. Format: YYYY-MM-DD-<kategorie>-<beschreibung>.md
+# Categories: workflow-dependency, security, code, model, infrastructure, performance

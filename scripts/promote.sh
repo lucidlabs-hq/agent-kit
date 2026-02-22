@@ -252,7 +252,12 @@ is_blacklisted() {
     local path="$1"
 
     for pattern in "${BLACKLIST_PATTERNS[@]}"; do
-        if [[ "$path" == "$pattern"* ]] || [[ "$path" == *"$pattern"* ]]; then
+        # Prefix match: path starts with blacklisted pattern
+        if [[ "$path" == "$pattern"* ]]; then
+            return 0
+        fi
+        # Exact basename match: path ends with /pattern
+        if [[ "$path" == *"/$pattern" ]]; then
             return 0
         fi
     done
@@ -313,7 +318,7 @@ detect_promotable_changes() {
                     fi
 
                     changes+=("$rel_path|$status")
-                done < <(find "$DOWNSTREAM_PATH/$pattern" -type f -print0 2>/dev/null)
+                done < <(find "$DOWNSTREAM_PATH/$pattern" -type f -not -name ".DS_Store" -not -name "Thumbs.db" -not -name "*.swp" -not -name "*~" -print0 2>/dev/null)
             elif [[ -f "$DOWNSTREAM_PATH/$pattern" ]]; then
                 local rel_path="$pattern"
 

@@ -505,7 +505,7 @@ for path in "${SYNCABLE_PATHS[@]}"; do
                     SYNC_TYPES+=("NEW")
                     print_sync_entry "$INDEX" "$rel_path" "NEW"
                     ((INDEX++))
-                done < <(find "$UPSTREAM_FILE" -type f -print0 2>/dev/null)
+                done < <(find "$UPSTREAM_FILE" -type f -not -name ".DS_Store" -not -name "Thumbs.db" -not -name "*.swp" -not -name "*~" -print0 2>/dev/null)
             fi
         elif [[ -f "$UPSTREAM_FILE" ]]; then
             # File exists in both - check if different
@@ -532,7 +532,7 @@ for path in "${SYNCABLE_PATHS[@]}"; do
                     print_sync_entry "$INDEX" "$rel_path" "MODIFIED"
                     ((INDEX++))
                 fi
-            done < <(find "$UPSTREAM_FILE" -type f -print0 2>/dev/null)
+            done < <(find "$UPSTREAM_FILE" -type f -not -name ".DS_Store" -not -name "Thumbs.db" -not -name "*.swp" -not -name "*~" -print0 2>/dev/null)
         fi
     fi
 done

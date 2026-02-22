@@ -387,12 +387,15 @@ upstream (lucidlabs-agent-kit)/
 │   ├── sync-upstream.sh           # Sync script (populates synced_files)
 │   ├── pattern-registry.sh        # Registry generator
 │   ├── pattern-list.sh            # Discovery CLI
+│   ├── drift-detect.sh            # Cross-project drift detection
+│   ├── audit-sync.sh              # Orchestrated fleet sync
 │   ├── bootstrap-sync.sh          # One-time bootstrap for existing projects
 │   └── create-agent-project.sh    # Includes sync infra in new projects
 ├── .claude/
 │   ├── skills/
 │   │   ├── promote/SKILL.md       # Promotion instructions
-│   │   └── sync/SKILL.md          # Sync instructions (with self-bootstrap)
+│   │   ├── sync/SKILL.md          # Sync instructions (with self-bootstrap)
+│   │   └── audit-sync/SKILL.md    # Fleet audit & sync instructions
 │   └── reference/
 │       └── promote-sync.md        # This document
 └── CLAUDE.md                      # Has <!-- UPSTREAM-SYNC-END --> marker
@@ -459,6 +462,80 @@ From a downstream project, the ONLY permitted interactions with upstream are:
 
 ---
 
+## Drift Detection
+
+### Script: `scripts/drift-detect.sh`
+
+Detects how far behind each downstream project is relative to upstream HEAD. Can be run from upstream OR downstream.
+
+```bash
+./scripts/drift-detect.sh                   # Full drift report
+./scripts/drift-detect.sh --project neola   # Single project
+./scripts/drift-detect.sh --json            # Machine-readable output
+./scripts/drift-detect.sh --quiet           # Compact table (for /prime)
+```
+
+### Per-Project Metrics
+
+| Metric | Source | Description |
+|--------|--------|-------------|
+| `commits_behind` | `git rev-list --count` | Commits since last sync |
+| `days_behind` | `.upstream-sync.json` date vs today | Calendar days |
+| `files_changed` | `git diff --name-only` | Files changed in upstream |
+| `score` | Infrastructure checks (9 items) | Sync readiness score |
+| `promote_queue` | `.agents/promote-queue.md` | Pending promotion items |
+
+### Status Classification
+
+| Status | Criteria | Color |
+|--------|----------|-------|
+| CURRENT | 0 commits behind | Green |
+| RECENT | 1-3 commits behind | Yellow |
+| STALE | 4+ commits behind | Red |
+| BROKEN | Missing .upstream-sync.json | Red |
+
+---
+
+## Fleet Audit & Sync
+
+### Script: `scripts/audit-sync.sh`
+
+Orchestrates bringing ALL downstream projects up to date with upstream. Runs a 5-phase workflow.
+
+```bash
+./scripts/audit-sync.sh --dry-run              # Preview plan
+./scripts/audit-sync.sh                         # Full audit
+./scripts/audit-sync.sh --project neola         # Single project
+./scripts/audit-sync.sh --skip-promote --yes    # Sync-only, automated
+```
+
+### Phases
+
+| Phase | Action | Details |
+|-------|--------|---------|
+| 1. Backup | Safe copy of every project | rsync + git bundle to `~/.lucidlabs-backups/` |
+| 2. Bootstrap | Fix broken projects | Copy sync scripts, create .upstream-sync.json |
+| 3. Promote | Process promote queues | Run promote.sh per project, creates PRs |
+| 4. Sync | Sync from enriched upstream | Run sync-upstream.sh --all per project |
+| 5. Verify | Confirm success | Check sync commit, zone markers, scripts |
+
+### Why Promote BEFORE Sync
+
+If we sync first, promoted patterns from downstream would conflict with newly-synced upstream versions. By promoting first:
+1. Downstream improvements become part of upstream HEAD
+2. Promotion PRs are merged to enrich upstream
+3. Sync then distributes the complete upstream to all projects
+
+### Backup Strategy (3 Layers)
+
+1. **rsync** — Full directory copy (excluding node_modules, .next, dist)
+2. **git bundle** — Portable complete git history
+3. **manifest.json** — Metadata (branch, commit, dirty state, file count, size)
+
+Backups are stored at `~/.lucidlabs-backups/audit-<timestamp>/` with a JSON manifest.
+
+---
+
 ## References
 
 - `.claude/skills/promote/SKILL.md` - Promotion skill instructions
@@ -467,5 +544,7 @@ From a downstream project, the ONLY permitted interactions with upstream are:
 - `scripts/sync-upstream.sh` - Sync script (populates `synced_files`)
 - `scripts/pattern-registry.sh` - Pattern registry generator
 - `scripts/pattern-list.sh` - Pattern discovery CLI
+- `scripts/drift-detect.sh` - Cross-project drift detection
+- `scripts/audit-sync.sh` - Orchestrated fleet audit & sync
 - `scripts/bootstrap-sync.sh` - Bootstrap script for existing projects
 - `pattern-registry.json` - Central pattern catalog (auto-generated)

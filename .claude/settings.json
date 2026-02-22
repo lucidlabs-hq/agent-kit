@@ -1,4 +1,16 @@
 {
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(.env.production)",
+      "Read(.env.*.local)",
+      "Read(credentials.json)",
+      "Read(**/credentials.json)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -17,6 +29,17 @@
           {
             "type": "command",
             "command": "echo '--- CRITICAL CONTEXT (re-injected before compaction) ---'; echo 'UPSTREAM REPO: All changes must go through feature branches + PRs.'; echo 'PIV LOOP: Planning -> Implementation -> Validation. Never mix phases.'; echo 'QUALITY GATES: See .claude/reference/quality-gates.md'; PLAN=$(ls -t .agents/plans/*.md 2>/dev/null | head -1); if [ -n \"$PLAN\" ]; then echo \"ACTIVE PLAN: $PLAN\"; fi; BRANCH=$(git branch --show-current 2>/dev/null); if [ -n \"$BRANCH\" ]; then echo \"BRANCH: $BRANCH\"; fi"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$TOOL_INPUT\" | grep -q 'git push'; then bash scripts/check-greptile.sh 2>/dev/null || true; fi"
           }
         ]
       }

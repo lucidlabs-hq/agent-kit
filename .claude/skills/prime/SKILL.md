@@ -274,6 +274,37 @@ done
 
 ---
 
+#### 0.0.3 Fleet Drift Overview (NUR im UPSTREAM-Modus)
+
+**WANN:** Im Upstream-Modus. Zeige nach Promote Queue.
+
+**Zweck:** Zeige wie weit die Downstream-Projekte hinter dem Upstream stehen.
+
+**Ausfuehrung:**
+
+```bash
+if [ -f "scripts/drift-detect.sh" ]; then
+  bash scripts/drift-detect.sh --quiet
+fi
+```
+
+**Anzeige (wenn Drift vorhanden):**
+
+```
+  PROJECT                     SYNC AT    BEHIND  DAYS  SCORE  PROMOTE
+  ll-decision-briefing        c406085         0     0   9/9        1
+  client-service-reporting    7dbf253         8    11   9/9       17
+  casavi-sandbox-seeder       BROKEN        ---   ---   4/9        0
+```
+
+**Rendering-Regeln:**
+- Nur im `--quiet` Modus (kompakte Tabelle ohne Banner)
+- Falls alle Projekte CURRENT: "All projects are up to date." (eine Zeile)
+- Falls STALE oder BROKEN vorhanden: Empfehlung `./scripts/audit-sync.sh --dry-run`
+- Block NICHT anzeigen wenn kein `scripts/drift-detect.sh` vorhanden
+
+---
+
 #### 0.0.2 Agent Kit Roadmap (NUR im UPSTREAM-Modus)
 
 **WANN:** Wenn im Upstream-Modus. Zeige nach Promote Queue.

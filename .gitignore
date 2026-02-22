@@ -9,6 +9,13 @@ node_modules/
 .env
 .env.local
 .env.*.local
+.env.production
+
+# Credentials (NEVER commit — contains real API keys)
+credentials.json
+**/credentials.json
+*.pem
+*.key
 
 # Build
 .next/
